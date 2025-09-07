@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"hostettler.dev/dnc/models"
@@ -22,24 +21,28 @@ type TitleScreen struct {
 }
 
 func NewTitleScreen(character_dir string) *TitleScreen {
-	files := listCharacterFiles(character_dir)
-	choices := []string{"Create new Character"}
-	if len(files) > 0 {
-		choices = append(choices, Map(files, PrettyFileName)...)
-	}
-
 	ti := textinput.New()
 	ti.Width = 20
 	ti.CharLimit = 64
 	ti.Placeholder = "Character Name"
 
-	return &TitleScreen{
-		choices:      choices,
-		files:        files,
+	t := TitleScreen{
 		characterDir: character_dir,
 		editMode:     false,
 		nameInput:    ti,
 	}
+	t.updateFiles()
+
+	return &t
+}
+
+func (t *TitleScreen) updateFiles() {
+	t.files = listCharacterFiles(t.characterDir)
+	choices := []string{"Create new Character"}
+	if len(t.files) > 0 {
+		choices = append(choices, Map(t.files, PrettyFileName)...)
+	}
+	t.choices = choices
 }
 
 func listCharacterFiles(dir string) []string {
@@ -66,13 +69,19 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch msg.String() {
-			case "enter":
-				c := models.Character{
-					Name:     m.nameInput.Value(),
-					SaveFile: filepath.Join(m.characterDir, strings.ToLower(m.nameInput.Value())+".json"),
-				}
-				c.SaveToFile()
+			case "esc":
+				m.editMode = false
+				m.nameInput.Reset()
+			case "ctrl+c":
 				return m, tea.Quit
+			case "enter":
+				c, err := models.NewCharacter(m.nameInput.Value())
+				if err == nil {
+					c.SaveToFile()
+					m.updateFiles()
+				}
+				m.nameInput.Reset()
+				m.editMode = false
 			}
 
 		}
@@ -113,13 +122,15 @@ func (m *TitleScreen) View() string {
 	for i, choice := range m.choices {
 
 		cursor := " "
+
+		textInput := " "
 		if m.cursor == i {
 			cursor = ">"
+			if m.cursor == 0 && m.editMode {
+				textInput = m.nameInput.View()
+			}
 		}
-		textInput := " "
-		if m.cursor == 0 && m.editMode {
-			textInput = m.nameInput.View()
-		}
+
 		s += fmt.Sprintf("%s %s %s\n", cursor, choice, textInput)
 	}
 	return s

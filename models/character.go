@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Character struct {
@@ -36,6 +37,26 @@ type Character struct {
 	Bonds              string       `json:"bonds"`
 	Flaws              string       `json:"flaws"`
 	SaveFile           string       `json:"-"`
+}
+
+func NewCharacter(name string) (Character, error) {
+	c := Character{
+		Name:   name,
+		Skills: NewSkills(),
+	}
+	cfgDir, err := os.UserConfigDir()
+	if err != nil {
+		return c, err
+	}
+	characterFile := filepath.Join(
+		cfgDir,
+		"dnc",
+		"characters",
+		strings.ToLower(name)+".json",
+	)
+	c.SaveFile = characterFile
+	return c, nil
+
 }
 
 func (c *Character) SaveToFile() error {
