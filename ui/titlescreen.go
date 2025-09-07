@@ -8,8 +8,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/list"
 )
 
 type TitleScreen struct {
@@ -32,12 +30,12 @@ func NewTitleScreen(character_dir string) *TitleScreen {
 		editMode:     false,
 		nameInput:    ti,
 	}
-	t.updateFiles()
+	t.UpdateFiles()
 
 	return &t
 }
 
-func (t *TitleScreen) updateFiles() {
+func (t *TitleScreen) UpdateFiles() {
 	t.files = listCharacterFiles(t.characterDir)
 	choices := []string{"Create new Character"}
 	if len(t.files) > 0 {
@@ -66,6 +64,14 @@ func (m *TitleScreen) Init() tea.Cmd {
 
 func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
+
+	switch t := msg.(type) {
+	case FileOpMsg:
+		if t.success && t.op != "update" {
+			return m, UpdateFilesCmd(m)
+		}
+	}
+
 	if m.editMode {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
@@ -73,21 +79,20 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "esc":
 				m.editMode = false
 				m.nameInput.Reset()
-			case "ctrl+c":
-				return m, tea.Quit
 			case "enter":
 				c, err := models.NewCharacter(m.nameInput.Value())
-				if err == nil {
-					c.SaveToFile()
-					m.updateFiles()
-				}
 				m.nameInput.Reset()
 				m.editMode = false
-				return m, ExitEditMode
+				if err == nil {
+					cmd = tea.Batch(SaveToFileCmd(&c), ExitEditModeCmd)
+				}
+			default:
+				m.nameInput, cmd = m.nameInput.Update(msg)
 			}
-
+		default:
+			m.nameInput, cmd = m.nameInput.Update(msg)
 		}
-		m.nameInput, cmd = m.nameInput.Update(msg)
+
 	} else {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
@@ -105,12 +110,13 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case 0:
 					m.editMode = true
 					m.nameInput.Focus()
-					cmd = tea.Batch(textinput.Blink, EnterEditMode)
+					cmd = tea.Batch(textinput.Blink, EnterEditModeCmd)
 				}
-			case "ctrl+c", "q":
-				return m, tea.Quit
+			case "x":
+				if m.cursor != 0 {
+					cmd = DeleteCharacterFileCmd(m.characterDir, m.files[m.cursor-1])
+				}
 			}
-
 		}
 	}
 	return m, cmd
@@ -118,16 +124,15 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *TitleScreen) View() string {
 	s := ""
-	l := list.New(m.choices).ItemStyleFunc(func(_ list.Items, i int) lipgloss.Style {
-		if m.cursor == i {
-			return ItemStyleSelected
-		}
-		return ItemStyleDefault
-	})
-	s += l.String()
+
+	s += RenderList(m.choices[0:1], m.cursor)
+	if len(m.choices) > 1 {
+		s += "\n"
+		s += RenderList(m.choices[1:], m.cursor-1)
+	}
 
 	if m.editMode && m.cursor == 0 {
-		s += "\n\n" + m.nameInput.View()
+		s += "\n" + m.nameInput.View()
 	}
 
 	return s

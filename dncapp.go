@@ -67,6 +67,8 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			a.editMode = false
 		}
+	default:
+		_, cmd = a.GetCurrentPage().Update(msg)
 	}
 
 	return a, cmd

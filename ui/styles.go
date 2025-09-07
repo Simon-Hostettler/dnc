@@ -12,3 +12,16 @@ var (
 				BorderStyle(lipgloss.NormalBorder()).
 				BorderForeground(lipgloss.Color("7"))
 )
+
+func RenderList(l []string, selected int) string {
+	s := ""
+
+	for i, el := range l {
+		if i == selected {
+			s += "> " + ItemStyleSelected.Render(el) + "\n"
+		} else {
+			s += "• " + ItemStyleDefault.Render(el) + "\n"
+		}
+	}
+	return s
+}
