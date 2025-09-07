@@ -1,5 +1,11 @@
 package models
 
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+)
+
 type Character struct {
 	Name               string       `json:"name"`
 	Race               string       `json:"race"`
@@ -29,6 +35,33 @@ type Character struct {
 	Ideals             string       `json:"ideals"`
 	Bonds              string       `json:"bonds"`
 	Flaws              string       `json:"flaws"`
+	SaveFile           string       `json:"-"`
+}
+
+func (c *Character) SaveToFile() error {
+	data, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		return err
+	}
+	dir := filepath.Dir(c.SaveFile)
+
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(c.SaveFile, data, 0644)
+}
+
+func LoadCharacterFromFile(filename string) (*Character, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	var c Character
+	if err := json.Unmarshal(data, &c); err != nil {
+		return nil, err
+	}
+	c.SaveFile = filename
+	return &c, nil
 }
 
 type Feature struct {
