@@ -83,6 +83,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.nameInput.Reset()
 				m.editMode = false
+				return m, ExitEditMode
 			}
 
 		}
@@ -104,11 +105,8 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case 0:
 					m.editMode = true
 					m.nameInput.Focus()
-					cmd = textinput.Blink
-				default:
-
+					cmd = tea.Batch(textinput.Blink, EnterEditMode)
 				}
-				return m, nil
 			case "ctrl+c", "q":
 				return m, tea.Quit
 			}
@@ -127,6 +125,10 @@ func (m *TitleScreen) View() string {
 		return ItemStyleDefault
 	})
 	s += l.String()
+
+	if m.editMode && m.cursor == 0 {
+		s += "\n\n" + m.nameInput.View()
+	}
 
 	return s
 }

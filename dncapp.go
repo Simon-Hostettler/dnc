@@ -61,6 +61,12 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		a.width = msg.Width
 		a.height = msg.Height
+	case ui.EditMessage:
+		if msg == "start" {
+			a.editMode = true
+		} else {
+			a.editMode = false
+		}
 	}
 
 	return a, cmd
