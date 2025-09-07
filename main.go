@@ -2,16 +2,14 @@ package main
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"hostettler.dev/dnc/ui"
 )
 
 func main() {
-	cfg, err := LoadConfig()
+	app, err := NewApp()
 	if err != nil {
 		panic(err)
 	}
-
-	p := tea.NewProgram(ui.NewTitleScreen(cfg.CharacterDir))
+	p := tea.NewProgram(app, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		panic(err)
 	}

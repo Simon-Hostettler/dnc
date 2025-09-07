@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -9,6 +8,8 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/list"
 )
 
 type TitleScreen struct {
@@ -119,19 +120,13 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *TitleScreen) View() string {
 	s := ""
-	for i, choice := range m.choices {
-
-		cursor := " "
-
-		textInput := " "
+	l := list.New(m.choices).ItemStyleFunc(func(_ list.Items, i int) lipgloss.Style {
 		if m.cursor == i {
-			cursor = ">"
-			if m.cursor == 0 && m.editMode {
-				textInput = m.nameInput.View()
-			}
+			return ItemStyleSelected
 		}
+		return ItemStyleDefault
+	})
+	s += l.String()
 
-		s += fmt.Sprintf("%s %s %s\n", cursor, choice, textInput)
-	}
 	return s
 }

@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -54,9 +55,12 @@ func NewCharacter(name string) (Character, error) {
 		"characters",
 		strings.ToLower(name)+".json",
 	)
-	c.SaveFile = characterFile
-	return c, nil
-
+	if _, err := os.Stat(characterFile); errors.Is(err, os.ErrNotExist) {
+		c.SaveFile = characterFile
+		return c, nil
+	} else {
+		return c, errors.New("character already exists")
+	}
 }
 
 func (c *Character) SaveToFile() error {
