@@ -82,19 +82,16 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (a *DnCApp) View() string {
-	s := ui.AppTitleStyle.Render("DNC") + "\n\n"
-
-	titleHeight := lipgloss.Height(s)
-
 	pageContent := a.page.View()
 
 	pageWidth := a.width - defaultPadding
-	pageHeight := a.height - titleHeight - defaultPadding
+	pageHeight := a.height - defaultPadding
 
 	topPad := (pageHeight - lipgloss.Height(pageContent)) / 2
 	leftPad := (pageWidth - lipgloss.Width(pageContent)) / 2
 
-	s += ui.MainBorderStyle.
+	s := ui.NoBorderStyle.
+		UnsetAlign().
 		Width(pageWidth).
 		Height(pageHeight).
 		PaddingLeft(leftPad).

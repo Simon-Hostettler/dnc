@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type TitleScreen struct {
@@ -18,7 +19,7 @@ type TitleScreen struct {
 
 func NewTitleScreen(character_dir string) *TitleScreen {
 	ti := textinput.New()
-	ti.Width = 20
+	ti.Width = 18
 	ti.CharLimit = 64
 	ti.Placeholder = "Character Name"
 
@@ -110,15 +111,21 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *TitleScreen) View() string {
 	s := ""
 
-	s += RenderList(m.choices[0:1], m.cursor)
+	createField := RenderList(m.choices[0:1], m.cursor)
+
+	charList := ""
 	if len(m.choices) > 1 {
-		s += "\n"
-		s += RenderList(m.choices[1:], m.cursor-1)
+		charList += VerticalBorderStyle.
+			Width(25).
+			Render(RenderList(m.choices[1:], m.cursor-1))
 	}
 
+	inputField := ""
 	if m.editMode && m.cursor == 0 {
-		s += "\n" + m.nameInput.View()
+		inputField += m.nameInput.View()
 	}
+
+	s += lipgloss.JoinVertical(lipgloss.Center, createField, inputField, charList)
 
 	return s
 }

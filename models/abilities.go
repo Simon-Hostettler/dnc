@@ -49,7 +49,7 @@ func (s Skill) ToModifier(a Abilities, profBonus int) int {
 	if err != nil {
 		return 0
 	}
-	return base + int(s.Proficiency)*profBonus + s.CustomModifier
+	return ToModifier(base) + int(s.Proficiency)*profBonus + s.CustomModifier
 
 }
 
