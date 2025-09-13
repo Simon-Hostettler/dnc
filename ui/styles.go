@@ -5,22 +5,29 @@ import (
 )
 
 var (
-	DefaultTextStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("7"))
-	FlippedText       = lipgloss.NewStyle().Background(lipgloss.Color("8")).Foreground(lipgloss.Color("0"))
-	GrayTextStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	AppTitleStyle     = lipgloss.NewStyle().Background(lipgloss.Color("#7D56F4")).Padding(0, 1)
-	ItemStyleSelected = lipgloss.NewStyle().Background(lipgloss.Color("#7D56F4"))
-	ItemStyleDefault  = lipgloss.NewStyle().Foreground(lipgloss.Color("7"))
-	CenteredStyle     = lipgloss.NewStyle().Align(lipgloss.Center)
-	MainBorderStyle   = lipgloss.NewStyle().
-				BorderStyle(lipgloss.NormalBorder()).
-				BorderForeground(lipgloss.Color("7"))
+	HighlightColor  = lipgloss.Color("#7D56F4")
+	TextColor       = lipgloss.Color("#FAFAFA")
+	SecondaryColor  = lipgloss.Color("8")
+	BackgroundColor = lipgloss.Color("0")
+
+	DefaultTextStyle = lipgloss.NewStyle().Foreground(TextColor)
+	FlippedText      = lipgloss.NewStyle().Background(SecondaryColor).Foreground(BackgroundColor)
+	GrayTextStyle    = lipgloss.NewStyle().Foreground(SecondaryColor)
+
+	ItemStyleSelected = lipgloss.NewStyle().Background(HighlightColor)
+	ItemStyleDefault  = lipgloss.NewStyle().Foreground(TextColor)
+
+	CenteredStyle = lipgloss.NewStyle().Align(lipgloss.Center)
+
+	MainBorderStyle = lipgloss.NewStyle().
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(TextColor)
 	RoundedBorderNoBottomStyle = lipgloss.NewStyle().Border(RoundedBorder, true, true, false).
-					BorderForeground(lipgloss.Color("8")).Align(lipgloss.Center)
+					BorderForeground(SecondaryColor).Align(lipgloss.Center)
 	VerticalBorderStyle = lipgloss.NewStyle().Border(VerticalBorder).
-				BorderForeground(lipgloss.Color("8")).Align(lipgloss.Center)
+				BorderForeground(SecondaryColor).Align(lipgloss.Center)
 	HorizontalBorderStyle = lipgloss.NewStyle().Border(HorizontalBorder).
-				BorderForeground(lipgloss.Color("8")).Align(lipgloss.Center)
+				BorderForeground(SecondaryColor).Align(lipgloss.Center)
 	NoBorderStyle = lipgloss.NewStyle().Border(RoundedBorder, false, false, false)
 
 	RoundedBorder = lipgloss.Border{
