@@ -25,6 +25,10 @@ func (a Abilities) Get(ability string) (int, error) {
 
 }
 
+func ToModifier(score int) int {
+	return (score - 10) / 2
+}
+
 type ProficiencyLevel int
 
 const (
@@ -38,6 +42,15 @@ type Skill struct {
 	Ability        string           `json:"ability"`
 	Proficiency    ProficiencyLevel `json:"proficiency"`
 	CustomModifier int              `json:"custom_modifier"`
+}
+
+func (s Skill) ToModifier(a Abilities, profBonus int) int {
+	base, err := a.Get(s.Ability)
+	if err != nil {
+		return 0
+	}
+	return base + int(s.Proficiency)*profBonus + s.CustomModifier
+
 }
 
 type Skills struct {

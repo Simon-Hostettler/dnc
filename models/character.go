@@ -76,8 +76,19 @@ func (c *Character) SaveToFile() error {
 	return os.WriteFile(c.SaveFile, data, 0644)
 }
 
-func LoadCharacterFromFile(filename string) (*Character, error) {
-	data, err := os.ReadFile(filename)
+func LoadCharacterByName(name string) (*Character, error) {
+	cfgDir, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	characterFile := filepath.Join(
+		cfgDir,
+		"dnc",
+		"characters",
+		strings.ToLower(name)+".json",
+	)
+
+	data, err := os.ReadFile(characterFile)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +96,7 @@ func LoadCharacterFromFile(filename string) (*Character, error) {
 	if err := json.Unmarshal(data, &c); err != nil {
 		return nil, err
 	}
-	c.SaveFile = filename
+	c.SaveFile = characterFile
 	return &c, nil
 }
 

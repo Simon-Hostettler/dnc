@@ -1,9 +1,6 @@
 package ui
 
 import (
-	"os"
-	"strings"
-
 	"hostettler.dev/dnc/models"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -29,14 +26,13 @@ func NewTitleScreen(character_dir string) *TitleScreen {
 		characterDir: character_dir,
 		editMode:     false,
 		nameInput:    ti,
+		choices:      []string{"Create new Character"},
 	}
-	t.UpdateFiles()
-
 	return &t
 }
 
 func (t *TitleScreen) UpdateFiles() {
-	t.files = listCharacterFiles(t.characterDir)
+	t.files = ListCharacterFiles(t.characterDir)
 	choices := []string{"Create new Character"}
 	if len(t.files) > 0 {
 		choices = append(choices, Map(t.files, PrettyFileName)...)
@@ -44,22 +40,8 @@ func (t *TitleScreen) UpdateFiles() {
 	t.choices = choices
 }
 
-func listCharacterFiles(dir string) []string {
-	var files []string
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return files
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".json") {
-			files = append(files, entry.Name())
-		}
-	}
-	return files
-}
-
 func (m *TitleScreen) Init() tea.Cmd {
-	return nil
+	return UpdateFilesCmd(m)
 }
 
 func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -111,6 +93,9 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.editMode = true
 					m.nameInput.Focus()
 					cmd = tea.Batch(textinput.Blink, EnterEditModeCmd)
+				default:
+					charName := m.choices[m.cursor]
+					cmd = SelectCharacterAndSwitchScreenCommand(charName)
 				}
 			case "x":
 				if m.cursor != 0 {

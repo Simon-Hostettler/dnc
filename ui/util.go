@@ -9,11 +9,26 @@ import (
 	"hostettler.dev/dnc/models"
 )
 
+type ScreenIndex int
+
+const (
+	ScoreScreenIndex ScreenIndex = iota
+)
+
 type EditMessage string
 
 type FileOpMsg struct {
 	op      string
 	success bool
+}
+
+type SelectCharacterAndSwitchScreenMsg struct {
+	Character *models.Character
+	Err       error
+}
+
+type SwitchScreenMsg struct {
+	Screen ScreenIndex
 }
 
 func Map[T, V any](ts []T, fn func(T) V) []V {
@@ -36,6 +51,20 @@ func EnterEditModeCmd() tea.Msg {
 
 func ExitEditModeCmd() tea.Msg {
 	return EditMessage("stop")
+}
+
+func ListCharacterFiles(dir string) []string {
+	var files []string
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return files
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".json") {
+			files = append(files, entry.Name())
+		}
+	}
+	return files
 }
 
 func DeleteCharacterFileCmd(characterDir string, filename string) tea.Cmd {
@@ -63,7 +92,22 @@ func SaveToFileCmd(c *models.Character) func() tea.Msg {
 func UpdateFilesCmd(t *TitleScreen) func() tea.Msg {
 	return func() tea.Msg {
 		t.UpdateFiles()
-		return FileOpMsg{"save", true}
+		return FileOpMsg{"update", true}
 	}
+}
 
+func SelectCharacterAndSwitchScreenCommand(name string) func() tea.Msg {
+	return func() tea.Msg {
+		c, err := models.LoadCharacterByName(name)
+		if err != nil {
+			return SelectCharacterAndSwitchScreenMsg{nil, err}
+		}
+		return SelectCharacterAndSwitchScreenMsg{c, nil}
+	}
+}
+
+func SwitchScreenCmd(s ScreenIndex) func() tea.Msg {
+	return func() tea.Msg {
+		return SwitchScreenMsg{s}
+	}
 }
