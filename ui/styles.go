@@ -19,16 +19,29 @@ var (
 
 	CenteredStyle = lipgloss.NewStyle().Align(lipgloss.Center)
 
-	MainBorderStyle = lipgloss.NewStyle().
+	MainBorderStyle = lipgloss.
+			NewStyle().
 			BorderStyle(lipgloss.NormalBorder()).
 			BorderForeground(TextColor)
-	RoundedBorderNoBottomStyle = lipgloss.NewStyle().Border(RoundedBorder, true, true, false).
-					BorderForeground(SecondaryColor).Align(lipgloss.Center)
-	VerticalBorderStyle = lipgloss.NewStyle().Border(VerticalBorder).
-				BorderForeground(SecondaryColor).Align(lipgloss.Center)
-	HorizontalBorderStyle = lipgloss.NewStyle().Border(HorizontalBorder).
-				BorderForeground(SecondaryColor).Align(lipgloss.Center)
-	NoBorderStyle = lipgloss.NewStyle().Border(RoundedBorder, false, false, false)
+	RoundedBorderNoBottomStyle = lipgloss.
+					NewStyle().
+					Border(RoundedBorder, true, true, false).
+					BorderForeground(SecondaryColor).
+					Align(lipgloss.Center)
+	VerticalBorderStyle = lipgloss.
+				NewStyle().
+				Border(VerticalBorder).
+				BorderForeground(SecondaryColor).
+				Align(lipgloss.Center).
+				Padding(1, 2)
+	HorizontalBorderStyle = lipgloss.
+				NewStyle().
+				Border(HorizontalBorder).
+				BorderForeground(SecondaryColor).
+				Align(lipgloss.Center)
+	NoBorderStyle = lipgloss.
+			NewStyle().
+			Border(RoundedBorder, false, false, false)
 
 	RoundedBorder = lipgloss.Border{
 		Top:         "─",
@@ -63,16 +76,3 @@ var (
 		BottomRight: " ",
 	}
 )
-
-func RenderList(l []string, selected int) string {
-	s := ""
-
-	for i, el := range l {
-		if i == selected {
-			s += ItemStyleSelected.Render(el) + "\n"
-		} else {
-			s += ItemStyleDefault.Render(el) + "\n"
-		}
-	}
-	return s
-}

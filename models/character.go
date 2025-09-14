@@ -19,6 +19,7 @@ type Character struct {
 	Abilities          Abilities    `json:"abilities"`
 	ProficiencyBonus   int          `json:"proficiency_bonus"`
 	Skills             Skills       `json:"skills"`
+	SavingThrows       SavingThrows `json:"saving_throws"`
 	ArmorClass         int          `json:"armor_class"`
 	Initiative         int          `json:"initiative"`
 	Speed              int          `json:"speed"`
@@ -42,8 +43,9 @@ type Character struct {
 
 func NewCharacter(name string) (Character, error) {
 	c := Character{
-		Name:   name,
-		Skills: NewSkills(),
+		Name:         name,
+		Skills:       NewSkills(),
+		SavingThrows: NewSavingThrows(),
 	}
 	cfgDir, err := os.UserConfigDir()
 	if err != nil {

@@ -11,13 +11,21 @@ import (
 )
 
 type ScoreScreen struct {
-	cursor    int
-	character *models.Character
+	character    *models.Character
+	skills       *Table
+	savingThrows *Table
 }
 
 func NewScoreScreen(c *models.Character) *ScoreScreen {
 	return &ScoreScreen{
 		character: c,
+		skills: NewTableWithDefaults().
+			WithTitle("Skills").
+			WithRows(SkillsToRows(c)).
+			SetFocus(true),
+		savingThrows: NewTableWithDefaults().
+			WithTitle("Saving Throws").
+			WithRows(SavingThrowsToRows(c)),
 	}
 }
 
@@ -32,8 +40,10 @@ func (s *ScoreScreen) Update(tea.Msg) (tea.Model, tea.Cmd) {
 func (s *ScoreScreen) View() string {
 	abilities := RenderAbilities(s.character.Abilities)
 	separator := GrayTextStyle.Render(strings.Repeat("─", lipgloss.Width(abilities)))
-	skills := RenderSkills(s.character.Skills, s.character.Abilities, s.character.ProficiencyBonus)
-	return lipgloss.JoinVertical(lipgloss.Left, abilities, separator, skills)
+	skills := VerticalBorderStyle.Render(s.skills.View())
+	savingThrows := VerticalBorderStyle.Render(s.savingThrows.View())
+	body := lipgloss.JoinHorizontal(lipgloss.Left, skills, savingThrows)
+	return lipgloss.JoinVertical(lipgloss.Left, abilities, separator, body)
 }
 
 func RenderAbilities(a models.Abilities) string {
@@ -48,33 +58,45 @@ func RenderAbilities(a models.Abilities) string {
 }
 
 func RenderAbility(name string, score int) string {
-	modStr := fmt.Sprintf("%+d", models.ToModifier(score))
+	modStr := DefaultTextStyle.Render(fmt.Sprintf("%+d", models.ToModifier(score)))
 
 	innerBorder := HorizontalBorderStyle.Padding(0, 2)
-	outerBorder := VerticalBorderStyle.Padding(1, 0).Width(14)
+	outerBorder := VerticalBorderStyle
 
-	scoreStr := fmt.Sprintf("%d", score)
+	scoreStr := DefaultTextStyle.Render(fmt.Sprintf("%d", score))
 	modView := innerBorder.Render(modStr)
 
-	content := lipgloss.JoinVertical(lipgloss.Center, name, "\n"+scoreStr, modView)
+	content := lipgloss.JoinVertical(lipgloss.Center, DefaultTextStyle.Render(name), "\n"+scoreStr, modView)
 	top := outerBorder.Render(content)
 
 	return top
 
 }
 
-func RenderSkills(s models.Skills, a models.Abilities, profBonus int) string {
-	rows := []string{}
+func SkillsToRows(c *models.Character) []Row {
+	rows := []Row{}
 
-	skillFields := structs.Fields(s)
+	skillFields := structs.Fields(c.Skills)
 	for _, field := range skillFields {
 		skill := field.Value().(models.Skill)
-		mod := skill.ToModifier(a, profBonus)
-		row := fmt.Sprintf("%-18s %3s", skill.Name, fmt.Sprintf("%+d", mod))
+		mod := skill.ToModifier(c.Abilities, c.ProficiencyBonus)
+		row := Row{fmt.Sprintf("%-18s %3s", skill.Name, fmt.Sprintf("%+d", mod))}
 		rows = append(rows, row)
 	}
 
-	t := lipgloss.JoinVertical(lipgloss.Center, rows...)
-	t = VerticalBorderStyle.Padding(1, 0).Width(27).Render(t)
-	return t
+	return rows
+}
+
+func SavingThrowsToRows(c *models.Character) []Row {
+	rows := []Row{}
+
+	skillFields := structs.Fields(c.SavingThrows)
+	for _, field := range skillFields {
+		saving := field.Value().(models.SavingThrow)
+		mod := saving.ToModifier(c.Abilities, c.ProficiencyBonus)
+		row := Row{fmt.Sprintf("%-14s %3s", saving.Ability, fmt.Sprintf("%+d", mod))}
+		rows = append(rows, row)
+	}
+
+	return rows
 }

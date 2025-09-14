@@ -3,14 +3,17 @@ package ui
 import (
 	"hostettler.dev/dnc/models"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 type TitleScreen struct {
+	KeyMap KeyMap
+
 	cursor       int
-	choices      []string
+	characters   *Table
 	files        []string
 	characterDir string
 	editMode     bool
@@ -24,21 +27,36 @@ func NewTitleScreen(character_dir string) *TitleScreen {
 	ti.Placeholder = "Character Name"
 
 	t := TitleScreen{
+		KeyMap:       DefaultKeyMap(),
+		cursor:       0,
 		characterDir: character_dir,
 		editMode:     false,
 		nameInput:    ti,
-		choices:      []string{"Create new Character"},
+		characters:   NewTableWithDefaults().WithRowHandler(CharacterRowHandler(character_dir)).SetFocus(false),
 	}
 	return &t
 }
 
 func (t *TitleScreen) UpdateFiles() {
 	t.files = ListCharacterFiles(t.characterDir)
-	choices := []string{"Create new Character"}
-	if len(t.files) > 0 {
-		choices = append(choices, Map(t.files, PrettyFileName)...)
+	charNames := Map(t.files, func(s string) Row { return Row{PrettyFileName(s)} })
+	t.characters.WithRows(charNames)
+}
+
+func CharacterRowHandler(character_dir string) func(KeyMap, tea.Msg, Row) tea.Cmd {
+	return func(k KeyMap, m tea.Msg, r Row) tea.Cmd {
+		switch msg := m.(type) {
+		case tea.KeyMsg:
+			switch {
+			case key.Matches(msg, k.Select):
+				return SelectCharacterAndSwitchScreenCommand(r[0])
+			case key.Matches(msg, k.Delete):
+				return DeleteCharacterFileCmd(character_dir, r[0])
+			}
+
+		}
+		return nil
 	}
-	t.choices = choices
 }
 
 func (m *TitleScreen) Init() tea.Cmd {
@@ -55,14 +73,15 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	// New character creation
 	if m.editMode {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
-			switch msg.String() {
-			case "esc":
+			switch {
+			case key.Matches(msg, m.KeyMap.Escape):
 				m.editMode = false
 				m.nameInput.Reset()
-			case "enter":
+			case key.Matches(msg, m.KeyMap.Enter):
 				c, err := models.NewCharacter(m.nameInput.Value())
 				m.nameInput.Reset()
 				m.editMode = false
@@ -75,33 +94,40 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			m.nameInput, cmd = m.nameInput.Update(msg)
 		}
+		return m, cmd
+	}
 
-	} else {
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch msg.String() {
-			case "up", "k":
-				if m.cursor > 0 {
-					m.cursor--
-				}
-			case "down", "j":
-				if m.cursor < len(m.choices)-1 {
-					m.cursor++
-				}
-			case "enter", " ":
-				switch m.cursor {
-				case 0:
-					m.editMode = true
-					m.nameInput.Focus()
-					cmd = tea.Batch(textinput.Blink, EnterEditModeCmd)
-				default:
-					charName := m.choices[m.cursor]
-					cmd = SelectCharacterAndSwitchScreenCommand(charName)
-				}
-			case "x":
-				if m.cursor != 0 {
-					cmd = DeleteCharacterFileCmd(m.characterDir, m.files[m.cursor-1])
-				}
+	// Character selection
+	if m.characters.IsFocus() {
+		switch msg.(type) {
+		case ExitTableMsg:
+			m.characters.SetFocus(false)
+			m.cursor = 0
+			return m, nil
+		default:
+			_, cmd = m.characters.Update(msg)
+		}
+		return m, cmd
+	}
+
+	// Otherwise
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, m.KeyMap.Down):
+			if m.cursor == 0 {
+				m.cursor++
+			}
+			m.characters.SetFocus(true)
+		case key.Matches(msg, m.KeyMap.Select):
+			if m.cursor == 0 {
+				m.editMode = true
+				m.nameInput.Focus()
+				cmd = tea.Batch(textinput.Blink, EnterEditModeCmd)
+			}
+		case key.Matches(msg, m.KeyMap.Delete):
+			if m.cursor != 0 {
+				cmd = DeleteCharacterFileCmd(m.characterDir, m.files[m.cursor-1])
 			}
 		}
 	}
@@ -111,21 +137,23 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *TitleScreen) View() string {
 	s := ""
 
-	createField := RenderList(m.choices[0:1], m.cursor)
+	createField := "Create new Character"
 
-	charList := ""
-	if len(m.choices) > 1 {
-		charList += VerticalBorderStyle.
-			Width(25).
-			Render(RenderList(m.choices[1:], m.cursor-1))
+	if m.cursor == 0 {
+		createField = ItemStyleSelected.Render(createField)
+	} else {
+		createField = ItemStyleDefault.Render(createField)
 	}
+
+	charTable := VerticalBorderStyle.
+		Render(m.characters.View())
 
 	inputField := ""
 	if m.editMode && m.cursor == 0 {
 		inputField += m.nameInput.View()
 	}
 
-	s += lipgloss.JoinVertical(lipgloss.Center, createField, inputField, charList)
+	s += lipgloss.JoinVertical(lipgloss.Center, createField, inputField, charTable)
 
 	return s
 }

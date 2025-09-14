@@ -2,33 +2,35 @@ package ui
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"hostettler.dev/dnc/models"
+	"github.com/charmbracelet/bubbles/key"
 )
 
-type ScreenIndex int
-
-const (
-	ScoreScreenIndex ScreenIndex = iota
-)
-
-type EditMessage string
-
-type FileOpMsg struct {
-	op      string
-	success bool
+type KeyMap struct {
+	Up        key.Binding `json:"up"`
+	Down      key.Binding `json:"down"`
+	Left      key.Binding `json:"left"`
+	Right     key.Binding `json:"right"`
+	Select    key.Binding `json:"select"`
+	Enter     key.Binding `json:"enter"`
+	Escape    key.Binding `json:"escape"`
+	Delete    key.Binding `json:"delete"`
+	ForceQuit key.Binding `json:"force_quit"`
 }
 
-type SelectCharacterAndSwitchScreenMsg struct {
-	Character *models.Character
-	Err       error
-}
-
-type SwitchScreenMsg struct {
-	Screen ScreenIndex
+func DefaultKeyMap() KeyMap {
+	return KeyMap{
+		Up:        key.NewBinding(key.WithKeys("k", "up")),
+		Down:      key.NewBinding(key.WithKeys("j", "down")),
+		Left:      key.NewBinding(key.WithKeys("h", "left")),
+		Right:     key.NewBinding(key.WithKeys("l", "right")),
+		Select:    key.NewBinding(key.WithKeys(" ", "enter")),
+		Enter:     key.NewBinding(key.WithKeys("enter")),
+		Escape:    key.NewBinding(key.WithKeys("esc")),
+		Delete:    key.NewBinding(key.WithKeys("x", "del")),
+		ForceQuit: key.NewBinding(key.WithKeys("ctrl+c")),
+	}
 }
 
 func Map[T, V any](ts []T, fn func(T) V) []V {
@@ -45,14 +47,6 @@ func PrettyFileName(file string) string {
 	return strings.Title(fileName)
 }
 
-func EnterEditModeCmd() tea.Msg {
-	return EditMessage("start")
-}
-
-func ExitEditModeCmd() tea.Msg {
-	return EditMessage("stop")
-}
-
 func ListCharacterFiles(dir string) []string {
 	var files []string
 	entries, err := os.ReadDir(dir)
@@ -65,49 +59,4 @@ func ListCharacterFiles(dir string) []string {
 		}
 	}
 	return files
-}
-
-func DeleteCharacterFileCmd(characterDir string, filename string) tea.Cmd {
-	return func() tea.Msg {
-		err := os.Remove(filepath.Join(characterDir, filename))
-		if err == nil {
-			return FileOpMsg{"delete", true}
-		} else {
-			return FileOpMsg{"delete", false}
-		}
-	}
-}
-
-func SaveToFileCmd(c *models.Character) func() tea.Msg {
-	return func() tea.Msg {
-		err := c.SaveToFile()
-		if err == nil {
-			return FileOpMsg{"save", true}
-		} else {
-			return FileOpMsg{"save", false}
-		}
-	}
-}
-
-func UpdateFilesCmd(t *TitleScreen) func() tea.Msg {
-	return func() tea.Msg {
-		t.UpdateFiles()
-		return FileOpMsg{"update", true}
-	}
-}
-
-func SelectCharacterAndSwitchScreenCommand(name string) func() tea.Msg {
-	return func() tea.Msg {
-		c, err := models.LoadCharacterByName(name)
-		if err != nil {
-			return SelectCharacterAndSwitchScreenMsg{nil, err}
-		}
-		return SelectCharacterAndSwitchScreenMsg{c, nil}
-	}
-}
-
-func SwitchScreenCmd(s ScreenIndex) func() tea.Msg {
-	return func() tea.Msg {
-		return SwitchScreenMsg{s}
-	}
 }

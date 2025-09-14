@@ -96,3 +96,36 @@ func NewSkills() Skills {
 		Persuasion:     Skill{Name: "Persuasion", Ability: "Charisma", Proficiency: NoProficiency},
 	}
 }
+
+type SavingThrow struct {
+	Ability     string           `json:"ability"`
+	Proficiency ProficiencyLevel `json:"proficiency"`
+}
+
+func (s SavingThrow) ToModifier(a Abilities, profBonus int) int {
+	base, err := a.Get(s.Ability)
+	if err != nil {
+		return 0
+	}
+	return ToModifier(base) + int(s.Proficiency)*profBonus
+}
+
+type SavingThrows struct {
+	Strength     SavingThrow `json:"strength"`
+	Dexterity    SavingThrow `json:"dexterity"`
+	Constitution SavingThrow `json:"constitution"`
+	Intelligence SavingThrow `json:"intelligence"`
+	Wisdom       SavingThrow `json:"wisdom"`
+	Charisma     SavingThrow `json:"charisma"`
+}
+
+func NewSavingThrows() SavingThrows {
+	return SavingThrows{
+		Strength:     SavingThrow{Ability: "Strength"},
+		Dexterity:    SavingThrow{Ability: "Dexterity"},
+		Constitution: SavingThrow{Ability: "Constitution"},
+		Intelligence: SavingThrow{Ability: "Intelligence"},
+		Wisdom:       SavingThrow{Ability: "Wisdom"},
+		Charisma:     SavingThrow{Ability: "Charisma"},
+	}
+}
