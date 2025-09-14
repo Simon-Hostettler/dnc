@@ -12,24 +12,42 @@ import (
 )
 
 var (
-	StandardBoxWidth  = 30
-	StandardBoxHeight = 25
-	LongColWidth      = 20
-	ColWidth          = 16
-	ShortColWidth     = 3
+	TopBarHeight = 6
+	TopBarWidth  = LeftColWidth + MidColWidth + RightColWidth + 4
+
+	TopSeparatorWidth = 20
+
+	ColHeight    = 25
+	LeftColWidth = 30
+	MidColWidth  = 28
+
+	RightColWidth     = 38
+	RightContentWidth = RightColWidth - 6
+
+	LongColWidth   = 20
+	ColWidth       = 16
+	MediumColWidth = 12
+	ShortColWidth  = 8
+	TinyColWidth   = 3
 )
 
 type ScoreScreen struct {
-	character    *models.Character
-	skills       *Table
-	savingThrows *Table
-	combatInfo   *Table
-	attacks      *Table
+	character     *models.Character
+	characterInfo *Table
+	abilities     *Table
+	skills        *Table
+	savingThrows  *Table
+	combatInfo    *Table
+	attacks       *Table
 }
 
 func NewScoreScreen(c *models.Character) *ScoreScreen {
 	return &ScoreScreen{
 		character: c,
+		characterInfo: NewTableWithDefaults().
+			WithRows(GetCharacterInfoRows(c)),
+		abilities: NewTableWithDefaults().
+			WithRows(GetAbilityRows(c)),
 		skills: NewTableWithDefaults().
 			WithTitle("Skills").
 			WithRows(SkillsToRows(c)).
@@ -55,19 +73,36 @@ func (s *ScoreScreen) Update(tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (s *ScoreScreen) View() string {
-	abilities := RenderAbilities(s.character.Abilities)
+	characterInfo := s.characterInfo.View()
+
+	abilities := s.abilities.View()
+
+	topBarSeparator := MakeVerticalSeparator(TopBarHeight)
+
+	topBar := DefaultBorderStyle.
+		Height(TopBarHeight).
+		Width(TopBarWidth).
+		Render(lipgloss.JoinHorizontal(lipgloss.Center,
+			characterInfo,
+			lipgloss.PlaceHorizontal(20, lipgloss.Center, topBarSeparator),
+			abilities))
+
+	leftColumn := DefaultBorderStyle.
+		Height(ColHeight).
+		Width(LeftColWidth).
+		Render(s.skills.View())
 
 	savingThrows := s.savingThrows.View()
 
 	combatInfo := s.combatInfo.View()
 
 	midBoxInnerSeparator := "\n" +
-		GrayTextStyle.Render(strings.Repeat("─", StandardBoxWidth-6)) +
+		GrayTextStyle.Render(strings.Repeat("─", MidColWidth-4)) +
 		"\n"
 
 	midColumn := DefaultBorderStyle.
-		Width(StandardBoxWidth - 2).
-		Height(StandardBoxHeight).
+		Width(MidColWidth).
+		Height(ColHeight).
 		Render(lipgloss.JoinVertical(lipgloss.Center, combatInfo, midBoxInnerSeparator, savingThrows))
 
 	actions := RenderActions(s.character)
@@ -75,78 +110,59 @@ func (s *ScoreScreen) View() string {
 	attacks := s.attacks.View()
 
 	rightBoxInnerSeparator := "\n" +
-		GrayTextStyle.Render(strings.Repeat("─", StandardBoxWidth+2)) +
+		GrayTextStyle.Render(strings.Repeat("─", RightContentWidth)) +
 		"\n"
 
 	rightColumn := DefaultBorderStyle.
-		Width(StandardBoxWidth + 8).
-		Height(StandardBoxHeight).
+		Width(RightColWidth).
+		Height(ColHeight).
 		Render(lipgloss.JoinVertical(lipgloss.Center, actions, rightBoxInnerSeparator, attacks))
 
-	skills := DefaultBorderStyle.
-		Height(lipgloss.Height(midColumn) - 2).
-		Width(StandardBoxWidth).
-		Height(StandardBoxHeight).
-		Render(s.skills.View())
-
-	body := lipgloss.JoinHorizontal(lipgloss.Left, skills, midColumn, rightColumn)
+	body := lipgloss.JoinHorizontal(lipgloss.Left, leftColumn, midColumn, rightColumn)
 
 	topSeparator := GrayTextStyle.Render(strings.Repeat("─", lipgloss.Width(body)))
 
-	return lipgloss.JoinVertical(lipgloss.Center, abilities, topSeparator, body)
+	return lipgloss.JoinVertical(lipgloss.Center, topBar, topSeparator, body)
 }
 
-func RenderAbilities(a models.Abilities) string {
-	strength := RenderAbility("Strength", a.Strength)
-	constitution := RenderAbility("Constitution", a.Constitution)
-	dexterity := RenderAbility("Dexterity", a.Dexterity)
-	intelligence := RenderAbility("Intelligence", a.Intelligence)
-	wisdom := RenderAbility("Wisdom", a.Wisdom)
-	charisma := RenderAbility("Charisma", a.Charisma)
+func GetCharacterInfoRows(c *models.Character) []Row {
+	fmtStr := "%-" + strconv.Itoa(ColWidth) + "s"
+	rows := []Row{
+		{fmt.Sprintf(fmtStr, "Name: "+c.Name)},
+		{fmt.Sprintf(fmtStr, "Levels: "+strconv.Itoa(c.Level)+" "+c.Class)},
+		{fmt.Sprintf(fmtStr, "Race: "+c.Race)},
+		{fmt.Sprintf(fmtStr, "Alignment: "+c.Alignment)},
+	}
+	return rows
+}
 
-	return lipgloss.JoinHorizontal(lipgloss.Center, strength, constitution, dexterity, intelligence, wisdom, charisma)
+func GetAbilityRows(c *models.Character) []Row {
+	rows := []Row{
+		{RenderAbility("Strength", c.Abilities.Strength)},
+		{RenderAbility("Constitution", c.Abilities.Constitution)},
+		{RenderAbility("Dexterity", c.Abilities.Dexterity)},
+		{RenderAbility("Intelligence", c.Abilities.Intelligence)},
+		{RenderAbility("Wisdom", c.Abilities.Wisdom)},
+		{RenderAbility("Charisma", c.Abilities.Charisma)},
+	}
+	return rows
 }
 
 func RenderAbility(name string, score int) string {
-	modStr := DefaultTextStyle.Render(fmt.Sprintf("%+d", models.ToModifier(score)))
-
-	innerBorder := DefaultBorderStyle.Padding(0, 2)
-	outerBorder := DefaultBorderStyle.Padding(1, 0, 0).Width(14)
-
-	scoreStr := DefaultTextStyle.Render(fmt.Sprintf("%d", score))
-	modView := innerBorder.Render(modStr)
-
-	content := lipgloss.JoinVertical(lipgloss.Center, DefaultTextStyle.Render(name), "\n"+scoreStr, modView)
-	top := outerBorder.Render(content)
-
-	return top
-
+	scoreStr := fmt.Sprintf("%3s  ( %+d )", strconv.Itoa(score), models.ToModifier(score))
+	return RenderEdgeBound(ColWidth, ShortColWidth, name+":", scoreStr)
 }
 
 func GetCombatInfoRows(c *models.Character) []Row {
 	initiative := models.ToModifier(c.Abilities.Dexterity)
 	rows := []Row{
-		{
-			RenderEdgeBound(ColWidth, ShortColWidth, "AC", strconv.Itoa(c.ArmorClass)),
-		},
-		{
-			RenderEdgeBound(ColWidth, ShortColWidth, "Initiative", fmt.Sprintf("%+d", initiative)),
-		},
-		{
-			RenderEdgeBound(ColWidth, ShortColWidth, "Speed", strconv.Itoa(c.Speed)),
-		},
-		{
-			RenderEdgeBound(ColWidth-4, 7, "HP", strconv.Itoa(c.CurrentHitPoints)+"/"+strconv.Itoa(c.MaxHitPoints)),
-		},
-		{
-			RenderEdgeBound(ColWidth-8, ShortColWidth+8, "Hit Dice", c.UsedHitDice+"/"+c.HitDice),
-		},
-		{
-			RenderEdgeBound(ColWidth, ShortColWidth, "DS Successes", DeathSaveSymbols(c.DeathSaves.Successes)),
-		},
-		{
-			RenderEdgeBound(ColWidth, ShortColWidth, "DS Failures", DeathSaveSymbols(c.DeathSaves.Failures)),
-		},
+		{RenderEdgeBound(ColWidth, TinyColWidth, "AC", strconv.Itoa(c.ArmorClass))},
+		{RenderEdgeBound(ColWidth, TinyColWidth, "Initiative", fmt.Sprintf("%+d", initiative))},
+		{RenderEdgeBound(ColWidth, TinyColWidth, "Speed", strconv.Itoa(c.Speed))},
+		{RenderEdgeBound(ColWidth-4, 7, "HP", strconv.Itoa(c.CurrentHitPoints)+"/"+strconv.Itoa(c.MaxHitPoints))},
+		{RenderEdgeBound(ColWidth-8, TinyColWidth+8, "Hit Dice", c.UsedHitDice+"/"+c.HitDice)},
+		{RenderEdgeBound(ColWidth, TinyColWidth, "DS Successes", DeathSaveSymbols(c.DeathSaves.Successes))},
+		{RenderEdgeBound(ColWidth, TinyColWidth, "DS Failures", DeathSaveSymbols(c.DeathSaves.Failures))},
 	}
 	return rows
 }
@@ -154,15 +170,15 @@ func GetCombatInfoRows(c *models.Character) []Row {
 func RenderActions(c *models.Character) string {
 	actionTitle := DefaultTextStyle.Render("Actions\n")
 
-	actionBody := DefaultTextStyle.Width(StandardBoxWidth + 2).Render(c.Actions)
+	actionBody := DefaultTextStyle.Width(RightContentWidth).Render(c.Actions)
 
 	separator := "\n" +
-		GrayTextStyle.Render(strings.Repeat("─", StandardBoxWidth+2)) +
+		GrayTextStyle.Render(strings.Repeat("─", RightContentWidth)) +
 		"\n"
 
 	bonusActionTitle := DefaultTextStyle.Render("Bonus Actions\n")
 
-	bonusActionBody := DefaultTextStyle.Width(StandardBoxWidth + 2).Render(c.BonusActions)
+	bonusActionBody := DefaultTextStyle.Width(RightContentWidth).Render(c.BonusActions)
 
 	return lipgloss.JoinVertical(lipgloss.Center, actionTitle, actionBody, separator, bonusActionTitle, bonusActionBody)
 }
@@ -184,7 +200,7 @@ func SkillsToRows(c *models.Character) []Row {
 		skill := field.Value().(models.Skill)
 		mod := skill.ToModifier(c.Abilities, c.ProficiencyBonus)
 		bullet := ProficiencySymbol(skill.Proficiency)
-		row := Row{RenderEdgeBound(LongColWidth, ShortColWidth, bullet+" "+skill.Name, fmt.Sprintf("%+d", mod))}
+		row := Row{RenderEdgeBound(LongColWidth, TinyColWidth, bullet+" "+skill.Name, fmt.Sprintf("%+d", mod))}
 		rows = append(rows, row)
 	}
 
@@ -199,7 +215,7 @@ func SavingThrowsToRows(c *models.Character) []Row {
 		saving := field.Value().(models.SavingThrow)
 		mod := saving.ToModifier(c.Abilities, c.ProficiencyBonus)
 		bullet := ProficiencySymbol(saving.Proficiency)
-		row := Row{RenderEdgeBound(ColWidth, ShortColWidth, bullet+" "+saving.Ability, fmt.Sprintf("%+d", mod))}
+		row := Row{RenderEdgeBound(ColWidth, TinyColWidth, bullet+" "+saving.Ability, fmt.Sprintf("%+d", mod))}
 		rows = append(rows, row)
 	}
 

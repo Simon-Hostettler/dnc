@@ -71,3 +71,11 @@ var (
 		BottomRight: " ",
 	}
 )
+
+func MakeVerticalSeparator(height int) string {
+	bars := make([]string, height)
+	for i := range bars {
+		bars[i] = "│"
+	}
+	return GrayTextStyle.Render(lipgloss.JoinVertical(lipgloss.Center, bars...))
+}
