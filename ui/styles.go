@@ -28,17 +28,12 @@ var (
 					Border(RoundedBorder, true, true, false).
 					BorderForeground(SecondaryColor).
 					Align(lipgloss.Center)
-	VerticalBorderStyle = lipgloss.
+	DefaultBorderStyle = lipgloss.
 				NewStyle().
-				Border(VerticalBorder).
+				BorderStyle(lipgloss.NormalBorder()).
 				BorderForeground(SecondaryColor).
 				Align(lipgloss.Center).
 				Padding(1, 2)
-	HorizontalBorderStyle = lipgloss.
-				NewStyle().
-				Border(HorizontalBorder).
-				BorderForeground(SecondaryColor).
-				Align(lipgloss.Center)
 	NoBorderStyle = lipgloss.
 			NewStyle().
 			Border(RoundedBorder, false, false, false)

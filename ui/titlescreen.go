@@ -32,7 +32,9 @@ func NewTitleScreen(character_dir string) *TitleScreen {
 		characterDir: character_dir,
 		editMode:     false,
 		nameInput:    ti,
-		characters:   NewTableWithDefaults().WithRowHandler(CharacterRowHandler(character_dir)).SetFocus(false),
+		characters: NewTableWithDefaults().
+			WithRowHandler(CharacterRowHandler(character_dir)).
+			SetFocus(false),
 	}
 	return &t
 }
@@ -145,12 +147,12 @@ func (m *TitleScreen) View() string {
 		createField = ItemStyleDefault.Render(createField)
 	}
 
-	charTable := VerticalBorderStyle.
+	charTable := DefaultBorderStyle.
 		Render(m.characters.View())
 
 	inputField := ""
 	if m.editMode && m.cursor == 0 {
-		inputField += m.nameInput.View()
+		inputField = "\n" + m.nameInput.View() + "\n"
 	}
 
 	s += lipgloss.JoinVertical(lipgloss.Center, createField, inputField, charTable)

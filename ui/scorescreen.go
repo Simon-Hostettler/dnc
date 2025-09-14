@@ -40,8 +40,8 @@ func (s *ScoreScreen) Update(tea.Msg) (tea.Model, tea.Cmd) {
 func (s *ScoreScreen) View() string {
 	abilities := RenderAbilities(s.character.Abilities)
 	separator := GrayTextStyle.Render(strings.Repeat("─", lipgloss.Width(abilities)))
-	skills := VerticalBorderStyle.Render(s.skills.View())
-	savingThrows := VerticalBorderStyle.Render(s.savingThrows.View())
+	skills := DefaultBorderStyle.Render(s.skills.View())
+	savingThrows := DefaultBorderStyle.Render(s.savingThrows.View())
 	body := lipgloss.JoinHorizontal(lipgloss.Left, skills, savingThrows)
 	return lipgloss.JoinVertical(lipgloss.Left, abilities, separator, body)
 }
@@ -60,13 +60,13 @@ func RenderAbilities(a models.Abilities) string {
 func RenderAbility(name string, score int) string {
 	modStr := DefaultTextStyle.Render(fmt.Sprintf("%+d", models.ToModifier(score)))
 
-	innerBorder := HorizontalBorderStyle.Padding(0, 2)
-	outerBorder := VerticalBorderStyle
+	innerBorder := DefaultBorderStyle.Padding(0, 2)
+	outerBorder := DefaultBorderStyle.Padding(0).Width(14)
 
 	scoreStr := DefaultTextStyle.Render(fmt.Sprintf("%d", score))
 	modView := innerBorder.Render(modStr)
 
-	content := lipgloss.JoinVertical(lipgloss.Center, DefaultTextStyle.Render(name), "\n"+scoreStr, modView)
+	content := lipgloss.JoinVertical(lipgloss.Center, DefaultTextStyle.Render(name), "\n"+scoreStr+"\n", modView)
 	top := outerBorder.Render(content)
 
 	return top

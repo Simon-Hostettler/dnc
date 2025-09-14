@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -142,5 +144,6 @@ func (t *Table) RenderBody() string {
 			s += t.Styles.Row.Render(elStr) + "\n"
 		}
 	}
+	s, _ = strings.CutSuffix(s, "\n")
 	return s
 }
