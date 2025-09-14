@@ -5,6 +5,11 @@ import (
 )
 
 var (
+	BoxWidth      = 30
+	LongColWidth  = 20
+	ColWidth      = 16
+	ShortColWidth = 3
+
 	HighlightColor  = lipgloss.Color("#7D56F4")
 	TextColor       = lipgloss.Color("#FAFAFA")
 	SecondaryColor  = lipgloss.Color("8")

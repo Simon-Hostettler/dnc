@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -45,6 +46,11 @@ func PrettyFileName(file string) string {
 	baseFile := strings.Split(file, "/")[0]
 	fileName := strings.TrimSuffix(baseFile, ".json")
 	return strings.Title(fileName)
+}
+
+func RenderEdgeBound(w1 int, w2 int, str1 string, str2 string) string {
+	format := fmt.Sprintf("%%-%ds%%%ds", w1, w2)
+	return fmt.Sprintf(format, str1, str2)
 }
 
 func ListCharacterFiles(dir string) []string {
