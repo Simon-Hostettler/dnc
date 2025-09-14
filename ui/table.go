@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"strings"
-
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -134,16 +132,18 @@ func (t *Table) View() string {
 }
 
 func (t *Table) RenderBody() string {
-	s := ""
+	rows := []string{}
 
 	for i, el := range t.content {
 		elStr := lipgloss.JoinHorizontal(lipgloss.Left, el...)
 		if t.focus && i == t.cursor {
-			s += t.Styles.Selected.Render(elStr) + "\n"
+			rows = append(rows,
+				t.Styles.Selected.Render(elStr))
 		} else {
-			s += t.Styles.Row.Render(elStr) + "\n"
+			rows = append(rows,
+				t.Styles.Row.Render(elStr))
 		}
 	}
-	s, _ = strings.CutSuffix(s, "\n")
-	return s
+
+	return lipgloss.JoinVertical(lipgloss.Left, rows...)
 }

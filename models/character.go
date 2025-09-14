@@ -27,7 +27,10 @@ type Character struct {
 	CurrentHitPoints   int          `json:"current_hit_points"`
 	TemporaryHitPoints int          `json:"temporary_hit_points"`
 	HitDice            string       `json:"hit_dice"`
+	UsedHitDice        string       `json:"used_hit_dice"`
 	DeathSaves         DeathSaves   `json:"death_saves"`
+	Actions            string       `json:"actions"`
+	BonusActions       string       `json:"bonus_actions"`
 	Attacks            []Attack     `json:"attacks"`
 	Equipment          []Item       `json:"equipment"`
 	Features           []Feature    `json:"features"`

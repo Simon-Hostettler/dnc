@@ -53,6 +53,18 @@ func RenderEdgeBound(w1 int, w2 int, str1 string, str2 string) string {
 	return fmt.Sprintf(format, str1, str2)
 }
 
+func ForceLineBreaks(s string, w int) string {
+	var b strings.Builder
+	runes := []rune(s)
+	for i, r := range runes {
+		b.WriteRune(r)
+		if (i+1)%w == 0 && i != len(runes)-1 {
+			b.WriteRune('\n')
+		}
+	}
+	return b.String()
+}
+
 func ListCharacterFiles(dir string) []string {
 	var files []string
 	entries, err := os.ReadDir(dir)
