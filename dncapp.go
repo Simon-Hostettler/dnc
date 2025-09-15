@@ -3,6 +3,7 @@ package main
 import (
 	"strconv"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"hostettler.dev/dnc/models"
@@ -17,6 +18,7 @@ type DnCApp struct {
 	page      tea.Model
 	editMode  bool
 	config    Config
+	keymap    ui.KeyMap
 	width     int
 	height    int
 	character *models.Character
@@ -31,6 +33,7 @@ func NewApp() (*DnCApp, error) {
 		page:     ui.NewTitleScreen(config.CharacterDir),
 		editMode: false,
 		config:   config,
+		keymap:   ui.DefaultKeyMap(),
 	}, nil
 }
 
@@ -42,7 +45,8 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if msg.String() == "ctrl+c" {
+		switch {
+		case key.Matches(msg, a.keymap.ForceQuit):
 			return a, tea.Quit
 		}
 		switch msg.String() {
