@@ -70,7 +70,7 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ui.SwitchScreenMsg:
 		switch msg.Screen {
 		case ui.ScoreScreenIndex:
-			a.page = ui.NewScoreScreen(a.character)
+			a.page = ui.NewScoreScreen(a.keymap, a.character)
 			cmd = a.page.Init()
 		}
 	case ui.SelectCharacterAndSwitchScreenMsg:

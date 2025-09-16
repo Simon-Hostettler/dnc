@@ -5,22 +5,25 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// implements ValueEditor[string]
 type StringEditor struct {
-	delegate    *string
+	keymap      KeyMap
+	value       *string
 	textInput   textinput.Model
 	initialized bool
 }
 
-func (s *StringEditor) Init(label string, delegate *string) {
-	s.delegate = delegate
+func (s *StringEditor) Init(label string, delegatorPointer interface{}, keymap KeyMap) {
+	ptr, ok := delegatorPointer.(*string)
+	if !ok {
+		panic("Value passed is not a pointer to string")
+	}
+	s.value = ptr
 
 	ti := textinput.New()
-	ti.Placeholder = label
 	ti.Width = 40
 
-	if delegate != nil {
-		ti.SetValue(*delegate)
+	if ptr != nil {
+		ti.SetValue(*ptr)
 	}
 
 	s.textInput = ti
@@ -45,8 +48,8 @@ func (s *StringEditor) View() string {
 }
 
 func (s *StringEditor) Save() tea.Cmd {
-	if s.delegate != nil {
-		*s.delegate = s.textInput.Value()
+	if s.value != nil {
+		*s.value = s.textInput.Value()
 	}
 	return nil
 }

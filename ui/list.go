@@ -6,101 +6,100 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type Row []string
+type Row interface {
+	Init() tea.Cmd
+	Update(tea.Msg) (tea.Model, tea.Cmd)
+	View() string
+	Editors() []ValueEditor
+}
 
-type TableStyles struct {
+type ListStyles struct {
 	Title    lipgloss.Style
 	Row      lipgloss.Style
 	Selected lipgloss.Style
 }
 
-func DefaultTableStyles() TableStyles {
-	return TableStyles{
+func DefaultListStyles() ListStyles {
+	return ListStyles{
 		Title:    DefaultTextStyle,
 		Row:      ItemStyleDefault,
 		Selected: ItemStyleSelected,
 	}
 }
 
-type Table struct {
+type List struct {
 	KeyMap KeyMap
-	Styles TableStyles
+	Styles ListStyles
 
-	rowHandler func(KeyMap, tea.Msg, Row) tea.Cmd
-	focus      bool
-	title      string
-	content    []Row
-	cursor     int
+	focus   bool
+	title   string
+	content []Row
+	cursor  int
 }
 
-func (t *Table) WithKeyMap(k KeyMap) *Table {
+func (t *List) WithKeyMap(k KeyMap) *List {
 	t.KeyMap = k
 	return t
 }
 
-func (t *Table) WithStyles(s TableStyles) *Table {
+func (t *List) WithStyles(s ListStyles) *List {
 	t.Styles = s
 	return t
 }
 
-func (t *Table) WithRows(r []Row) *Table {
+func (t *List) WithRows(r []Row) *List {
 	t.content = r
 	return t
 }
 
-func (t *Table) WithTitle(title string) *Table {
+func (t *List) WithTitle(title string) *List {
 	t.title = title
 	return t
 }
 
-func (t *Table) WithRowHandler(f func(KeyMap, tea.Msg, Row) tea.Cmd) *Table {
-	t.rowHandler = f
-	return t
-}
-
-func (t *Table) SetFocus(f bool) *Table {
+func (t *List) SetFocus(f bool) *List {
 	t.focus = f
 	return t
 }
 
-func (t *Table) IsFocus() bool {
+func (t *List) IsFocus() bool {
 	return t.focus
 }
 
-func (t *Table) MoveCursor(offset int) tea.Cmd {
+func (t *List) MoveCursor(offset int) tea.Cmd {
 	newCursor := t.cursor + offset
 	if newCursor >= 0 && newCursor < len(t.content) {
 		t.cursor = newCursor
 		return nil
 	} else {
 		if newCursor < 0 {
-			return ExitTableCmd(tea.KeyUp)
+			return ExitListCmd(tea.KeyUp)
 		} else {
-			return ExitTableCmd(tea.KeyDown)
+			return ExitListCmd(tea.KeyDown)
 		}
 
 	}
 }
 
-func NewTable(k KeyMap, s TableStyles) *Table {
-	return &Table{
+func NewList(k KeyMap, s ListStyles) *List {
+	return &List{
 		KeyMap: k,
 		Styles: s,
 	}
 }
 
-func NewTableWithDefaults() *Table {
-	return &Table{
+func NewListWithDefaults() *List {
+	return &List{
 		KeyMap: DefaultKeyMap(),
-		Styles: DefaultTableStyles(),
+		Styles: DefaultListStyles(),
 	}
 }
 
-func (t *Table) Init() tea.Cmd {
+func (t *List) Init() tea.Cmd {
 	return nil
 }
 
-func (t *Table) Update(m tea.Msg) (tea.Model, tea.Cmd) {
+func (t *List) Update(m tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	if !t.focus {
 		return t, nil
@@ -116,13 +115,13 @@ func (t *Table) Update(m tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, t.KeyMap.Escape):
 			t.focus = false
 		default:
-			cmd = t.rowHandler(t.KeyMap, m, t.content[t.cursor])
+			_, cmd = t.content[t.cursor].Update(m)
 		}
 	}
 	return t, cmd
 }
 
-func (t *Table) View() string {
+func (t *List) View() string {
 	body := t.RenderBody()
 	if t.title != "" {
 		title := t.Styles.Title.Render(t.title) + "\n"
@@ -131,11 +130,11 @@ func (t *Table) View() string {
 	return body
 }
 
-func (t *Table) RenderBody() string {
+func (t *List) RenderBody() string {
 	rows := []string{}
 
 	for i, el := range t.content {
-		elStr := lipgloss.JoinHorizontal(lipgloss.Left, el...)
+		elStr := el.View()
 		if t.focus && i == t.cursor {
 			rows = append(rows,
 				t.Styles.Selected.Render(elStr))

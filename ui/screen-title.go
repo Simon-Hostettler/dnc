@@ -13,7 +13,7 @@ type TitleScreen struct {
 	KeyMap KeyMap
 
 	cursor       int
-	characters   *Table
+	characters   *List
 	files        []string
 	characterDir string
 	editMode     bool
@@ -32,8 +32,7 @@ func NewTitleScreen(character_dir string) *TitleScreen {
 		characterDir: character_dir,
 		editMode:     false,
 		nameInput:    ti,
-		characters: NewTableWithDefaults().
-			WithRowHandler(CharacterRowHandler(character_dir)).
+		characters: NewListWithDefaults().
 			SetFocus(false),
 	}
 	return &t
@@ -41,24 +40,8 @@ func NewTitleScreen(character_dir string) *TitleScreen {
 
 func (t *TitleScreen) UpdateFiles() {
 	t.files = ListCharacterFiles(t.characterDir)
-	charNames := Map(t.files, func(s string) Row { return Row{PrettyFileName(s)} })
-	t.characters.WithRows(charNames)
-}
-
-func CharacterRowHandler(character_dir string) func(KeyMap, tea.Msg, Row) tea.Cmd {
-	return func(k KeyMap, m tea.Msg, r Row) tea.Cmd {
-		switch msg := m.(type) {
-		case tea.KeyMsg:
-			switch {
-			case key.Matches(msg, k.Select):
-				return SelectCharacterAndSwitchScreenCommand(r[0])
-			case key.Matches(msg, k.Delete):
-				return DeleteCharacterFileCmd(character_dir, r[0])
-			}
-
-		}
-		return nil
-	}
+	charRows := Map(t.files, func(s string) Row { return NewCharacterRow(PrettyFileName(s), t.characterDir, t.KeyMap) })
+	t.characters.WithRows(charRows)
 }
 
 func (m *TitleScreen) Init() tea.Cmd {

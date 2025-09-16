@@ -2,8 +2,8 @@ package ui
 
 import tea "github.com/charmbracelet/bubbletea"
 
-type ValueEditor[V any] interface {
-	Init(KeyMap, string, *V)
+type ValueEditor interface {
+	Init(string, interface{}, KeyMap)
 
 	Update(tea.Msg) tea.Cmd
 

@@ -12,7 +12,6 @@ type EnumMapping struct {
 	Label string
 }
 
-// implements ValueEditor[int]
 type EnumEditor struct {
 	keymap      KeyMap
 	options     []EnumMapping
@@ -21,18 +20,23 @@ type EnumEditor struct {
 	initialized bool
 }
 
-func NewEnumEditor(options []EnumMapping) *EnumEditor {
-	return &EnumEditor{
+func NewEnumEditor(options []EnumMapping) EnumEditor {
+	return EnumEditor{
 		options: options,
 	}
 }
 
-func (e *EnumEditor) Init(keymap KeyMap, label string, val *int) {
+func (e *EnumEditor) Init(label string, delegatorPointer interface{}, keymap KeyMap) {
 	e.keymap = keymap
-	e.value = val
+	ptr, ok := delegatorPointer.(*int)
+	if !ok {
+		panic("Value passed is not a pointer to int")
+	}
+
+	e.value = ptr
 
 	for i, opt := range e.options {
-		if val != nil && opt.Value == *val {
+		if ptr != nil && opt.Value == *ptr {
 			e.cursor = i
 			break
 		}

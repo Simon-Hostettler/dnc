@@ -90,7 +90,7 @@ func SwitchScreenCmd(s ScreenIndex) func() tea.Msg {
 	}
 }
 
-func ExitTableCmd(k tea.KeyType) func() tea.Msg {
+func ExitListCmd(k tea.KeyType) func() tea.Msg {
 	return func() tea.Msg {
 		return ExitTableMsg{k}
 	}

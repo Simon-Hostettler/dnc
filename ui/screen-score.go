@@ -32,33 +32,35 @@ var (
 )
 
 type ScoreScreen struct {
+	keymap        KeyMap
 	character     *models.Character
-	characterInfo *Table
-	abilities     *Table
-	skills        *Table
-	savingThrows  *Table
-	combatInfo    *Table
-	attacks       *Table
+	characterInfo *List
+	abilities     *List
+	skills        *List
+	savingThrows  *List
+	combatInfo    *List
+	attacks       *List
 }
 
-func NewScoreScreen(c *models.Character) *ScoreScreen {
+func NewScoreScreen(keymap KeyMap, c *models.Character) *ScoreScreen {
 	return &ScoreScreen{
+		keymap:    keymap,
 		character: c,
-		characterInfo: NewTableWithDefaults().
+		characterInfo: NewListWithDefaults().
 			WithRows(GetCharacterInfoRows(c)),
-		abilities: NewTableWithDefaults().
+		abilities: NewListWithDefaults().
 			WithRows(GetAbilityRows(c)),
-		skills: NewTableWithDefaults().
+		skills: NewListWithDefaults().
 			WithTitle("Skills").
-			WithRows(SkillsToRows(c)).
+			WithRows(GetSkillRows(c)).
 			SetFocus(true),
-		savingThrows: NewTableWithDefaults().
+		savingThrows: NewListWithDefaults().
 			WithTitle("Saving Throws").
-			WithRows(SavingThrowsToRows(c)),
-		combatInfo: NewTableWithDefaults().
+			WithRows(GetSavingThrowRows(c)),
+		combatInfo: NewListWithDefaults().
 			WithTitle("Combat").
 			WithRows(GetCombatInfoRows(c)),
-		attacks: NewTableWithDefaults().
+		attacks: NewListWithDefaults().
 			WithTitle("Attacks").
 			WithRows(GetAttackRows(c)),
 	}
@@ -192,7 +194,7 @@ func GetAttackRows(c *models.Character) []Row {
 	}
 	return rows
 }
-func SkillsToRows(c *models.Character) []Row {
+func GetSkillRows(c *models.Character) []Row {
 	rows := []Row{}
 
 	skillFields := structs.Fields(c.Skills)
@@ -207,7 +209,7 @@ func SkillsToRows(c *models.Character) []Row {
 	return rows
 }
 
-func SavingThrowsToRows(c *models.Character) []Row {
+func GetSavingThrowRows(c *models.Character) []Row {
 	rows := []Row{}
 
 	skillFields := structs.Fields(c.SavingThrows)
