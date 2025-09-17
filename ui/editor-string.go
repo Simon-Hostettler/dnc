@@ -12,6 +12,12 @@ type StringEditor struct {
 	initialized bool
 }
 
+func NewStringEditor(label string, delegatorPointer interface{}, keymap KeyMap) *StringEditor {
+	s := StringEditor{}
+	s.Init(label, delegatorPointer, keymap)
+	return &s
+}
+
 func (s *StringEditor) Init(label string, delegatorPointer interface{}, keymap KeyMap) {
 	ptr, ok := delegatorPointer.(*string)
 	if !ok {

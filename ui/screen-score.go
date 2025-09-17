@@ -127,25 +127,39 @@ func (s *ScoreScreen) View() string {
 	return lipgloss.JoinVertical(lipgloss.Center, topBar, topSeparator, body)
 }
 
-func GetCharacterInfoRows(c *models.Character) []Row {
-	fmtStr := "%-" + strconv.Itoa(ColWidth) + "s"
+func (s *ScoreScreen) GetCharacterInfoRows() []Row {
+	rowCfg := LabeledStringRowConfig{false, ColWidth, 0}
 	rows := []Row{
-		{fmt.Sprintf(fmtStr, "Name: "+c.Name)},
-		{fmt.Sprintf(fmtStr, "Levels: "+strconv.Itoa(c.Level)+" "+c.Class)},
-		{fmt.Sprintf(fmtStr, "Race: "+c.Race)},
-		{fmt.Sprintf(fmtStr, "Alignment: "+c.Alignment)},
+		NewLabeledStringRow(s.keymap, "Name:", &s.character.Name,
+			NewStringEditor("Name", &s.character.Name, s.keymap)).WithConfig(rowCfg),
+		NewLabeledStringRow(s.keymap, "Levels:", &s.character.ClassLevels,
+			NewStringEditor("Levels", &s.character.ClassLevels, s.keymap)).WithConfig(rowCfg),
+		NewLabeledStringRow(s.keymap, "Race:", &s.character.Race,
+			NewStringEditor("Race", &s.character.Race, s.keymap)).WithConfig(rowCfg),
+		NewLabeledStringRow(s.keymap, "Alignment:", &s.character.Alignment,
+			NewStringEditor("Alignment", &s.character.Alignment, s.keymap)).WithConfig(rowCfg),
 	}
 	return rows
 }
 
-func GetAbilityRows(c *models.Character) []Row {
+func (s *ScoreScreen) GetAbilityRows() []Row {
+	scorePrinter := func(score int) string {
+		return fmt.Sprintf("%3s  ( %+d )", strconv.Itoa(score), models.ToModifier(score))
+	}
+	rowCfg := LabeledIntRowConfig{scorePrinter, true, ColWidth, ShortColWidth}
 	rows := []Row{
-		{RenderAbility("Strength", c.Abilities.Strength)},
-		{RenderAbility("Constitution", c.Abilities.Constitution)},
-		{RenderAbility("Dexterity", c.Abilities.Dexterity)},
-		{RenderAbility("Intelligence", c.Abilities.Intelligence)},
-		{RenderAbility("Wisdom", c.Abilities.Wisdom)},
-		{RenderAbility("Charisma", c.Abilities.Charisma)},
+		NewLabeledIntRow(s.keymap, "Strength:", &s.character.Abilities.Strength,
+			NewIntEditor("Strength", &s.character.Abilities.Strength, s.keymap)).WithConfig(rowCfg),
+		NewLabeledIntRow(s.keymap, "Constitution:", &s.character.Abilities.Constitution,
+			NewIntEditor("Constitution", &s.character.Abilities.Constitution, s.keymap)).WithConfig(rowCfg),
+		NewLabeledIntRow(s.keymap, "Dexterity:", &s.character.Abilities.Dexterity,
+			NewIntEditor("Dexterity", &s.character.Abilities.Dexterity, s.keymap)).WithConfig(rowCfg),
+		NewLabeledIntRow(s.keymap, "Intelligence:", &s.character.Abilities.Intelligence,
+			NewIntEditor("Intelligence", &s.character.Abilities.Intelligence, s.keymap)).WithConfig(rowCfg),
+		NewLabeledIntRow(s.keymap, "Wisdom:", &s.character.Abilities.Wisdom,
+			NewIntEditor("Wisdom", &s.character.Abilities.Wisdom, s.keymap)).WithConfig(rowCfg),
+		NewLabeledIntRow(s.keymap, "Charisma:", &s.character.Abilities.Charisma,
+			NewIntEditor("Charisma", &s.character.Abilities.Charisma, s.keymap)).WithConfig(rowCfg),
 	}
 	return rows
 }

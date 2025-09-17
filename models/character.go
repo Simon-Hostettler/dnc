@@ -11,8 +11,7 @@ import (
 type Character struct {
 	Name               string       `json:"name"`
 	Race               string       `json:"race"`
-	Class              string       `json:"class"`
-	Level              int          `json:"level"`
+	ClassLevels        string       `json:"class_levels"`
 	Background         string       `json:"background"`
 	Alignment          string       `json:"alignment"`
 	Inspiration        bool         `json:"inspiration"`

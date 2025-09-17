@@ -36,6 +36,10 @@ type ExitTableMsg struct {
 	Key tea.KeyType
 }
 
+type EditValueMsg struct {
+	Editors []ValueEditor
+}
+
 func EnterEditModeCmd() tea.Msg {
 	return EditMessage("start")
 }
@@ -81,6 +85,12 @@ func SelectCharacterAndSwitchScreenCommand(name string) func() tea.Msg {
 			return SelectCharacterAndSwitchScreenMsg{nil, err}
 		}
 		return SelectCharacterAndSwitchScreenMsg{c, nil}
+	}
+}
+
+func EditValueCmd(editors []ValueEditor) func() tea.Msg {
+	return func() tea.Msg {
+		return EditValueMsg{editors}
 	}
 }
 

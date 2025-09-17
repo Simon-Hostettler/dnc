@@ -14,6 +14,7 @@ type KeyMap struct {
 	Left      key.Binding `json:"left"`
 	Right     key.Binding `json:"right"`
 	Select    key.Binding `json:"select"`
+	Edit      key.Binding `json:"edit"`
 	Enter     key.Binding `json:"enter"`
 	Escape    key.Binding `json:"escape"`
 	Delete    key.Binding `json:"delete"`
@@ -27,6 +28,7 @@ func DefaultKeyMap() KeyMap {
 		Left:      key.NewBinding(key.WithKeys("h", "left")),
 		Right:     key.NewBinding(key.WithKeys("l", "right")),
 		Select:    key.NewBinding(key.WithKeys(" ", "enter")),
+		Edit:      key.NewBinding(key.WithKeys("e")),
 		Enter:     key.NewBinding(key.WithKeys("enter")),
 		Escape:    key.NewBinding(key.WithKeys("esc")),
 		Delete:    key.NewBinding(key.WithKeys("x", "del")),
@@ -50,6 +52,11 @@ func PrettyFileName(file string) string {
 
 func RenderEdgeBound(w1 int, w2 int, str1 string, str2 string) string {
 	format := fmt.Sprintf("%%-%ds%%%ds", w1, w2)
+	return fmt.Sprintf(format, str1, str2)
+}
+
+func RenderLeftBound(w1 int, str1 string, str2 string) string {
+	format := fmt.Sprintf("%%-%ds %%s", w1)
 	return fmt.Sprintf(format, str1, str2)
 }
 
