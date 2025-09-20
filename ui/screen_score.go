@@ -65,7 +65,8 @@ func NewScoreScreen(keymap KeyMap, c *models.Character) *ScoreScreen {
 			WithRows(GetCombatInfoRows(keymap, c)),
 		attacks: NewListWithDefaults().
 			WithTitle("Attacks").
-			WithRows(GetAttackRows(keymap, c)),
+			WithRows(GetAttackRows(keymap, c)).
+			WithAppender(),
 		actions:      NewSimpleStringComponent(keymap, "Actions", &c.Actions),
 		bonusActions: NewSimpleStringComponent(keymap, "Bonus Actions", &c.BonusActions),
 	}
@@ -92,6 +93,15 @@ func (s *ScoreScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case AppendElementMsg:
+		switch s.focusedElement {
+		case s.attacks:
+			attack := models.Attack{}
+			s.character.Attacks = append(s.character.Attacks, attack)
+			newRows := GetAttackRows(s.keymap, s.character)
+			s.attacks.WithRows(newRows)
+			cmd = SwitchToEditorCmd(ScoreScreenIndex, s.character, newRows[len(newRows)-1].Editors())
+		}
 	case ExitTableMsg:
 		s.moveFocus(msg.Direction)
 	case EditValueMsg:
@@ -368,8 +378,9 @@ func (s *ScoreScreen) RenderActions() string {
 
 func GetAttackRows(k KeyMap, c *models.Character) []Row {
 	rows := []Row{}
-	for _, a := range c.Attacks {
-		row := NewStructRow(k, &a, RenderAttack, []ValueEditor{
+	for i := range c.Attacks {
+		a := &c.Attacks[i]
+		row := NewStructRow(k, a, RenderAttack, []ValueEditor{
 			NewStringEditor(k, "Name", &a.Name),
 			NewIntEditor(k, "Bonus", &a.Bonus),
 			NewStringEditor(k, "Damage", &a.Damage),
@@ -454,7 +465,7 @@ func renderSkillInfoRow(s *SkillInfo) string {
 }
 
 func RenderAttack(a *models.Attack) string {
-	return fmt.Sprintf("%10s %+3d %6s (%s)", a.Name, a.Bonus, a.Damage, a.DamageType)
+	return fmt.Sprintf("%-11s %+3d %s (%s)", a.Name, a.Bonus, a.Damage, a.DamageType)
 }
 
 func DeathSaveSymbols(amount int) string {

@@ -85,3 +85,10 @@ func ListCharacterFiles(dir string) []string {
 	}
 	return files
 }
+
+func B2i(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}

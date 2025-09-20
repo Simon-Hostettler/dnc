@@ -29,10 +29,11 @@ type List struct {
 	KeyMap KeyMap
 	Styles ListStyles
 
-	focus   bool
-	title   string
-	content []Row
-	cursor  int
+	focus      bool
+	title      string
+	content    []Row
+	cursor     int
+	appendable bool
 }
 
 func (t *List) WithKeyMap(k KeyMap) *List {
@@ -52,6 +53,11 @@ func (t *List) WithRows(r []Row) *List {
 
 func (t *List) WithTitle(title string) *List {
 	t.title = title
+	return t
+}
+
+func (t *List) WithAppender() *List {
+	t.appendable = true
 	return t
 }
 
@@ -75,7 +81,7 @@ func (t *List) SetCursor(idx int) {
 
 func (t *List) MoveCursor(offset int) tea.Cmd {
 	newCursor := t.cursor + offset
-	if newCursor >= 0 && newCursor < len(t.content) {
+	if newCursor >= 0 && newCursor < len(t.content)+B2i(t.appendable) {
 		t.cursor = newCursor
 		return nil
 	} else {
@@ -120,6 +126,8 @@ func (t *List) Update(m tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = t.MoveCursor(1)
 		case key.Matches(msg, t.KeyMap.Escape):
 			t.focus = false
+		case key.Matches(msg, t.KeyMap.Select) && t.cursor == len(t.content):
+			cmd = AppendElementCmd
 		default:
 			_, cmd = t.content[t.cursor].Update(m)
 		}
@@ -154,6 +162,16 @@ func (t *List) RenderBody() string {
 				t.Styles.Row.Render(elStr))
 		}
 	}
-
-	return lipgloss.JoinVertical(lipgloss.Left, rows...)
+	list := lipgloss.JoinVertical(lipgloss.Left, rows...)
+	if t.appendable {
+		var adder string
+		if t.focus && t.cursor == len(t.content) {
+			adder = "\n" + t.Styles.Selected.Render("+")
+		} else {
+			adder = "\n" + t.Styles.Row.Render("+")
+		}
+		return lipgloss.JoinVertical(lipgloss.Center, list, adder)
+	} else {
+		return list
+	}
 }

@@ -54,6 +54,8 @@ type SwitchToEditorMsg struct {
 	Editors    []ValueEditor
 }
 
+type AppendElementMsg struct{}
+
 func DeleteCharacterFileCmd(characterDir string, name string) tea.Cmd {
 	return func() tea.Msg {
 		filename := fmt.Sprintf("%s.json", strings.ToLower(name))
@@ -116,4 +118,8 @@ func ExitListCmd(d Direction) func() tea.Msg {
 	return func() tea.Msg {
 		return ExitTableMsg{d}
 	}
+}
+
+func AppendElementCmd() tea.Msg {
+	return AppendElementMsg{}
 }
