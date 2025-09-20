@@ -74,10 +74,10 @@ func (c *Character) SaveToFile() error {
 	}
 	dir := filepath.Dir(c.SaveFile)
 
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(c.SaveFile, data, 0644)
+	return os.WriteFile(c.SaveFile, data, 0o644)
 }
 
 func LoadCharacterByName(name string) (*Character, error) {

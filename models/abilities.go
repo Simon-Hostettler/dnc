@@ -22,7 +22,6 @@ func (a Abilities) Get(ability string) (int, error) {
 	} else {
 		return -1, errors.New("undefined ability")
 	}
-
 }
 
 func ToModifier(score int) int {
@@ -50,7 +49,6 @@ func (s Skill) ToModifier(a Abilities, profBonus int) int {
 		return 0
 	}
 	return ToModifier(base) + int(s.Proficiency)*profBonus + s.CustomModifier
-
 }
 
 type Skills struct {

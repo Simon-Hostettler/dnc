@@ -28,7 +28,6 @@ func (c *CharacterRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, c.keymap.Delete):
 			return c, DeleteCharacterFileCmd(c.characterDir, c.name)
 		}
-
 	}
 	return c, nil
 }

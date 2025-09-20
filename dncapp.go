@@ -103,5 +103,4 @@ func (a *DnCApp) View() string {
 		Render(pageContent)
 
 	return s
-
 }

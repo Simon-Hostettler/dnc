@@ -43,7 +43,6 @@ func (r *LabeledStringRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, r.keymap.Edit):
 			return r, EditValueCmd(r.Editors())
 		}
-
 	}
 	return r, nil
 }

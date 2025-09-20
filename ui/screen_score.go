@@ -129,7 +129,8 @@ func (s *ScoreScreen) focusOn(m interface {
 	Update(tea.Msg) (tea.Model, tea.Cmd)
 	View() string
 	Focus()
-}) {
+},
+) {
 	s.focusedElement = m
 	m.Focus()
 }
@@ -336,11 +337,15 @@ func GetCombatInfoRows(k KeyMap, c *models.Character) []Row {
 		NewLabeledIntRow(k, "Speed", &c.Speed,
 			NewIntEditor(k, "Speed", &c.Speed)).WithConfig(standardCfg),
 		NewStructRow(k, &HPInfo{&c.CurrentHitPoints, &c.MaxHitPoints}, renderHPInfoRow,
-			[]ValueEditor{NewIntEditor(k, "Current HP", &c.CurrentHitPoints),
-				NewIntEditor(k, "Max HP", &c.MaxHitPoints)}),
+			[]ValueEditor{
+				NewIntEditor(k, "Current HP", &c.CurrentHitPoints),
+				NewIntEditor(k, "Max HP", &c.MaxHitPoints),
+			}),
 		NewStructRow(k, &HitDiceInfo{&c.UsedHitDice, &c.HitDice}, renderHitDiceInfoRow,
-			[]ValueEditor{NewStringEditor(k, "Used Hit Dice", &c.UsedHitDice),
-				NewStringEditor(k, "Hit Dice", &c.HitDice)}),
+			[]ValueEditor{
+				NewStringEditor(k, "Used Hit Dice", &c.UsedHitDice),
+				NewStringEditor(k, "Hit Dice", &c.HitDice),
+			}),
 		NewLabeledIntRow(k, "DS Successes", &c.DeathSaves.Successes,
 			NewIntEditor(k, "DS Successes", &c.DeathSaves.Successes)).WithConfig(dsConfig),
 		NewLabeledIntRow(k, "DS Failures", &c.DeathSaves.Failures,
@@ -388,6 +393,7 @@ func GetAttackRows(k KeyMap, c *models.Character) []Row {
 	}
 	return rows
 }
+
 func GetSkillRows(k KeyMap, c *models.Character) []Row {
 	rows := []Row{}
 
@@ -395,8 +401,10 @@ func GetSkillRows(k KeyMap, c *models.Character) []Row {
 	for _, field := range skillFields {
 		skill := field.Value().(models.Skill)
 		row := NewStructRow(k, &SkillInfo{&skill, &c.Abilities, &c.ProficiencyBonus}, renderSkillInfoRow,
-			[]ValueEditor{NewEnumEditor(k, ProficiencySymbols, "Proficiency", &skill.Proficiency),
-				NewIntEditor(k, "Custom Modifier", &skill.CustomModifier)})
+			[]ValueEditor{
+				NewEnumEditor(k, ProficiencySymbols, "Proficiency", &skill.Proficiency),
+				NewIntEditor(k, "Custom Modifier", &skill.CustomModifier),
+			})
 		rows = append(rows, row)
 	}
 
@@ -469,13 +477,11 @@ func DeathSaveSymbols(amount int) string {
 	return strings.Repeat("●", amount) + strings.Repeat("○", 3-amount)
 }
 
-var (
-	ProficiencySymbols []EnumMapping = []EnumMapping{
-		{int(models.NoProficiency), "○"},
-		{int(models.Proficient), "◐"},
-		{int(models.Expertise), "●"},
-	}
-)
+var ProficiencySymbols []EnumMapping = []EnumMapping{
+	{int(models.NoProficiency), "○"},
+	{int(models.Proficient), "◐"},
+	{int(models.Expertise), "●"},
+}
 
 func ProficiencySymbol(p models.ProficiencyLevel) string {
 	for _, m := range ProficiencySymbols {

@@ -58,6 +58,7 @@ func (t *List) WithTitle(title string) *List {
 func (t *List) Focus() {
 	t.focus = true
 }
+
 func (t *List) Blur() {
 	t.focus = false
 }
@@ -83,7 +84,6 @@ func (t *List) MoveCursor(offset int) tea.Cmd {
 		} else {
 			return ExitListCmd(DownDirection)
 		}
-
 	}
 }
 
