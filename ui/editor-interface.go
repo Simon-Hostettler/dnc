@@ -3,7 +3,7 @@ package ui
 import tea "github.com/charmbracelet/bubbletea"
 
 type ValueEditor interface {
-	Init(string, interface{}, KeyMap)
+	Init(KeyMap, string, interface{})
 
 	Update(tea.Msg) tea.Cmd
 

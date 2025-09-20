@@ -14,13 +14,13 @@ type IntEditor struct {
 	initialized bool
 }
 
-func NewIntEditor(label string, delegatorPointer interface{}, keymap KeyMap) *IntEditor {
+func NewIntEditor(keymap KeyMap, label string, delegatorPointer interface{}) *IntEditor {
 	s := IntEditor{}
-	s.Init(label, delegatorPointer, keymap)
+	s.Init(keymap, label, delegatorPointer)
 	return &s
 }
 
-func (s *IntEditor) Init(label string, delegatorPointer interface{}, keymap KeyMap) {
+func (s *IntEditor) Init(keymap KeyMap, label string, delegatorPointer interface{}) {
 	ptr, ok := delegatorPointer.(*int)
 	if !ok {
 		panic("Value passed is not a pointer to int")

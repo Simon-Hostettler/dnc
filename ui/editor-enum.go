@@ -20,15 +20,15 @@ type EnumEditor struct {
 	initialized bool
 }
 
-func NewEnumEditor(options []EnumMapping, label string, delegatorPointer interface{}, keymap KeyMap) *EnumEditor {
+func NewEnumEditor(keymap KeyMap, options []EnumMapping, label string, delegatorPointer interface{}) *EnumEditor {
 	e := EnumEditor{
 		options: options,
 	}
-	e.Init(label, delegatorPointer, keymap)
+	e.Init(keymap, label, delegatorPointer)
 	return &e
 }
 
-func (e *EnumEditor) Init(label string, delegatorPointer interface{}, keymap KeyMap) {
+func (e *EnumEditor) Init(keymap KeyMap, label string, delegatorPointer interface{}) {
 	e.keymap = keymap
 	ptr, ok := delegatorPointer.(*int)
 	if !ok {

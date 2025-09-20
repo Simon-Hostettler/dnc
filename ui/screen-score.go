@@ -127,58 +127,64 @@ func (s *ScoreScreen) View() string {
 	return lipgloss.JoinVertical(lipgloss.Center, topBar, topSeparator, body)
 }
 
-func (s *ScoreScreen) GetCharacterInfoRows() []Row {
+func GetCharacterInfoRows(k KeyMap, c *models.Character) []Row {
 	rowCfg := LabeledStringRowConfig{false, ColWidth, 0}
 	rows := []Row{
-		NewLabeledStringRow(s.keymap, "Name:", &s.character.Name,
-			NewStringEditor("Name", &s.character.Name, s.keymap)).WithConfig(rowCfg),
-		NewLabeledStringRow(s.keymap, "Levels:", &s.character.ClassLevels,
-			NewStringEditor("Levels", &s.character.ClassLevels, s.keymap)).WithConfig(rowCfg),
-		NewLabeledStringRow(s.keymap, "Race:", &s.character.Race,
-			NewStringEditor("Race", &s.character.Race, s.keymap)).WithConfig(rowCfg),
-		NewLabeledStringRow(s.keymap, "Alignment:", &s.character.Alignment,
-			NewStringEditor("Alignment", &s.character.Alignment, s.keymap)).WithConfig(rowCfg),
+		NewLabeledStringRow(k, "Name:", &c.Name,
+			NewStringEditor(k, "Name", &c.Name)).WithConfig(rowCfg),
+		NewLabeledStringRow(k, "Levels:", &c.ClassLevels,
+			NewStringEditor(k, "Levels", &c.ClassLevels)).WithConfig(rowCfg),
+		NewLabeledStringRow(k, "Race:", &c.Race,
+			NewStringEditor(k, "Race", &c.Race)).WithConfig(rowCfg),
+		NewLabeledStringRow(k, "Alignment:", &c.Alignment,
+			NewStringEditor(k, "Alignment", &c.Alignment)).WithConfig(rowCfg),
 	}
 	return rows
 }
 
-func (s *ScoreScreen) GetAbilityRows() []Row {
+func GetAbilityRows(k KeyMap, c *models.Character) []Row {
 	scorePrinter := func(score int) string {
 		return fmt.Sprintf("%3s  ( %+d )", strconv.Itoa(score), models.ToModifier(score))
 	}
 	rowCfg := LabeledIntRowConfig{scorePrinter, true, ColWidth, ShortColWidth}
 	rows := []Row{
-		NewLabeledIntRow(s.keymap, "Strength:", &s.character.Abilities.Strength,
-			NewIntEditor("Strength", &s.character.Abilities.Strength, s.keymap)).WithConfig(rowCfg),
-		NewLabeledIntRow(s.keymap, "Constitution:", &s.character.Abilities.Constitution,
-			NewIntEditor("Constitution", &s.character.Abilities.Constitution, s.keymap)).WithConfig(rowCfg),
-		NewLabeledIntRow(s.keymap, "Dexterity:", &s.character.Abilities.Dexterity,
-			NewIntEditor("Dexterity", &s.character.Abilities.Dexterity, s.keymap)).WithConfig(rowCfg),
-		NewLabeledIntRow(s.keymap, "Intelligence:", &s.character.Abilities.Intelligence,
-			NewIntEditor("Intelligence", &s.character.Abilities.Intelligence, s.keymap)).WithConfig(rowCfg),
-		NewLabeledIntRow(s.keymap, "Wisdom:", &s.character.Abilities.Wisdom,
-			NewIntEditor("Wisdom", &s.character.Abilities.Wisdom, s.keymap)).WithConfig(rowCfg),
-		NewLabeledIntRow(s.keymap, "Charisma:", &s.character.Abilities.Charisma,
-			NewIntEditor("Charisma", &s.character.Abilities.Charisma, s.keymap)).WithConfig(rowCfg),
+		NewLabeledIntRow(k, "Strength:", &c.Abilities.Strength,
+			NewIntEditor(k, "Strength", &c.Abilities.Strength)).WithConfig(rowCfg),
+		NewLabeledIntRow(k, "Constitution:", &c.Abilities.Constitution,
+			NewIntEditor(k, "Constitution", &c.Abilities.Constitution)).WithConfig(rowCfg),
+		NewLabeledIntRow(k, "Dexterity:", &c.Abilities.Dexterity,
+			NewIntEditor(k, "Dexterity", &c.Abilities.Dexterity)).WithConfig(rowCfg),
+		NewLabeledIntRow(k, "Intelligence:", &c.Abilities.Intelligence,
+			NewIntEditor(k, "Intelligence", &c.Abilities.Intelligence)).WithConfig(rowCfg),
+		NewLabeledIntRow(k, "Wisdom:", &c.Abilities.Wisdom,
+			NewIntEditor(k, "Wisdom", &c.Abilities.Wisdom)).WithConfig(rowCfg),
+		NewLabeledIntRow(k, "Charisma:", &c.Abilities.Charisma,
+			NewIntEditor(k, "Charisma", &c.Abilities.Charisma)).WithConfig(rowCfg),
 	}
 	return rows
 }
 
-func RenderAbility(name string, score int) string {
-	scoreStr := fmt.Sprintf("%3s  ( %+d )", strconv.Itoa(score), models.ToModifier(score))
-	return RenderEdgeBound(ColWidth, ShortColWidth, name+":", scoreStr)
-}
-
-func GetCombatInfoRows(c *models.Character) []Row {
-	initiative := models.ToModifier(c.Abilities.Dexterity)
+func GetCombatInfoRows(k KeyMap, c *models.Character) []Row {
+	standardCfg := LabeledIntRowConfig{strconv.Itoa, true, ColWidth, TinyColWidth}
+	dsConfig := LabeledIntRowConfig{DeathSaveSymbols, true, ColWidth, TinyColWidth}
 	rows := []Row{
-		{RenderEdgeBound(ColWidth, TinyColWidth, "AC", strconv.Itoa(c.ArmorClass))},
-		{RenderEdgeBound(ColWidth, TinyColWidth, "Initiative", fmt.Sprintf("%+d", initiative))},
-		{RenderEdgeBound(ColWidth, TinyColWidth, "Speed", strconv.Itoa(c.Speed))},
-		{RenderEdgeBound(ColWidth-4, 7, "HP", strconv.Itoa(c.CurrentHitPoints)+"/"+strconv.Itoa(c.MaxHitPoints))},
-		{RenderEdgeBound(ColWidth-8, TinyColWidth+8, "Hit Dice", c.UsedHitDice+"/"+c.HitDice)},
-		{RenderEdgeBound(ColWidth, TinyColWidth, "DS Successes", DeathSaveSymbols(c.DeathSaves.Successes))},
-		{RenderEdgeBound(ColWidth, TinyColWidth, "DS Failures", DeathSaveSymbols(c.DeathSaves.Failures))},
+		NewLabeledIntRow(k, "AC", &c.ArmorClass,
+			NewIntEditor(k, "AC", &c.ArmorClass)).WithConfig(standardCfg),
+		NewLabeledIntRow(k, "Initiative", &c.Initiative,
+			NewIntEditor(k, "Initiative", &c.Initiative)).
+			WithConfig(LabeledIntRowConfig{func(i int) string { return fmt.Sprintf("%+d", i) }, true, ColWidth, TinyColWidth}),
+		NewLabeledIntRow(k, "Speed", &c.Speed,
+			NewIntEditor(k, "Speed", &c.Speed)).WithConfig(standardCfg),
+		NewStructRow(k, &HPInfo{&c.CurrentHitPoints, &c.MaxHitPoints}, renderHPInfoRow,
+			[]ValueEditor{NewIntEditor(k, "Current HP", &c.CurrentHitPoints),
+				NewIntEditor(k, "Max HP", &c.MaxHitPoints)}),
+		NewStructRow(k, &HitDiceInfo{&c.UsedHitDice, &c.HitDice}, renderHitDiceInfoRow,
+			[]ValueEditor{NewIntEditor(k, "Used Hit Dice", &c.UsedHitDice),
+				NewIntEditor(k, "Hit Dice", &c.HitDice)}),
+		NewLabeledIntRow(k, "DS Successes", &c.DeathSaves.Successes,
+			NewIntEditor(k, "DS Successes", &c.DeathSaves.Successes)).WithConfig(dsConfig),
+		NewLabeledIntRow(k, "DS Failures", &c.DeathSaves.Failures,
+			NewIntEditor(k, "DS Failures", &c.DeathSaves.Failures)).WithConfig(dsConfig),
 	}
 	return rows
 }
@@ -236,6 +242,26 @@ func GetSavingThrowRows(c *models.Character) []Row {
 	}
 
 	return rows
+}
+
+// screen specific types + utility functions
+
+type HPInfo struct {
+	current *int
+	max     *int
+}
+
+func renderHPInfoRow(hp *HPInfo) string {
+	return RenderEdgeBound(ColWidth-4, 7, "HP", strconv.Itoa(*hp.current)+"/"+strconv.Itoa(*hp.max))
+}
+
+type HitDiceInfo struct {
+	current *string
+	max     *string
+}
+
+func renderHitDiceInfoRow(hd *HitDiceInfo) string {
+	return RenderEdgeBound(ShortColWidth, MediumColWidth, "Hit Dice", c.UsedHitDice+"/"+c.HitDice)
 }
 
 func RenderAttack(a models.Attack) string {

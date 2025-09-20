@@ -12,13 +12,13 @@ type StringEditor struct {
 	initialized bool
 }
 
-func NewStringEditor(label string, delegatorPointer interface{}, keymap KeyMap) *StringEditor {
+func NewStringEditor(keymap KeyMap, label string, delegatorPointer interface{}) *StringEditor {
 	s := StringEditor{}
-	s.Init(label, delegatorPointer, keymap)
+	s.Init(keymap, label, delegatorPointer)
 	return &s
 }
 
-func (s *StringEditor) Init(label string, delegatorPointer interface{}, keymap KeyMap) {
+func (s *StringEditor) Init(keymap KeyMap, label string, delegatorPointer interface{}) {
 	ptr, ok := delegatorPointer.(*string)
 	if !ok {
 		panic("Value passed is not a pointer to string")
