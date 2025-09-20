@@ -1,8 +1,6 @@
 package main
 
 import (
-	"strconv"
-
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -15,13 +13,15 @@ const (
 )
 
 type DnCApp struct {
-	page      tea.Model
-	editMode  bool
-	config    Config
-	keymap    ui.KeyMap
-	width     int
-	height    int
-	character *models.Character
+	config        Config
+	keymap        ui.KeyMap
+	width         int
+	height        int
+	character     *models.Character
+	focusedScreen tea.Model
+	titleScreen   *ui.TitleScreen
+	scoreScreen   *ui.ScoreScreen
+	editorScreen  *ui.EditorScreen
 }
 
 func NewApp() (*DnCApp, error) {
@@ -30,15 +30,29 @@ func NewApp() (*DnCApp, error) {
 		return nil, err
 	}
 	return &DnCApp{
-		page:     ui.NewTitleScreen(config.CharacterDir),
-		editMode: false,
-		config:   config,
-		keymap:   ui.DefaultKeyMap(),
+		config:       config,
+		keymap:       ui.DefaultKeyMap(),
+		titleScreen:  ui.NewTitleScreen(config.CharacterDir),
+		editorScreen: ui.NewEditorScreen(ui.DefaultKeyMap(), []ui.ValueEditor{}),
 	}, nil
 }
 
 func (a *DnCApp) Init() tea.Cmd {
-	return a.page.Init()
+	cmds := []tea.Cmd{}
+	if a.titleScreen != nil {
+		cmds = append(cmds, a.titleScreen.Init())
+		a.focusedScreen = a.titleScreen
+	}
+	if a.scoreScreen != nil {
+		cmds = append(cmds, a.scoreScreen.Init())
+	}
+	if a.editorScreen != nil {
+		cmds = append(cmds, a.editorScreen.Init())
+	}
+	if len(cmds) > 0 {
+		return tea.Batch(cmds...)
+	}
+	return nil
 }
 
 func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -49,44 +63,35 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, a.keymap.ForceQuit):
 			return a, tea.Quit
 		}
-		switch msg.String() {
-		case "1", "2", "3", "4", "5":
-			if !a.editMode {
-				p, _ := strconv.Atoi(msg.String())
-				idx := ui.ScreenIndex(p - 1)
-				return a, ui.SwitchScreenCmd(idx)
-			}
-		}
-		_, cmd = a.page.Update(msg)
+		_, cmd = a.focusedScreen.Update(msg)
 	case tea.WindowSizeMsg:
 		a.width = msg.Width
 		a.height = msg.Height
-	case ui.EditMessage:
-		if msg == "start" {
-			a.editMode = true
-		} else {
-			a.editMode = false
-		}
 	case ui.SwitchScreenMsg:
 		switch msg.Screen {
 		case ui.ScoreScreenIndex:
-			a.page = ui.NewScoreScreen(a.keymap, a.character)
-			cmd = a.page.Init()
+			a.focusedScreen = a.scoreScreen
+		case ui.EditScreenIndex:
+			a.focusedScreen = a.editorScreen
 		}
 	case ui.SelectCharacterAndSwitchScreenMsg:
 		if msg.Err == nil {
 			a.character = msg.Character
-			cmd = ui.SwitchScreenCmd(ui.ScoreScreenIndex)
+			a.scoreScreen = ui.NewScoreScreen(a.keymap, a.character)
+			cmd = tea.Batch(a.scoreScreen.Init(), ui.SwitchScreenCmd(ui.ScoreScreenIndex))
 		}
+	case ui.SwitchToEditorMsg:
+		a.editorScreen.StartEdit(msg.Originator, msg.Character, msg.Editors)
+		cmd = ui.SwitchScreenCmd(ui.EditScreenIndex)
 	default:
-		_, cmd = a.page.Update(msg)
+		_, cmd = a.focusedScreen.Update(msg)
 	}
 
 	return a, cmd
 }
 
 func (a *DnCApp) View() string {
-	pageContent := a.page.View()
+	pageContent := a.focusedScreen.View()
 
 	pageWidth := a.width - defaultPadding
 	pageHeight := a.height - defaultPadding

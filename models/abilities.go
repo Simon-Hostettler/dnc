@@ -51,47 +51,26 @@ func (s Skill) ToModifier(a Abilities, profBonus int) int {
 	return ToModifier(base) + int(s.Proficiency)*profBonus + s.CustomModifier
 }
 
-type Skills struct {
-	Athletics      Skill `json:"athletics"`
-	Acrobatics     Skill `json:"acrobatics"`
-	SleightOfHand  Skill `json:"sleight_of_hand"`
-	Stealth        Skill `json:"stealth"`
-	Arcana         Skill `json:"arcana"`
-	History        Skill `json:"history"`
-	Investigation  Skill `json:"investigation"`
-	Nature         Skill `json:"nature"`
-	Religion       Skill `json:"religion"`
-	AnimalHandling Skill `json:"animal_handling"`
-	Insight        Skill `json:"insight"`
-	Medicine       Skill `json:"medicine"`
-	Perception     Skill `json:"perception"`
-	Survival       Skill `json:"survival"`
-	Deception      Skill `json:"deception"`
-	Intimidation   Skill `json:"intimidation"`
-	Performance    Skill `json:"performance"`
-	Persuasion     Skill `json:"persuasion"`
-}
-
-func NewSkills() Skills {
-	return Skills{
-		Athletics:      Skill{Name: "Athletics", Ability: "Strength", Proficiency: NoProficiency},
-		Acrobatics:     Skill{Name: "Acrobatics", Ability: "Dexterity", Proficiency: NoProficiency},
-		SleightOfHand:  Skill{Name: "Sleight of Hand", Ability: "Dexterity", Proficiency: NoProficiency},
-		Stealth:        Skill{Name: "Stealth", Ability: "Dexterity", Proficiency: NoProficiency},
-		Arcana:         Skill{Name: "Arcana", Ability: "Intelligence", Proficiency: NoProficiency},
-		History:        Skill{Name: "History", Ability: "Intelligence", Proficiency: NoProficiency},
-		Investigation:  Skill{Name: "Investigation", Ability: "Intelligence", Proficiency: NoProficiency},
-		Nature:         Skill{Name: "Nature", Ability: "Intelligence", Proficiency: NoProficiency},
-		Religion:       Skill{Name: "Religion", Ability: "Intelligence", Proficiency: NoProficiency},
-		AnimalHandling: Skill{Name: "Animal Handling", Ability: "Wisdom", Proficiency: NoProficiency},
-		Insight:        Skill{Name: "Insight", Ability: "Wisdom", Proficiency: NoProficiency},
-		Medicine:       Skill{Name: "Medicine", Ability: "Wisdom", Proficiency: NoProficiency},
-		Perception:     Skill{Name: "Perception", Ability: "Wisdom", Proficiency: NoProficiency},
-		Survival:       Skill{Name: "Survival", Ability: "Wisdom", Proficiency: NoProficiency},
-		Deception:      Skill{Name: "Deception", Ability: "Charisma", Proficiency: NoProficiency},
-		Intimidation:   Skill{Name: "Intimidation", Ability: "Charisma", Proficiency: NoProficiency},
-		Performance:    Skill{Name: "Performance", Ability: "Charisma", Proficiency: NoProficiency},
-		Persuasion:     Skill{Name: "Persuasion", Ability: "Charisma", Proficiency: NoProficiency},
+func NewSkills() []Skill {
+	return []Skill{
+		{Name: "Athletics", Ability: "Strength", Proficiency: NoProficiency},
+		{Name: "Acrobatics", Ability: "Dexterity", Proficiency: NoProficiency},
+		{Name: "Sleight of Hand", Ability: "Dexterity", Proficiency: NoProficiency},
+		{Name: "Stealth", Ability: "Dexterity", Proficiency: NoProficiency},
+		{Name: "Arcana", Ability: "Intelligence", Proficiency: NoProficiency},
+		{Name: "History", Ability: "Intelligence", Proficiency: NoProficiency},
+		{Name: "Investigation", Ability: "Intelligence", Proficiency: NoProficiency},
+		{Name: "Nature", Ability: "Intelligence", Proficiency: NoProficiency},
+		{Name: "Religion", Ability: "Intelligence", Proficiency: NoProficiency},
+		{Name: "Animal Handling", Ability: "Wisdom", Proficiency: NoProficiency},
+		{Name: "Insight", Ability: "Wisdom", Proficiency: NoProficiency},
+		{Name: "Medicine", Ability: "Wisdom", Proficiency: NoProficiency},
+		{Name: "Perception", Ability: "Wisdom", Proficiency: NoProficiency},
+		{Name: "Survival", Ability: "Wisdom", Proficiency: NoProficiency},
+		{Name: "Deception", Ability: "Charisma", Proficiency: NoProficiency},
+		{Name: "Intimidation", Ability: "Charisma", Proficiency: NoProficiency},
+		{Name: "Performance", Ability: "Charisma", Proficiency: NoProficiency},
+		{Name: "Persuasion", Ability: "Charisma", Proficiency: NoProficiency},
 	}
 }
 
@@ -117,13 +96,13 @@ type SavingThrows struct {
 	Charisma     SavingThrow `json:"charisma"`
 }
 
-func NewSavingThrows() SavingThrows {
-	return SavingThrows{
-		Strength:     SavingThrow{Ability: "Strength"},
-		Dexterity:    SavingThrow{Ability: "Dexterity"},
-		Constitution: SavingThrow{Ability: "Constitution"},
-		Intelligence: SavingThrow{Ability: "Intelligence"},
-		Wisdom:       SavingThrow{Ability: "Wisdom"},
-		Charisma:     SavingThrow{Ability: "Charisma"},
+func NewSavingThrows() []SavingThrow {
+	return []SavingThrow{
+		{Ability: "Strength"},
+		{Ability: "Dexterity"},
+		{Ability: "Constitution"},
+		{Ability: "Intelligence"},
+		{Ability: "Wisdom"},
+		{Ability: "Charisma"},
 	}
 }

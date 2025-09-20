@@ -16,9 +16,11 @@ type EnumMapping struct {
 type EnumEditor struct {
 	keymap      KeyMap
 	options     []EnumMapping
+	label       string
 	value       reflect.Value
 	cursor      int
 	initialized bool
+	focus       bool
 }
 
 func NewEnumEditor(keymap KeyMap, options []EnumMapping, label string, delegatorPointer interface{}) *EnumEditor {
@@ -53,6 +55,7 @@ func (e *EnumEditor) Init(keymap KeyMap, label string, delegatorPointer interfac
 		}
 	}
 
+	e.label = label
 	e.initialized = true
 }
 
@@ -64,9 +67,9 @@ func (e *EnumEditor) Update(msg tea.Msg) tea.Cmd {
 	switch m := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(m, e.keymap.Left, e.keymap.Up):
+		case key.Matches(m, e.keymap.Left):
 			e.cursor = (e.cursor - 1 + len(e.options)) % len(e.options)
-		case key.Matches(m, e.keymap.Right, e.keymap.Down):
+		case key.Matches(m, e.keymap.Right, e.keymap.Select):
 			e.cursor = (e.cursor + 1) % len(e.options)
 		}
 	}
@@ -79,12 +82,19 @@ func (e *EnumEditor) View() string {
 		return ""
 	}
 	current := e.options[e.cursor]
-	return fmt.Sprintf("[ %s ]", current.Label)
+	box := fmt.Sprintf("[ %s ]", current.Label)
+	return RenderItem(e.focus, e.label+":") + " " + ItemStyleDefault.Render(box)
 }
 
 func (e *EnumEditor) Save() tea.Cmd {
-	if e.value.IsValid() && e.cursor < len(e.options) {
-		e.value.Elem().SetInt(int64(e.options[e.cursor].Value))
-	}
+	e.value.Elem().SetInt(int64(e.options[e.cursor].Value))
 	return nil
+}
+
+func (e *EnumEditor) Focus() {
+	e.focus = true
+}
+
+func (e *EnumEditor) Blur() {
+	e.focus = false
 }

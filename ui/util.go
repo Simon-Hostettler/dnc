@@ -23,10 +23,10 @@ type KeyMap struct {
 
 func DefaultKeyMap() KeyMap {
 	return KeyMap{
-		Up:        key.NewBinding(key.WithKeys("k", "up")),
-		Down:      key.NewBinding(key.WithKeys("j", "down")),
-		Left:      key.NewBinding(key.WithKeys("h", "left")),
-		Right:     key.NewBinding(key.WithKeys("l", "right")),
+		Up:        key.NewBinding(key.WithKeys("up")),
+		Down:      key.NewBinding(key.WithKeys("down")),
+		Left:      key.NewBinding(key.WithKeys("left")),
+		Right:     key.NewBinding(key.WithKeys("right")),
 		Select:    key.NewBinding(key.WithKeys(" ", "enter")),
 		Edit:      key.NewBinding(key.WithKeys("e")),
 		Enter:     key.NewBinding(key.WithKeys("enter")),

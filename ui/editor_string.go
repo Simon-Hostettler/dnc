@@ -7,9 +7,11 @@ import (
 
 type StringEditor struct {
 	keymap      KeyMap
+	label       string
 	value       *string
 	textInput   textinput.Model
 	initialized bool
+	focus       bool
 }
 
 func NewStringEditor(keymap KeyMap, label string, delegatorPointer interface{}) *StringEditor {
@@ -26,13 +28,14 @@ func (s *StringEditor) Init(keymap KeyMap, label string, delegatorPointer interf
 	s.value = ptr
 
 	ti := textinput.New()
-	ti.Width = 40
+	ti.Prompt = ""
 
 	if ptr != nil {
 		ti.SetValue(*ptr)
 	}
 
 	s.textInput = ti
+	s.label = label
 	s.initialized = true
 }
 
@@ -50,7 +53,7 @@ func (s *StringEditor) View() string {
 	if !s.initialized {
 		return ""
 	}
-	return s.textInput.View()
+	return RenderItem(s.focus, s.label+":") + " " + ItemStyleDefault.Render(s.textInput.View())
 }
 
 func (s *StringEditor) Save() tea.Cmd {
@@ -58,4 +61,14 @@ func (s *StringEditor) Save() tea.Cmd {
 		*s.value = s.textInput.Value()
 	}
 	return nil
+}
+
+func (e *StringEditor) Focus() {
+	e.textInput.Focus()
+	e.focus = true
+}
+
+func (e *StringEditor) Blur() {
+	e.textInput.Blur()
+	e.focus = false
 }

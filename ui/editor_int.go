@@ -9,9 +9,11 @@ import (
 
 type IntEditor struct {
 	keymap      KeyMap
+	label       string
 	value       *int
 	textInput   textinput.Model
 	initialized bool
+	focus       bool
 }
 
 func NewIntEditor(keymap KeyMap, label string, delegatorPointer interface{}) *IntEditor {
@@ -28,13 +30,14 @@ func (s *IntEditor) Init(keymap KeyMap, label string, delegatorPointer interface
 	s.value = ptr
 
 	ti := textinput.New()
-	ti.Width = 40
+	ti.Prompt = ""
 
 	if ptr != nil {
 		ti.SetValue(strconv.Itoa(*ptr))
 	}
 
 	s.textInput = ti
+	s.label = label
 	s.initialized = true
 }
 
@@ -52,7 +55,7 @@ func (s *IntEditor) View() string {
 	if !s.initialized {
 		return ""
 	}
-	return s.textInput.View()
+	return RenderItem(s.focus, s.label+":") + " " + ItemStyleDefault.Render(s.textInput.View())
 }
 
 func (s *IntEditor) Save() tea.Cmd {
@@ -64,4 +67,14 @@ func (s *IntEditor) Save() tea.Cmd {
 		*s.value = value
 	}
 	return nil
+}
+
+func (e *IntEditor) Focus() {
+	e.textInput.Focus()
+	e.focus = true
+}
+
+func (e *IntEditor) Blur() {
+	e.textInput.Blur()
+	e.focus = false
 }

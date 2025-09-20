@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -72,10 +74,28 @@ var (
 	}
 )
 
+func ForceWidth(text string, width int) string {
+	return lipgloss.NewStyle().Width(width).Render(text)
+}
+
+func RenderItem(selected bool, item string) string {
+	if selected {
+		return ItemStyleSelected.Render(item)
+	} else {
+		return ItemStyleDefault.Render(item)
+	}
+}
+
 func MakeVerticalSeparator(height int) string {
 	bars := make([]string, height)
 	for i := range bars {
 		bars[i] = "│"
 	}
 	return GrayTextStyle.Render(lipgloss.JoinVertical(lipgloss.Center, bars...))
+}
+
+func MakeHorizontalSeparator(width int) string {
+	return "\n" +
+		GrayTextStyle.Render(strings.Repeat("─", width)) +
+		"\n"
 }

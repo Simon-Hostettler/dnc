@@ -10,4 +10,8 @@ type ValueEditor interface {
 	View() string
 
 	Save() tea.Cmd
+
+	Focus()
+
+	Blur()
 }

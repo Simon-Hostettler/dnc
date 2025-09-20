@@ -13,7 +13,8 @@ import (
 type ScreenIndex int
 
 const (
-	ScoreScreenIndex ScreenIndex = iota
+	EditScreenIndex ScreenIndex = iota
+	ScoreScreenIndex
 )
 
 type Direction int
@@ -24,8 +25,6 @@ const (
 	LeftDirection
 	RightDirection
 )
-
-type EditMessage string
 
 type FileOpMsg struct {
 	op      string
@@ -49,12 +48,10 @@ type EditValueMsg struct {
 	Editors []ValueEditor
 }
 
-func EnterEditModeCmd() tea.Msg {
-	return EditMessage("start")
-}
-
-func ExitEditModeCmd() tea.Msg {
-	return EditMessage("stop")
+type SwitchToEditorMsg struct {
+	Originator ScreenIndex
+	Character  *models.Character
+	Editors    []ValueEditor
 }
 
 func DeleteCharacterFileCmd(characterDir string, name string) tea.Cmd {
@@ -100,6 +97,12 @@ func SelectCharacterAndSwitchScreenCommand(name string) func() tea.Msg {
 func EditValueCmd(editors []ValueEditor) func() tea.Msg {
 	return func() tea.Msg {
 		return EditValueMsg{editors}
+	}
+}
+
+func SwitchToEditorCmd(caller ScreenIndex, character *models.Character, editors []ValueEditor) func() tea.Msg {
+	return func() tea.Msg {
+		return SwitchToEditorMsg{caller, character, editors}
 	}
 }
 

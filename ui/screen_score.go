@@ -8,7 +8,6 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/fatih/structs"
 	"hostettler.dev/dnc/models"
 )
 
@@ -95,6 +94,8 @@ func (s *ScoreScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case ExitTableMsg:
 		s.moveFocus(msg.Direction)
+	case EditValueMsg:
+		cmd = SwitchToEditorCmd(ScoreScreenIndex, s.character, msg.Editors)
 	case tea.KeyMsg:
 		switch s.focusedElement.(type) {
 		case *List:
@@ -259,9 +260,7 @@ func (s *ScoreScreen) View() string {
 
 	combatInfo := s.combatInfo.View()
 
-	midBoxInnerSeparator := "\n" +
-		GrayTextStyle.Render(strings.Repeat("─", MidColWidth-4)) +
-		"\n"
+	midBoxInnerSeparator := MakeHorizontalSeparator(MidColWidth - 4)
 
 	midColumn := DefaultBorderStyle.
 		Width(MidColWidth).
@@ -272,9 +271,7 @@ func (s *ScoreScreen) View() string {
 
 	attacks := s.attacks.View()
 
-	rightBoxInnerSeparator := "\n" +
-		GrayTextStyle.Render(strings.Repeat("─", RightContentWidth)) +
-		"\n"
+	rightBoxInnerSeparator := MakeHorizontalSeparator(RightContentWidth)
 
 	rightColumn := DefaultBorderStyle.
 		Width(RightColWidth).
@@ -283,13 +280,11 @@ func (s *ScoreScreen) View() string {
 
 	body := lipgloss.JoinHorizontal(lipgloss.Left, leftColumn, midColumn, rightColumn)
 
-	topSeparator := GrayTextStyle.Render(strings.Repeat("─", lipgloss.Width(body)))
-
-	return lipgloss.JoinVertical(lipgloss.Center, topBar, topSeparator, body)
+	return lipgloss.JoinVertical(lipgloss.Center, topBar, body)
 }
 
 func GetCharacterInfoRows(k KeyMap, c *models.Character) []Row {
-	rowCfg := LabeledStringRowConfig{false, ColWidth, 0}
+	rowCfg := LabeledStringRowConfig{false, LongColWidth, 0}
 	rows := []Row{
 		NewLabeledStringRow(k, "Name:", &c.Name,
 			NewStringEditor(k, "Name", &c.Name)).WithConfig(rowCfg),
@@ -299,6 +294,9 @@ func GetCharacterInfoRows(k KeyMap, c *models.Character) []Row {
 			NewStringEditor(k, "Race", &c.Race)).WithConfig(rowCfg),
 		NewLabeledStringRow(k, "Alignment:", &c.Alignment,
 			NewStringEditor(k, "Alignment", &c.Alignment)).WithConfig(rowCfg),
+		NewLabeledIntRow(k, "Proficiency Bonus:", &c.ProficiencyBonus,
+			NewIntEditor(k, "Proficiency Bonus", &c.ProficiencyBonus)).
+			WithConfig(LabeledIntRowConfig{func(i int) string { return fmt.Sprintf("%+d", i) }, false, LongColWidth, 0}),
 	}
 	return rows
 }
@@ -355,25 +353,13 @@ func GetCombatInfoRows(k KeyMap, c *models.Character) []Row {
 }
 
 func (s *ScoreScreen) RenderActions() string {
-	actionTitle := "Actions"
-	if s.actions.InFocus() {
-		actionTitle = ItemStyleSelected.Render(actionTitle) + "\n"
-	} else {
-		actionTitle = ItemStyleDefault.Render(actionTitle) + "\n"
-	}
+	actionTitle := RenderItem(s.actions.InFocus(), "Actions")
 
 	actionBody := DefaultTextStyle.Width(RightContentWidth).Render(s.actions.View())
 
-	separator := "\n" +
-		GrayTextStyle.Render(strings.Repeat("─", RightContentWidth)) +
-		"\n"
+	separator := MakeHorizontalSeparator(RightContentWidth)
 
-	bonusActionTitle := "Bonus Actions"
-	if s.bonusActions.InFocus() {
-		bonusActionTitle = ItemStyleSelected.Render(bonusActionTitle) + "\n"
-	} else {
-		bonusActionTitle = ItemStyleDefault.Render(bonusActionTitle) + "\n"
-	}
+	bonusActionTitle := RenderItem(s.bonusActions.InFocus(), "Bonus Actions")
 
 	bonusActionBody := DefaultTextStyle.Width(RightContentWidth).Render(s.bonusActions.View())
 
@@ -397,10 +383,9 @@ func GetAttackRows(k KeyMap, c *models.Character) []Row {
 func GetSkillRows(k KeyMap, c *models.Character) []Row {
 	rows := []Row{}
 
-	skillFields := structs.Fields(c.Skills)
-	for _, field := range skillFields {
-		skill := field.Value().(models.Skill)
-		row := NewStructRow(k, &SkillInfo{&skill, &c.Abilities, &c.ProficiencyBonus}, renderSkillInfoRow,
+	for i := range c.Skills {
+		skill := &c.Skills[i]
+		row := NewStructRow(k, &SkillInfo{skill, &c.Abilities, &c.ProficiencyBonus}, renderSkillInfoRow,
 			[]ValueEditor{
 				NewEnumEditor(k, ProficiencySymbols, "Proficiency", &skill.Proficiency),
 				NewIntEditor(k, "Custom Modifier", &skill.CustomModifier),
@@ -414,10 +399,9 @@ func GetSkillRows(k KeyMap, c *models.Character) []Row {
 func GetSavingThrowRows(k KeyMap, c *models.Character) []Row {
 	rows := []Row{}
 
-	skillFields := structs.Fields(c.SavingThrows)
-	for _, field := range skillFields {
-		saving := field.Value().(models.SavingThrow)
-		row := NewStructRow(k, &SavingThrowInfo{&saving, &c.Abilities, &c.ProficiencyBonus}, renderSavingThrowInfoRow,
+	for i := range c.SavingThrows {
+		saving := &c.SavingThrows[i]
+		row := NewStructRow(k, &SavingThrowInfo{saving, &c.Abilities, &c.ProficiencyBonus}, renderSavingThrowInfoRow,
 			[]ValueEditor{NewEnumEditor(k, ProficiencySymbols, "Proficiency", &saving.Proficiency)})
 		rows = append(rows, row)
 	}
@@ -464,7 +448,7 @@ type SkillInfo struct {
 }
 
 func renderSkillInfoRow(s *SkillInfo) string {
-	mod := s.skill.ToModifier(*s.abilities, *s.profBonus) + s.skill.CustomModifier
+	mod := s.skill.ToModifier(*s.abilities, *s.profBonus)
 	bullet := ProficiencySymbol(s.skill.Proficiency)
 	return RenderEdgeBound(LongColWidth, TinyColWidth, bullet+" "+s.skill.Name, fmt.Sprintf("%+d", mod))
 }

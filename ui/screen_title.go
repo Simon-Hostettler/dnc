@@ -70,7 +70,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.nameInput.Reset()
 				m.editMode = false
 				if err == nil {
-					cmd = tea.Batch(SaveToFileCmd(&c), ExitEditModeCmd)
+					cmd = SaveToFileCmd(&c)
 				}
 			default:
 				m.nameInput, cmd = m.nameInput.Update(msg)
@@ -107,7 +107,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor == 0 {
 				m.editMode = true
 				m.nameInput.Focus()
-				cmd = tea.Batch(textinput.Blink, EnterEditModeCmd)
+				cmd = textinput.Blink
 			}
 		case key.Matches(msg, m.KeyMap.Delete):
 			if m.cursor != 0 {
@@ -121,13 +121,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *TitleScreen) View() string {
 	s := ""
 
-	createField := "Create new Character"
-
-	if m.cursor == 0 {
-		createField = ItemStyleSelected.Render(createField)
-	} else {
-		createField = ItemStyleDefault.Render(createField)
-	}
+	createField := RenderItem(m.cursor == 0, "Create new Character")
 
 	charTable := DefaultBorderStyle.
 		Render(m.characters.View())
