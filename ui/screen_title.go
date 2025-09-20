@@ -32,8 +32,7 @@ func NewTitleScreen(character_dir string) *TitleScreen {
 		characterDir: character_dir,
 		editMode:     false,
 		nameInput:    ti,
-		characters: NewListWithDefaults().
-			SetFocus(false),
+		characters:   NewListWithDefaults(),
 	}
 	return &t
 }
@@ -83,10 +82,10 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	// Character selection
-	if m.characters.IsFocus() {
+	if m.characters.InFocus() {
 		switch msg.(type) {
 		case ExitTableMsg:
-			m.characters.SetFocus(false)
+			m.characters.Blur()
 			m.cursor = 0
 			return m, nil
 		default:
@@ -103,7 +102,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor == 0 {
 				m.cursor++
 			}
-			m.characters.SetFocus(true)
+			m.characters.Focus()
 		case key.Matches(msg, m.KeyMap.Select):
 			if m.cursor == 0 {
 				m.editMode = true

@@ -14,14 +14,12 @@ type Row interface {
 }
 
 type ListStyles struct {
-	Title    lipgloss.Style
 	Row      lipgloss.Style
 	Selected lipgloss.Style
 }
 
 func DefaultListStyles() ListStyles {
 	return ListStyles{
-		Title:    DefaultTextStyle,
 		Row:      ItemStyleDefault,
 		Selected: ItemStyleSelected,
 	}
@@ -57,13 +55,21 @@ func (t *List) WithTitle(title string) *List {
 	return t
 }
 
-func (t *List) SetFocus(f bool) *List {
-	t.focus = f
-	return t
+func (t *List) Focus() {
+	t.focus = true
+}
+func (t *List) Blur() {
+	t.focus = false
 }
 
-func (t *List) IsFocus() bool {
+func (t *List) InFocus() bool {
 	return t.focus
+}
+
+func (t *List) SetCursor(idx int) {
+	if !(idx < 0 || idx > len(t.content)) {
+		t.cursor = idx
+	}
 }
 
 func (t *List) MoveCursor(offset int) tea.Cmd {
@@ -73,9 +79,9 @@ func (t *List) MoveCursor(offset int) tea.Cmd {
 		return nil
 	} else {
 		if newCursor < 0 {
-			return ExitListCmd(tea.KeyUp)
+			return ExitListCmd(UpDirection)
 		} else {
-			return ExitListCmd(tea.KeyDown)
+			return ExitListCmd(DownDirection)
 		}
 
 	}
@@ -124,7 +130,12 @@ func (t *List) Update(m tea.Msg) (tea.Model, tea.Cmd) {
 func (t *List) View() string {
 	body := t.RenderBody()
 	if t.title != "" {
-		title := t.Styles.Title.Render(t.title) + "\n"
+		var title string
+		if t.focus {
+			title = t.Styles.Selected.Render(t.title) + "\n"
+		} else {
+			title = t.Styles.Row.Render(t.title) + "\n"
+		}
 		body = lipgloss.JoinVertical(lipgloss.Center, title, body)
 	}
 	return body

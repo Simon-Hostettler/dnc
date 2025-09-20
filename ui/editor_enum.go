@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,7 +16,7 @@ type EnumMapping struct {
 type EnumEditor struct {
 	keymap      KeyMap
 	options     []EnumMapping
-	value       *int
+	value       reflect.Value
 	cursor      int
 	initialized bool
 }
@@ -30,15 +31,23 @@ func NewEnumEditor(keymap KeyMap, options []EnumMapping, label string, delegator
 
 func (e *EnumEditor) Init(keymap KeyMap, label string, delegatorPointer interface{}) {
 	e.keymap = keymap
-	ptr, ok := delegatorPointer.(*int)
-	if !ok {
-		panic("Value passed is not a pointer to int")
+
+	ptrValue := reflect.ValueOf(delegatorPointer)
+	if ptrValue.Kind() != reflect.Ptr || !ptrValue.Elem().IsValid() {
+		panic("Value passed is not a valid pointer")
 	}
 
-	e.value = ptr
+	elem := ptrValue.Elem()
+	kind := elem.Kind()
+	if kind < reflect.Int || kind > reflect.Int64 {
+		panic(fmt.Sprintf("Value passed is not a pointer to int-like, got: %s", kind))
+	}
 
+	e.value = ptrValue
+
+	currentValue := int(elem.Int())
 	for i, opt := range e.options {
-		if ptr != nil && opt.Value == *ptr {
+		if opt.Value == currentValue {
 			e.cursor = i
 			break
 		}
@@ -74,8 +83,8 @@ func (e *EnumEditor) View() string {
 }
 
 func (e *EnumEditor) Save() tea.Cmd {
-	if e.value != nil && e.cursor < len(e.options) {
-		*e.value = e.options[e.cursor].Value
+	if e.value.IsValid() && e.cursor < len(e.options) {
+		e.value.Elem().SetInt(int64(e.options[e.cursor].Value))
 	}
 	return nil
 }

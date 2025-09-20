@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/fatih/structs"
@@ -32,14 +33,18 @@ var (
 )
 
 type ScoreScreen struct {
-	keymap        KeyMap
-	character     *models.Character
+	keymap         KeyMap
+	character      *models.Character
+	focusedElement tea.Model
+
 	characterInfo *List
 	abilities     *List
 	skills        *List
 	savingThrows  *List
 	combatInfo    *List
 	attacks       *List
+	actions       *SimpleStringComponent
+	bonusActions  *SimpleStringComponent
 }
 
 func NewScoreScreen(keymap KeyMap, c *models.Character) *ScoreScreen {
@@ -47,31 +52,186 @@ func NewScoreScreen(keymap KeyMap, c *models.Character) *ScoreScreen {
 		keymap:    keymap,
 		character: c,
 		characterInfo: NewListWithDefaults().
-			WithRows(GetCharacterInfoRows(c)),
+			WithRows(GetCharacterInfoRows(keymap, c)),
 		abilities: NewListWithDefaults().
-			WithRows(GetAbilityRows(c)),
+			WithRows(GetAbilityRows(keymap, c)),
 		skills: NewListWithDefaults().
 			WithTitle("Skills").
-			WithRows(GetSkillRows(c)).
-			SetFocus(true),
+			WithRows(GetSkillRows(keymap, c)),
 		savingThrows: NewListWithDefaults().
 			WithTitle("Saving Throws").
-			WithRows(GetSavingThrowRows(c)),
+			WithRows(GetSavingThrowRows(keymap, c)),
 		combatInfo: NewListWithDefaults().
 			WithTitle("Combat").
-			WithRows(GetCombatInfoRows(c)),
+			WithRows(GetCombatInfoRows(keymap, c)),
 		attacks: NewListWithDefaults().
 			WithTitle("Attacks").
-			WithRows(GetAttackRows(c)),
+			WithRows(GetAttackRows(keymap, c)),
+		actions:      NewSimpleStringComponent(keymap, "Actions", &c.Actions),
+		bonusActions: NewSimpleStringComponent(keymap, "Bonus Actions", &c.BonusActions),
 	}
 }
 
 func (s *ScoreScreen) Init() tea.Cmd {
+	cmds := []tea.Cmd{}
+	cmds = append(cmds, s.characterInfo.Init())
+	cmds = append(cmds, s.abilities.Init())
+	cmds = append(cmds, s.skills.Init())
+	cmds = append(cmds, s.savingThrows.Init())
+	cmds = append(cmds, s.combatInfo.Init())
+	cmds = append(cmds, s.attacks.Init())
+	cmds = append(cmds, s.actions.Init())
+	cmds = append(cmds, s.bonusActions.Init())
+	s.focusOn(s.characterInfo)
+	if len(cmds) > 0 {
+		return tea.Batch(cmds...)
+	}
 	return nil
 }
 
-func (s *ScoreScreen) Update(tea.Msg) (tea.Model, tea.Cmd) {
-	return nil, nil
+func (s *ScoreScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch msg := msg.(type) {
+	case ExitTableMsg:
+		s.moveFocus(msg.Direction)
+	case tea.KeyMsg:
+		switch s.focusedElement.(type) {
+		case *List:
+			switch {
+			case key.Matches(msg, s.keymap.Right):
+				s.moveFocus(RightDirection)
+			case key.Matches(msg, s.keymap.Left):
+				s.moveFocus(LeftDirection)
+			default:
+				_, cmd = s.focusedElement.Update(msg)
+			}
+		default:
+			switch {
+			case key.Matches(msg, s.keymap.Right):
+				s.moveFocus(RightDirection)
+			case key.Matches(msg, s.keymap.Left):
+				s.moveFocus(LeftDirection)
+			case key.Matches(msg, s.keymap.Up):
+				s.moveFocus(UpDirection)
+			case key.Matches(msg, s.keymap.Down):
+				s.moveFocus(DownDirection)
+			default:
+				_, cmd = s.focusedElement.Update(msg)
+			}
+		}
+	}
+	return s, cmd
+}
+
+func (s *ScoreScreen) focusOn(m interface {
+	Init() tea.Cmd
+	Update(tea.Msg) (tea.Model, tea.Cmd)
+	View() string
+	Focus()
+}) {
+	s.focusedElement = m
+	m.Focus()
+}
+
+func (s *ScoreScreen) moveFocus(d Direction) {
+	s.characterInfo.Blur()
+	s.abilities.Blur()
+	s.skills.Blur()
+	s.savingThrows.Blur()
+	s.combatInfo.Blur()
+	s.attacks.Blur()
+	s.actions.Blur()
+	s.bonusActions.Blur()
+
+	switch s.focusedElement {
+	case s.characterInfo:
+		switch d {
+		case DownDirection:
+			s.focusOn(s.skills)
+		case RightDirection:
+			s.focusOn(s.abilities)
+		default:
+			s.focusOn(s.characterInfo)
+		}
+	case s.abilities:
+		switch d {
+		case DownDirection:
+			s.focusOn(s.actions)
+		case LeftDirection:
+			s.focusOn(s.characterInfo)
+		default:
+			s.focusOn(s.abilities)
+		}
+	case s.skills:
+		switch d {
+		case UpDirection:
+			s.focusOn(s.characterInfo)
+		case RightDirection:
+			if s.skills.cursor < len(s.skills.content)/2 {
+				s.focusOn(s.combatInfo)
+			} else {
+				s.focusOn(s.savingThrows)
+			}
+		default:
+			s.focusOn(s.skills)
+		}
+	case s.combatInfo:
+		switch d {
+		case UpDirection:
+			s.focusOn(s.characterInfo)
+		case RightDirection:
+			s.focusOn(s.actions)
+		case DownDirection:
+			s.focusOn(s.savingThrows)
+		case LeftDirection:
+			s.focusOn(s.skills)
+			s.skills.SetCursor(0)
+		}
+	case s.savingThrows:
+		switch d {
+		case UpDirection:
+			s.focusOn(s.combatInfo)
+		case RightDirection:
+			s.focusOn(s.attacks)
+		case LeftDirection:
+			s.focusOn(s.skills)
+			s.skills.SetCursor(len(s.skills.content) / 2)
+		default:
+			s.focusOn(s.savingThrows)
+		}
+	case s.actions:
+		switch d {
+		case UpDirection:
+			s.focusOn(s.abilities)
+		case LeftDirection:
+			s.focusOn(s.combatInfo)
+		case DownDirection:
+			s.focusOn(s.bonusActions)
+		default:
+			s.focusOn(s.actions)
+		}
+	case s.bonusActions:
+		switch d {
+		case UpDirection:
+			s.focusOn(s.actions)
+		case LeftDirection:
+			s.focusOn(s.combatInfo)
+		case DownDirection:
+			s.focusOn(s.attacks)
+		default:
+			s.focusOn(s.bonusActions)
+		}
+	case s.attacks:
+		switch d {
+		case UpDirection:
+			s.focusOn(s.bonusActions)
+		case LeftDirection:
+			s.focusOn(s.savingThrows)
+		default:
+			s.focusOn(s.attacks)
+		}
+	}
 }
 
 func (s *ScoreScreen) View() string {
@@ -107,7 +267,7 @@ func (s *ScoreScreen) View() string {
 		Height(ColHeight).
 		Render(lipgloss.JoinVertical(lipgloss.Center, combatInfo, midBoxInnerSeparator, savingThrows))
 
-	actions := RenderActions(s.character)
+	actions := s.RenderActions()
 
 	attacks := s.attacks.View()
 
@@ -179,8 +339,8 @@ func GetCombatInfoRows(k KeyMap, c *models.Character) []Row {
 			[]ValueEditor{NewIntEditor(k, "Current HP", &c.CurrentHitPoints),
 				NewIntEditor(k, "Max HP", &c.MaxHitPoints)}),
 		NewStructRow(k, &HitDiceInfo{&c.UsedHitDice, &c.HitDice}, renderHitDiceInfoRow,
-			[]ValueEditor{NewIntEditor(k, "Used Hit Dice", &c.UsedHitDice),
-				NewIntEditor(k, "Hit Dice", &c.HitDice)}),
+			[]ValueEditor{NewStringEditor(k, "Used Hit Dice", &c.UsedHitDice),
+				NewStringEditor(k, "Hit Dice", &c.HitDice)}),
 		NewLabeledIntRow(k, "DS Successes", &c.DeathSaves.Successes,
 			NewIntEditor(k, "DS Successes", &c.DeathSaves.Successes)).WithConfig(dsConfig),
 		NewLabeledIntRow(k, "DS Failures", &c.DeathSaves.Failures,
@@ -189,55 +349,68 @@ func GetCombatInfoRows(k KeyMap, c *models.Character) []Row {
 	return rows
 }
 
-func RenderActions(c *models.Character) string {
-	actionTitle := DefaultTextStyle.Render("Actions\n")
+func (s *ScoreScreen) RenderActions() string {
+	actionTitle := "Actions"
+	if s.actions.InFocus() {
+		actionTitle = ItemStyleSelected.Render(actionTitle) + "\n"
+	} else {
+		actionTitle = ItemStyleDefault.Render(actionTitle) + "\n"
+	}
 
-	actionBody := DefaultTextStyle.Width(RightContentWidth).Render(c.Actions)
+	actionBody := DefaultTextStyle.Width(RightContentWidth).Render(s.actions.View())
 
 	separator := "\n" +
 		GrayTextStyle.Render(strings.Repeat("─", RightContentWidth)) +
 		"\n"
 
-	bonusActionTitle := DefaultTextStyle.Render("Bonus Actions\n")
+	bonusActionTitle := "Bonus Actions"
+	if s.bonusActions.InFocus() {
+		bonusActionTitle = ItemStyleSelected.Render(bonusActionTitle) + "\n"
+	} else {
+		bonusActionTitle = ItemStyleDefault.Render(bonusActionTitle) + "\n"
+	}
 
-	bonusActionBody := DefaultTextStyle.Width(RightContentWidth).Render(c.BonusActions)
+	bonusActionBody := DefaultTextStyle.Width(RightContentWidth).Render(s.bonusActions.View())
 
 	return lipgloss.JoinVertical(lipgloss.Center, actionTitle, actionBody, separator, bonusActionTitle, bonusActionBody)
 }
 
-func GetAttackRows(c *models.Character) []Row {
-	rows := []Row{
-		(Map(c.Attacks, RenderAttack)),
-	}
+func GetAttackRows(k KeyMap, c *models.Character) []Row {
+	rows := []Row{}
 	for _, a := range c.Attacks {
-		rows = append(rows, Row{RenderAttack(a)})
+		row := NewStructRow(k, &a, RenderAttack, []ValueEditor{
+			NewStringEditor(k, "Name", &a.Name),
+			NewIntEditor(k, "Bonus", &a.Bonus),
+			NewStringEditor(k, "Damage", &a.Damage),
+			NewStringEditor(k, "Damage Type", &a.DamageType),
+		})
+		rows = append(rows, row)
 	}
 	return rows
 }
-func GetSkillRows(c *models.Character) []Row {
+func GetSkillRows(k KeyMap, c *models.Character) []Row {
 	rows := []Row{}
 
 	skillFields := structs.Fields(c.Skills)
 	for _, field := range skillFields {
 		skill := field.Value().(models.Skill)
-		mod := skill.ToModifier(c.Abilities, c.ProficiencyBonus)
-		bullet := ProficiencySymbol(skill.Proficiency)
-		row := Row{RenderEdgeBound(LongColWidth, TinyColWidth, bullet+" "+skill.Name, fmt.Sprintf("%+d", mod))}
+		row := NewStructRow(k, &SkillInfo{&skill, &c.Abilities, &c.ProficiencyBonus}, renderSkillInfoRow,
+			[]ValueEditor{NewEnumEditor(k, ProficiencySymbols, "Proficiency", &skill.Proficiency),
+				NewIntEditor(k, "Custom Modifier", &skill.CustomModifier)})
 		rows = append(rows, row)
 	}
 
 	return rows
 }
 
-func GetSavingThrowRows(c *models.Character) []Row {
+func GetSavingThrowRows(k KeyMap, c *models.Character) []Row {
 	rows := []Row{}
 
 	skillFields := structs.Fields(c.SavingThrows)
 	for _, field := range skillFields {
 		saving := field.Value().(models.SavingThrow)
-		mod := saving.ToModifier(c.Abilities, c.ProficiencyBonus)
-		bullet := ProficiencySymbol(saving.Proficiency)
-		row := Row{RenderEdgeBound(ColWidth, TinyColWidth, bullet+" "+saving.Ability, fmt.Sprintf("%+d", mod))}
+		row := NewStructRow(k, &SavingThrowInfo{&saving, &c.Abilities, &c.ProficiencyBonus}, renderSavingThrowInfoRow,
+			[]ValueEditor{NewEnumEditor(k, ProficiencySymbols, "Proficiency", &saving.Proficiency)})
 		rows = append(rows, row)
 	}
 
@@ -261,10 +434,34 @@ type HitDiceInfo struct {
 }
 
 func renderHitDiceInfoRow(hd *HitDiceInfo) string {
-	return RenderEdgeBound(ShortColWidth, MediumColWidth, "Hit Dice", c.UsedHitDice+"/"+c.HitDice)
+	return RenderEdgeBound(ShortColWidth, MediumColWidth, "Hit Dice", *hd.current+"/"+*hd.max)
 }
 
-func RenderAttack(a models.Attack) string {
+type SavingThrowInfo struct {
+	savingThrow *models.SavingThrow
+	abilities   *models.Abilities
+	profBonus   *int
+}
+
+func renderSavingThrowInfoRow(st *SavingThrowInfo) string {
+	mod := st.savingThrow.ToModifier(*st.abilities, *st.profBonus)
+	bullet := ProficiencySymbol(st.savingThrow.Proficiency)
+	return RenderEdgeBound(ColWidth, TinyColWidth, bullet+" "+st.savingThrow.Ability, fmt.Sprintf("%+d", mod))
+}
+
+type SkillInfo struct {
+	skill     *models.Skill
+	abilities *models.Abilities
+	profBonus *int
+}
+
+func renderSkillInfoRow(s *SkillInfo) string {
+	mod := s.skill.ToModifier(*s.abilities, *s.profBonus) + s.skill.CustomModifier
+	bullet := ProficiencySymbol(s.skill.Proficiency)
+	return RenderEdgeBound(LongColWidth, TinyColWidth, bullet+" "+s.skill.Name, fmt.Sprintf("%+d", mod))
+}
+
+func RenderAttack(a *models.Attack) string {
 	return fmt.Sprintf("%10s %+3d %6s (%s)", a.Name, a.Bonus, a.Damage, a.DamageType)
 }
 
@@ -272,15 +469,19 @@ func DeathSaveSymbols(amount int) string {
 	return strings.Repeat("●", amount) + strings.Repeat("○", 3-amount)
 }
 
-func ProficiencySymbol(p models.ProficiencyLevel) string {
-	var bullet string
-	switch p {
-	case models.NoProficiency:
-		bullet = "○"
-	case models.Proficient:
-		bullet = "◐"
-	case models.Expertise:
-		bullet = "●"
+var (
+	ProficiencySymbols []EnumMapping = []EnumMapping{
+		{int(models.NoProficiency), "○"},
+		{int(models.Proficient), "◐"},
+		{int(models.Expertise), "●"},
 	}
-	return bullet
+)
+
+func ProficiencySymbol(p models.ProficiencyLevel) string {
+	for _, m := range ProficiencySymbols {
+		if int(p) == m.Value {
+			return m.Label
+		}
+	}
+	return ""
 }

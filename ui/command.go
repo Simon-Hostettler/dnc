@@ -16,6 +16,15 @@ const (
 	ScoreScreenIndex ScreenIndex = iota
 )
 
+type Direction int
+
+const (
+	UpDirection Direction = iota
+	DownDirection
+	LeftDirection
+	RightDirection
+)
+
 type EditMessage string
 
 type FileOpMsg struct {
@@ -33,7 +42,7 @@ type SwitchScreenMsg struct {
 }
 
 type ExitTableMsg struct {
-	Key tea.KeyType
+	Direction Direction
 }
 
 type EditValueMsg struct {
@@ -100,8 +109,8 @@ func SwitchScreenCmd(s ScreenIndex) func() tea.Msg {
 	}
 }
 
-func ExitListCmd(k tea.KeyType) func() tea.Msg {
+func ExitListCmd(d Direction) func() tea.Msg {
 	return func() tea.Msg {
-		return ExitTableMsg{k}
+		return ExitTableMsg{d}
 	}
 }

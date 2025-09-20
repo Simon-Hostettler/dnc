@@ -12,7 +12,7 @@ type CharacterRow struct {
 }
 
 func NewCharacterRow(name string, characterDir string, keymap KeyMap) *CharacterRow {
-	return &CharacterRow{keymap, name, characterDir}
+	return &CharacterRow{keymap, characterDir, name}
 }
 
 func (c *CharacterRow) Init() tea.Cmd {
