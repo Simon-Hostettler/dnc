@@ -53,6 +53,19 @@ func NewApp() (*DnCApp, error) {
 	}, nil
 }
 
+// NewTestApp creates a new app instance with a custom character directory for testing
+func NewTestApp(characterDir string) (*DnCApp, error) {
+	config := Config{CharacterDir: characterDir}
+	km := ui.DefaultKeyMap()
+	return &DnCApp{
+		config:       config,
+		keymap:       km,
+		scoreTab:     NewScreenTab(km, "Stats", ui.ScoreScreenIndex, false),
+		titleScreen:  ui.NewTitleScreen(characterDir),
+		editorScreen: ui.NewEditorScreen(km, []ui.ValueEditor{}),
+	}, nil
+}
+
 func (a *DnCApp) Init() tea.Cmd {
 	cmds := []tea.Cmd{}
 
@@ -215,4 +228,33 @@ func (s *ScreenTab) Focus() {
 
 func (s *ScreenTab) Blur() {
 	s.focus = false
+}
+
+// Testing support methods
+
+// GetCurrentScreenType returns the current screen type for testing
+func (a *DnCApp) GetCurrentScreenType() string {
+	switch a.screenInView {
+	case a.titleScreen:
+		return "title"
+	case a.scoreScreen:
+		return "score"
+	case a.editorScreen:
+		return "editor"
+	default:
+		if a.titleScreen != nil && a.screenInView == nil {
+			return "title"
+		}
+		return "unknown"
+	}
+}
+
+// GetCharacter returns the current character for testing
+func (a *DnCApp) GetCharacter() *models.Character {
+	return a.character
+}
+
+// GetConfig returns the app config for testing
+func (a *DnCApp) GetConfig() Config {
+	return a.config
 }
