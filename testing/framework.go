@@ -138,6 +138,11 @@ func (ta *TestApp) SendKey(key string) error {
 
 // createKeyMsg creates appropriate tea.KeyMsg for different key types
 func (ta *TestApp) createKeyMsg(key string) tea.KeyMsg {
+	return CreateKeyMsg(key)
+}
+
+// CreateKeyMsg creates appropriate tea.KeyMsg for different key types (exported for testing)
+func CreateKeyMsg(key string) tea.KeyMsg {
 	switch key {
 	case "enter":
 		return tea.KeyMsg{Type: tea.KeyEnter}
