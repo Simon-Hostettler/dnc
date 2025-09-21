@@ -95,6 +95,10 @@ func (c *Character) AddEmptyAttack() {
 	c.Attacks = append(c.Attacks, Attack{})
 }
 
+func (c *Character) AddEmptySpell(l int) {
+	c.Spells.SpellsKnown = append(c.Spells.SpellsKnown, Spell{Level: l})
+}
+
 func LoadCharacterByName(name string) (*Character, error) {
 	cfgDir, err := os.UserConfigDir()
 	if err != nil {

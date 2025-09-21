@@ -76,7 +76,16 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case command.AppendElementMsg:
-		switch s.focusedElement {
+		switch s.focusedElement.(type) {
+		case *list.List:
+			s.character.AddEmptySpell(s.spellListIndex)
+			newSpellRows := s.GetSpellListByLevel(s.spellListIndex)
+			s.spellLists[s.spellListIndex].WithRows(newSpellRows)
+			cmd = editor.SwitchToEditorCmd(
+				command.SpellScreenIndex,
+				s.character,
+				newSpellRows[len(newSpellRows)-1].Editors(),
+			)
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
@@ -118,7 +127,7 @@ func (s *SpellScreen) View() string {
 		renderedSpells = append(renderedSpells, util.WithPadding(s.spellLists[i].View(), 0, 0, 0, 1))
 	}
 
-	columns := util.SplitIntoColumns(renderedSpells, spellColHeight)
+	columns := util.SplitIntoColumns(renderedSpells, spellColHeight-2)
 	firstCol := columns[0]
 	secondCol := []string{}
 	if len(columns) > 1 {
@@ -127,7 +136,7 @@ func (s *SpellScreen) View() string {
 	s.colSplitIndex = len(firstCol)
 
 	left := lipgloss.PlaceHorizontal(spellColWidth, lipgloss.Left, lipgloss.JoinVertical(lipgloss.Left, firstCol...))
-	separator := lipgloss.PlaceHorizontal(8, lipgloss.Left, util.MakeVerticalSeparator(spellColHeight))
+	separator := lipgloss.PlaceHorizontal(8, lipgloss.Left, util.MakeVerticalSeparator(spellColHeight-2))
 	right := lipgloss.PlaceHorizontal(spellColWidth, lipgloss.Left, lipgloss.JoinVertical(lipgloss.Left, secondCol...))
 
 	content := util.DefaultBorderStyle.
@@ -271,7 +280,7 @@ func RenderSpellHeaderRow(h *SpellListHeader) string {
 }
 
 func RenderSpellInfoRow(s *models.Spell) string {
-	return fmt.Sprintf("%-12s ∙ %3s ∙ %5s ∙ %1s ∙ %3s", s.Name, s.Components, s.Range, s.CastingTime, s.Duration)
+	return fmt.Sprintf("%s ∙ %s ∙ %s ∙ %s ∙ %s", s.Name, s.Components, s.Range, s.CastingTime, s.Duration)
 }
 
 func RenderSpellSlots(used int, max int) string {
