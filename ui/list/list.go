@@ -146,7 +146,9 @@ func (t *List) Update(m tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, t.KeyMap.Select) && t.cursor == len(t.content):
 			cmd = command.AppendElementCmd
 		default:
-			_, cmd = t.content[t.cursor].Update(m)
+			if t.cursor < len(t.content) {
+				_, cmd = t.content[t.cursor].Update(m)
+			}
 		}
 	}
 	return t, cmd
@@ -183,11 +185,11 @@ func (t *List) RenderBody() string {
 	if t.appendable {
 		var adder string
 		if t.focus && t.cursor == len(t.content) {
-			adder = "\n" + t.Styles.Selected.Render("+")
+			adder = t.Styles.Selected.Render("[ + ]")
 		} else {
-			adder = "\n" + t.Styles.Row.Render("+")
+			adder = t.Styles.Row.Render("[ + ]")
 		}
-		return lipgloss.JoinVertical(lipgloss.Center, list, adder)
+		return lipgloss.JoinVertical(lipgloss.Left, list, adder)
 	} else {
 		return list
 	}

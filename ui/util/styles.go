@@ -81,6 +81,10 @@ func ForceWidth(text string, width int) string {
 	return lipgloss.NewStyle().Width(width).Render(text)
 }
 
+func WithPadding(text string, left int, right int, top int, bottom int) string {
+	return lipgloss.NewStyle().Padding(top, right, bottom, left).Render(text)
+}
+
 func RenderItem(selected bool, item string) string {
 	if selected {
 		return ItemStyleSelected.Render(item)

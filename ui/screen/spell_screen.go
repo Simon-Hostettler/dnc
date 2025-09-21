@@ -15,16 +15,24 @@ import (
 	"hostettler.dev/dnc/ui/util"
 )
 
+var (
+	spellColHeight = 30
+	spellColWidth  = util.ScreenWidth/2 - 8
+)
+
 type SpellScreen struct {
 	keymap    util.KeyMap
 	character *models.Character
 
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
+	spellListIndex     int
 
 	spellAbility  *component.SimpleStringComponent
 	spellSaveDC   *component.SimpleIntComponent
 	spellAtkBonus *component.SimpleIntComponent
+	spellLists    map[int]*list.List
+	colSplitIndex int
 }
 
 func NewSpellScreen(k util.KeyMap, c *models.Character) *SpellScreen {
@@ -34,6 +42,7 @@ func NewSpellScreen(k util.KeyMap, c *models.Character) *SpellScreen {
 		spellAbility:  component.NewSimpleStringComponent(k, "Spellcasting Ability", &c.Spells.SpellcastingAbility, true, true),
 		spellSaveDC:   component.NewSimpleIntComponent(k, "Spell Save DC", &c.Spells.SpellSaveDC, true, true),
 		spellAtkBonus: component.NewSimpleIntComponent(k, "Spell Attack Bonus", &c.Spells.SpellAttackBonus, true, true),
+		spellLists:    make(map[int]*list.List),
 	}
 }
 
@@ -45,6 +54,17 @@ func (s *SpellScreen) Init() tea.Cmd {
 	cmds = util.DropNil(cmds)
 	s.focusOn(s.spellAbility)
 	s.lastFocusedElement = s.spellAbility
+
+	for i := range 10 {
+		s.spellLists[i] = list.NewList(s.keymap,
+			list.ListStyles{
+				Row:      util.ItemStyleDefault.Align(lipgloss.Left),
+				Selected: util.ItemStyleSelected.Align(lipgloss.Left),
+			}).
+			WithAppender().
+			WithRows(s.GetSpellListByLevel(i))
+	}
+
 	if len(cmds) > 0 {
 		return tea.Batch(cmds...)
 	}
@@ -93,13 +113,33 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (s *SpellScreen) View() string {
 	topbar := s.RenderSpellScreenTopBar()
-	content := ""
-	for i := range 9 {
-		content += RenderSpellHeaderRow(s.character, i) + "\n"
+	renderedSpells := []string{}
+	for i := range 10 {
+		renderedSpells = append(renderedSpells, util.WithPadding(s.spellLists[i].View(), 0, 0, 0, 1))
 	}
-	content = util.DefaultBorderStyle.Width(util.ScreenWidth).Render(content)
 
-	return lipgloss.JoinVertical(lipgloss.Center, topbar, content)
+	columns := util.SplitIntoColumns(renderedSpells, spellColHeight)
+	firstCol := columns[0]
+	secondCol := []string{}
+	if len(columns) > 1 {
+		secondCol = columns[1]
+	}
+	s.colSplitIndex = len(firstCol)
+
+	left := lipgloss.PlaceHorizontal(spellColWidth, lipgloss.Left, lipgloss.JoinVertical(lipgloss.Left, firstCol...))
+	separator := lipgloss.PlaceHorizontal(8, lipgloss.Left, util.MakeVerticalSeparator(spellColHeight))
+	right := lipgloss.PlaceHorizontal(spellColWidth, lipgloss.Left, lipgloss.JoinVertical(lipgloss.Left, secondCol...))
+
+	content := util.DefaultBorderStyle.
+		Width(util.ScreenWidth).
+		Height(spellColHeight).
+		Render(
+			lipgloss.JoinHorizontal(lipgloss.Left,
+				left,
+				separator,
+				right,
+			))
+	return lipgloss.JoinVertical(lipgloss.Left, topbar, content)
 }
 
 func (s *SpellScreen) focusOn(m FocusableModel) {
@@ -118,6 +158,9 @@ func (s *SpellScreen) moveFocus(d command.Direction) tea.Cmd {
 			s.focusOn(s.spellSaveDC)
 		case command.LeftDirection:
 			cmd = command.ReturnFocusToParentCmd
+		case command.DownDirection:
+			s.focusOn(s.spellLists[0])
+			s.spellListIndex = 0
 		}
 	case s.spellSaveDC:
 		switch d {
@@ -125,11 +168,42 @@ func (s *SpellScreen) moveFocus(d command.Direction) tea.Cmd {
 			s.focusOn(s.spellAtkBonus)
 		case command.LeftDirection:
 			s.focusOn(s.spellAbility)
+		case command.DownDirection:
+			s.focusOn(s.spellLists[0])
+			s.spellListIndex = 0
 		}
 	case s.spellAtkBonus:
 		switch d {
 		case command.LeftDirection:
 			s.focusOn(s.spellSaveDC)
+		case command.DownDirection:
+			s.focusOn(s.spellLists[0])
+			s.spellListIndex = 0
+		}
+	default:
+		switch d {
+		case command.UpDirection:
+			if s.spellListIndex == 0 {
+				s.focusOn(s.spellAbility)
+			} else {
+				s.spellListIndex -= 1
+				s.focusOn(s.spellLists[s.spellListIndex])
+			}
+		case command.DownDirection:
+			if s.spellListIndex < 9 {
+				s.spellListIndex += 1
+				s.focusOn(s.spellLists[s.spellListIndex])
+			}
+		case command.RightDirection:
+			if s.spellListIndex < s.colSplitIndex {
+				s.spellListIndex = min(9, s.spellListIndex+s.colSplitIndex)
+				s.focusOn(s.spellLists[s.spellListIndex])
+			}
+		case command.LeftDirection:
+			if s.spellListIndex >= s.colSplitIndex {
+				s.spellListIndex = max(0, s.spellListIndex-s.colSplitIndex)
+				s.focusOn(s.spellLists[s.spellListIndex])
+			}
 		}
 	}
 	return cmd
@@ -148,22 +222,63 @@ func (s *SpellScreen) Blur() {
 	s.focusedElement = nil
 }
 
+func (s *SpellScreen) GetSpellListByLevel(l int) []list.Row {
+	rows := []list.Row{}
+	spells := s.character.GetSpellsByLevel(l)
+	rows = append(rows, list.NewStructRow(s.keymap,
+		&SpellListHeader{l, &s.character.Spells.SpellSlots[l], &s.character.Spells.SpellSlotsUsed[l]},
+		RenderSpellHeaderRow,
+		[]editor.ValueEditor{
+			editor.NewIntEditor(s.keymap, "Used Spell Slots", &s.character.Spells.SpellSlotsUsed[l]),
+			editor.NewIntEditor(s.keymap, "Max Spell Slots", &s.character.Spells.SpellSlots[l]),
+		}))
+	for _, spell := range spells {
+		rows = append(rows, list.NewStructRow(s.keymap, spell,
+			RenderSpellInfoRow,
+			[]editor.ValueEditor{
+				editor.NewStringEditor(s.keymap, "Name", &spell.Name),
+				editor.NewStringEditor(s.keymap, "Casting Time", &spell.CastingTime),
+				editor.NewStringEditor(s.keymap, "Range", &spell.Range),
+				editor.NewStringEditor(s.keymap, "Duration", &spell.Duration),
+				editor.NewStringEditor(s.keymap, "Components", &spell.Components),
+				editor.NewStringEditor(s.keymap, "Description", &spell.Description),
+			}))
+	}
+	return rows
+}
+
 func (s *SpellScreen) RenderSpellScreenTopBar() string {
+	separator := util.GrayTextStyle.Width(8).Render(util.MakeVerticalSeparator(1))
 	return util.DefaultBorderStyle.
 		Width(util.ScreenWidth).
 		Render(lipgloss.JoinHorizontal(lipgloss.Center,
-			util.ForceWidth(s.spellAbility.View(), util.ScreenWidth/3),
-			util.ForceWidth(s.spellSaveDC.View(), util.ScreenWidth/3),
-			util.ForceWidth(s.spellAtkBonus.View(), util.ScreenWidth/3)))
+			util.ForceWidth(s.spellAbility.View(), 28),
+			separator,
+			util.ForceWidth(s.spellSaveDC.View(), 28),
+			separator,
+			util.ForceWidth(s.spellAtkBonus.View(), 28)))
 }
 
-func RenderSpellHeaderRow(c *models.Character, level int) string {
-	return fmt.Sprintf("%d ∙ %s", level,
-		RenderSpellSlots(c.Spells.SpellSlotsUsed[level], c.Spells.SpellSlots[level]))
+type SpellListHeader struct {
+	level int
+	slots *int
+	used  *int
+}
+
+func RenderSpellHeaderRow(h *SpellListHeader) string {
+	return fmt.Sprintf("Level %d ∙ %s", h.level,
+		RenderSpellSlots(*h.used, *h.slots))
+}
+
+func RenderSpellInfoRow(s *models.Spell) string {
+	return fmt.Sprintf("%-12s ∙ %3s ∙ %5s ∙ %1s ∙ %3s", s.Name, s.Components, s.Range, s.CastingTime, s.Duration)
 }
 
 func RenderSpellSlots(used int, max int) string {
-	s := strings.Repeat("▣", used)
+	if max <= 0 {
+		return "∅"
+	}
+	s := strings.Repeat("■", used)
 	s += strings.Repeat("□", max-used)
 	return util.DefaultTextStyle.Render(s)
 }

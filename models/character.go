@@ -48,6 +48,7 @@ func NewCharacter(name string) (Character, error) {
 		Name:         name,
 		Skills:       NewSkills(),
 		SavingThrows: NewSavingThrows(),
+		Spells:       NewSpellcasting(),
 	}
 	cfgDir, err := os.UserConfigDir()
 	if err != nil {
@@ -78,6 +79,20 @@ func (c *Character) SaveToFile() error {
 		return err
 	}
 	return os.WriteFile(c.SaveFile, data, 0o644)
+}
+
+func (c *Character) GetSpellsByLevel(l int) []*Spell {
+	spells := []*Spell{}
+	for i := range c.Spells.SpellsKnown {
+		if c.Spells.SpellsKnown[i].Level == l {
+			spells = append(spells, &c.Spells.SpellsKnown[i])
+		}
+	}
+	return spells
+}
+
+func (c *Character) AddEmptyAttack() {
+	c.Attacks = append(c.Attacks, Attack{})
 }
 
 func LoadCharacterByName(name string) (*Character, error) {

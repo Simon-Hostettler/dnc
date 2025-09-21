@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type KeyMap struct {
@@ -103,6 +104,28 @@ func ListCharacterFiles(dir string) []string {
 		}
 	}
 	return files
+}
+
+func SplitIntoColumns(elements []string, maxHeight int) [][]string {
+	var (
+		columns       [][]string
+		currentColumn []string
+		currentHeight int
+	)
+	for _, elem := range elements {
+		elemHeight := lipgloss.Height(elem)
+		if currentHeight+elemHeight > maxHeight {
+			columns = append(columns, currentColumn)
+			currentColumn = []string{}
+			currentHeight = 0
+		}
+		currentColumn = append(currentColumn, elem)
+		currentHeight += elemHeight
+	}
+	if len(currentColumn) > 0 {
+		columns = append(columns, currentColumn)
+	}
+	return columns
 }
 
 func B2i(b bool) int {

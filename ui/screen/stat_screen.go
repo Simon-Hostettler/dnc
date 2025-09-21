@@ -106,8 +106,7 @@ func (s *StatScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case command.AppendElementMsg:
 		switch s.focusedElement {
 		case s.attacks:
-			attack := models.Attack{}
-			s.character.Attacks = append(s.character.Attacks, attack)
+			s.character.AddEmptyAttack()
 			newRows := GetAttackRows(s.keymap, s.character)
 			s.attacks.WithRows(newRows)
 			cmd = editor.SwitchToEditorCmd(command.StatScreenIndex, s.character, newRows[len(newRows)-1].Editors())
@@ -398,13 +397,13 @@ func GetCombatInfoRows(k util.KeyMap, c *models.Character) []list.Row {
 }
 
 func (s *StatScreen) RenderActions() string {
-	actionTitle := util.RenderItem(s.actions.InFocus(), "Actions")
+	actionTitle := util.RenderItem(s.actions.InFocus(), "Actions") + "\n"
 
 	actionBody := util.DefaultTextStyle.Width(RightContentWidth).Render(s.actions.View())
 
 	separator := util.MakeHorizontalSeparator(RightContentWidth)
 
-	bonusActionTitle := util.RenderItem(s.bonusActions.InFocus(), "Bonus Actions")
+	bonusActionTitle := util.RenderItem(s.bonusActions.InFocus(), "Bonus Actions") + "\n"
 
 	bonusActionBody := util.DefaultTextStyle.Width(RightContentWidth).Render(s.bonusActions.View())
 
