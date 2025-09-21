@@ -5,7 +5,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"hostettler.dev/dnc/models"
-	"hostettler.dev/dnc/ui"
+	"hostettler.dev/dnc/ui/command"
+	"hostettler.dev/dnc/ui/editor"
+	"hostettler.dev/dnc/ui/screen"
+	"hostettler.dev/dnc/ui/util"
 )
 
 var (
@@ -16,7 +19,7 @@ var (
 
 type DnCApp struct {
 	config    Config
-	keymap    ui.KeyMap
+	keymap    util.KeyMap
 	width     int
 	height    int
 	character *models.Character
@@ -26,17 +29,17 @@ type DnCApp struct {
 	statTab         *ScreenTab
 	spellTab        *ScreenTab
 
-	screenInView ui.FocusableModel
-	titleScreen  *ui.TitleScreen
-	editorScreen *ui.EditorScreen
-	statScreen   *ui.StatScreen
-	spellScreen  *ui.SpellScreen
+	screenInView screen.FocusableModel
+	titleScreen  *screen.TitleScreen
+	editorScreen *screen.EditorScreen
+	statScreen   *screen.StatScreen
+	spellScreen  *screen.SpellScreen
 }
 
 type ScreenTab struct {
-	keymap      ui.KeyMap
+	keymap      util.KeyMap
 	name        string
-	screenIndex ui.ScreenIndex
+	screenIndex command.ScreenIndex
 	focus       bool
 }
 
@@ -45,14 +48,14 @@ func NewApp() (*DnCApp, error) {
 	if err != nil {
 		return nil, err
 	}
-	km := ui.DefaultKeyMap()
+	km := util.DefaultKeyMap()
 	return &DnCApp{
 		config:       config,
 		keymap:       km,
-		statTab:      NewScreenTab(km, "Stats", ui.StatScreenIndex, false),
-		spellTab:     NewScreenTab(km, "Spells", ui.SpellScreenIndex, false),
-		titleScreen:  ui.NewTitleScreen(config.CharacterDir),
-		editorScreen: ui.NewEditorScreen(km, []ui.ValueEditor{}),
+		statTab:      NewScreenTab(km, "Stats", command.StatScreenIndex, false),
+		spellTab:     NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
+		titleScreen:  screen.NewTitleScreen(config.CharacterDir),
+		editorScreen: screen.NewEditorScreen(km, []editor.ValueEditor{}),
 	}, nil
 }
 
@@ -63,7 +66,7 @@ func (a *DnCApp) Init() tea.Cmd {
 
 	if a.titleScreen != nil {
 		cmds = append(cmds, a.titleScreen.Init())
-		a.switchScreen(ui.TitleScreenIndex)
+		a.switchScreen(command.TitleScreenIndex)
 	}
 	if a.statScreen != nil {
 		cmds = append(cmds, a.statScreen.Init())
@@ -71,7 +74,7 @@ func (a *DnCApp) Init() tea.Cmd {
 	if a.editorScreen != nil {
 		cmds = append(cmds, a.editorScreen.Init())
 	}
-	cmds = ui.DropNil(cmds)
+	cmds = util.DropNil(cmds)
 	if len(cmds) > 0 {
 		return tea.Batch(cmds...)
 	}
@@ -90,9 +93,9 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			switch {
 			case key.Matches(msg, a.keymap.Down):
-				a.moveTab(ui.DownDirection)
+				a.moveTab(command.DownDirection)
 			case key.Matches(msg, a.keymap.Up):
-				a.moveTab(ui.UpDirection)
+				a.moveTab(command.UpDirection)
 			case key.Matches(msg, a.keymap.Right):
 				a.isScreenFocused = true
 				a.screenInView.Focus()
@@ -104,21 +107,21 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		a.width = msg.Width
 		a.height = msg.Height
-	case ui.ReturnFocusToParentMsg:
+	case command.ReturnFocusToParentMsg:
 		a.isScreenFocused = false
 		a.screenInView.Blur()
 		a.selectedTab.Focus()
-	case ui.SwitchScreenMsg:
+	case command.SwitchScreenMsg:
 		a.switchScreen(msg.Screen)
-	case ui.SelectCharacterAndSwitchScreenMsg:
+	case command.SelectCharacterMsg:
 		if msg.Err == nil {
 			a.character = msg.Character
 			cmds := a.populateCharacterScreens()
-			cmd = tea.Batch(cmds, ui.SwitchScreenCmd(ui.StatScreenIndex))
+			cmd = tea.Batch(cmds, command.SwitchScreenCmd(command.StatScreenIndex))
 		}
-	case ui.SwitchToEditorMsg:
+	case editor.SwitchToEditorMsg:
 		a.editorScreen.StartEdit(msg.Originator, msg.Character, msg.Editors)
-		cmd = ui.SwitchScreenCmd(ui.EditScreenIndex)
+		cmd = command.SwitchScreenCmd(command.EditScreenIndex)
 	default:
 		_, cmd = a.screenInView.Update(msg)
 	}
@@ -141,7 +144,7 @@ func (a *DnCApp) View() string {
 	topPad := (pageHeight - lipgloss.Height(pageContent)) / 2
 	leftPad := (pageWidth - lipgloss.Width(pageContent)) / 2
 
-	s := ui.NoBorderStyle.
+	s := util.NoBorderStyle.
 		UnsetAlign().
 		Width(pageWidth).
 		Height(pageHeight).
@@ -154,29 +157,29 @@ func (a *DnCApp) View() string {
 
 func (a *DnCApp) populateCharacterScreens() tea.Cmd {
 	cmds := []tea.Cmd{}
-	a.statScreen = ui.NewStatScreen(a.keymap, a.character)
+	a.statScreen = screen.NewStatScreen(a.keymap, a.character)
 	cmds = append(cmds, a.statScreen.Init())
-	a.spellScreen = ui.NewSpellScreen(a.keymap, a.character)
+	a.spellScreen = screen.NewSpellScreen(a.keymap, a.character)
 	cmds = append(cmds, a.spellScreen.Init())
 
-	cmds = ui.DropNil(cmds)
+	cmds = util.DropNil(cmds)
 	if len(cmds) > 0 {
 		return tea.Batch(cmds...)
 	}
 	return nil
 }
 
-func (a *DnCApp) switchScreen(idx ui.ScreenIndex) {
+func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 	a.isScreenFocused = true
 	a.selectedTab.Blur()
 	switch idx {
-	case ui.StatScreenIndex:
+	case command.StatScreenIndex:
 		a.screenInView = a.statScreen
-	case ui.EditScreenIndex:
+	case command.EditScreenIndex:
 		a.screenInView = a.editorScreen
-	case ui.TitleScreenIndex:
+	case command.TitleScreenIndex:
 		a.screenInView = a.titleScreen
-	case ui.SpellScreenIndex:
+	case command.SpellScreenIndex:
 		a.screenInView = a.spellScreen
 	}
 	a.screenInView.Focus()
@@ -186,15 +189,15 @@ func (a *DnCApp) displayTabs() bool {
 	return a.screenInView != a.editorScreen && a.screenInView != a.titleScreen
 }
 
-func (a *DnCApp) moveTab(d ui.Direction) {
+func (a *DnCApp) moveTab(d command.Direction) {
 	a.selectedTab.Blur()
 	switch a.selectedTab {
 	case a.statTab:
-		if d == ui.DownDirection {
+		if d == command.DownDirection {
 			a.selectedTab = a.spellTab
 		}
 	case a.spellTab:
-		if d == ui.UpDirection {
+		if d == command.UpDirection {
 			a.selectedTab = a.statTab
 		}
 	}
@@ -203,9 +206,10 @@ func (a *DnCApp) moveTab(d ui.Direction) {
 
 func (a *DnCApp) Blur() {
 	a.statTab.Blur()
+	a.spellTab.Blur()
 }
 
-func NewScreenTab(keymap ui.KeyMap, name string, idx ui.ScreenIndex, focus bool) *ScreenTab {
+func NewScreenTab(keymap util.KeyMap, name string, idx command.ScreenIndex, focus bool) *ScreenTab {
 	return &ScreenTab{keymap, name, idx, focus}
 }
 
@@ -218,7 +222,7 @@ func (s *ScreenTab) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if key.Matches(msg, s.keymap.Enter) {
-			cmd = ui.SwitchScreenCmd(s.screenIndex)
+			cmd = command.SwitchScreenCmd(s.screenIndex)
 		}
 	}
 	return s, cmd
@@ -227,11 +231,11 @@ func (s *ScreenTab) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *ScreenTab) View() string {
 	name := s.name
 	if s.focus {
-		name = ui.ItemStyleSelected.Render(name)
+		name = util.ItemStyleSelected.Render(name)
 	} else {
-		name = ui.ItemStyleDefault.Render(name)
+		name = util.ItemStyleDefault.Render(name)
 	}
-	return ui.DefaultBorderStyle.UnsetPadding().
+	return util.DefaultBorderStyle.UnsetPadding().
 		AlignVertical(lipgloss.Center).
 		Width(tabWidth).
 		Height(tabHeight).

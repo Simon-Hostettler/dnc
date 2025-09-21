@@ -1,16 +1,21 @@
-package ui
+package list
 
 import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"hostettler.dev/dnc/ui/command"
+	"hostettler.dev/dnc/ui/editor"
+	"hostettler.dev/dnc/ui/util"
 )
+
+var DefaultColWidth = 16
 
 type Row interface {
 	Init() tea.Cmd
 	Update(tea.Msg) (tea.Model, tea.Cmd)
 	View() string
-	Editors() []ValueEditor
+	Editors() []editor.ValueEditor
 }
 
 type ListStyles struct {
@@ -20,13 +25,13 @@ type ListStyles struct {
 
 func DefaultListStyles() ListStyles {
 	return ListStyles{
-		Row:      ItemStyleDefault,
-		Selected: ItemStyleSelected,
+		Row:      util.ItemStyleDefault,
+		Selected: util.ItemStyleSelected,
 	}
 }
 
 type List struct {
-	KeyMap KeyMap
+	KeyMap util.KeyMap
 	Styles ListStyles
 
 	focus      bool
@@ -36,7 +41,7 @@ type List struct {
 	appendable bool
 }
 
-func (t *List) WithKeyMap(k KeyMap) *List {
+func (t *List) WithKeyMap(k util.KeyMap) *List {
 	t.KeyMap = k
 	return t
 }
@@ -77,6 +82,14 @@ func (t *List) InFocus() bool {
 	return t.focus
 }
 
+func (t *List) Size() int {
+	return len(t.content)
+}
+
+func (t *List) CursorPos() int {
+	return t.cursor
+}
+
 func (t *List) SetCursor(idx int) {
 	if !(idx < 0 || idx > len(t.content)) {
 		t.cursor = idx
@@ -85,19 +98,19 @@ func (t *List) SetCursor(idx int) {
 
 func (t *List) MoveCursor(offset int) tea.Cmd {
 	newCursor := t.cursor + offset
-	if newCursor >= 0 && newCursor < len(t.content)+B2i(t.appendable) {
+	if newCursor >= 0 && newCursor < len(t.content)+util.B2i(t.appendable) {
 		t.cursor = newCursor
 		return nil
 	} else {
 		if newCursor < 0 {
-			return FocusNextElementCmd(UpDirection)
+			return command.FocusNextElementCmd(command.UpDirection)
 		} else {
-			return FocusNextElementCmd(DownDirection)
+			return command.FocusNextElementCmd(command.DownDirection)
 		}
 	}
 }
 
-func NewList(k KeyMap, s ListStyles) *List {
+func NewList(k util.KeyMap, s ListStyles) *List {
 	return &List{
 		KeyMap: k,
 		Styles: s,
@@ -106,7 +119,7 @@ func NewList(k KeyMap, s ListStyles) *List {
 
 func NewListWithDefaults() *List {
 	return &List{
-		KeyMap: DefaultKeyMap(),
+		KeyMap: util.DefaultKeyMap(),
 		Styles: DefaultListStyles(),
 	}
 }
@@ -131,7 +144,7 @@ func (t *List) Update(m tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, t.KeyMap.Escape):
 			t.focus = false
 		case key.Matches(msg, t.KeyMap.Select) && t.cursor == len(t.content):
-			cmd = AppendElementCmd
+			cmd = command.AppendElementCmd
 		default:
 			_, cmd = t.content[t.cursor].Update(m)
 		}

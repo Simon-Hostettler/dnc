@@ -1,7 +1,10 @@
-package ui
+package screen
 
 import (
 	"hostettler.dev/dnc/models"
+	"hostettler.dev/dnc/ui/command"
+	"hostettler.dev/dnc/ui/list"
+	"hostettler.dev/dnc/ui/util"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -20,13 +23,15 @@ type FocusableModel interface {
 var (
 	screenWidth  = 60
 	screenHeight = 15
+	inputWidth   = 18
+	inputLimit   = 64
 )
 
 type TitleScreen struct {
-	KeyMap KeyMap
+	KeyMap util.KeyMap
 
 	cursor       int
-	characters   *List
+	characters   *list.List
 	files        []string
 	characterDir string
 	editMode     bool
@@ -35,24 +40,24 @@ type TitleScreen struct {
 
 func NewTitleScreen(character_dir string) *TitleScreen {
 	ti := textinput.New()
-	ti.Width = 18
-	ti.CharLimit = 64
+	ti.Width = inputWidth
+	ti.CharLimit = inputLimit
 	ti.Placeholder = "Character Name"
 
 	t := TitleScreen{
-		KeyMap:       DefaultKeyMap(),
+		KeyMap:       util.DefaultKeyMap(),
 		cursor:       0,
 		characterDir: character_dir,
 		editMode:     false,
 		nameInput:    ti,
-		characters:   NewListWithDefaults(),
+		characters:   list.NewListWithDefaults(),
 	}
 	return &t
 }
 
 func (t *TitleScreen) UpdateFiles() {
-	t.files = ListCharacterFiles(t.characterDir)
-	charRows := Map(t.files, func(s string) Row { return NewCharacterRow(PrettyFileName(s), t.characterDir, t.KeyMap) })
+	t.files = util.ListCharacterFiles(t.characterDir)
+	charRows := util.Map(t.files, func(s string) list.Row { return list.NewCharacterRow(util.PrettyFileName(s), t.characterDir, t.KeyMap) })
 	t.characters.WithRows(charRows)
 }
 
@@ -64,8 +69,8 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch t := msg.(type) {
-	case FileOpMsg:
-		if t.success && t.op != FileUpdate {
+	case command.FileOpMsg:
+		if t.Success && t.Op != command.FileUpdate {
 			return m, UpdateFilesCmd(m)
 		}
 	}
@@ -83,7 +88,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.nameInput.Reset()
 				m.editMode = false
 				if err == nil {
-					cmd = SaveToFileCmd(&c)
+					cmd = command.SaveToFileCmd(&c)
 				}
 			default:
 				m.nameInput, cmd = m.nameInput.Update(msg)
@@ -97,7 +102,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Character selection
 	if m.characters.InFocus() {
 		switch msg.(type) {
-		case FocusNextElementMsg:
+		case command.FocusNextElementMsg:
 			m.characters.Blur()
 			m.cursor = 0
 			return m, nil
@@ -124,7 +129,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case key.Matches(msg, m.KeyMap.Delete):
 			if m.cursor != 0 {
-				cmd = DeleteCharacterFileCmd(m.characterDir, m.files[m.cursor-1])
+				cmd = command.DeleteCharacterFileCmd(m.characterDir, m.files[m.cursor-1])
 			}
 		}
 	}
@@ -132,9 +137,9 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *TitleScreen) View() string {
-	createField := RenderItem(m.cursor == 0, "Create new Character")
+	createField := util.RenderItem(m.cursor == 0, "Create new Character")
 
-	separator := MakeHorizontalSeparator(screenWidth - 8)
+	separator := util.MakeHorizontalSeparator(screenWidth - 8)
 
 	chars := "\n" + m.characters.View()
 
@@ -143,7 +148,7 @@ func (m *TitleScreen) View() string {
 		inputField = "\n" + m.nameInput.View()
 	}
 
-	return DefaultBorderStyle.
+	return util.DefaultBorderStyle.
 		Width(screenWidth).
 		Height(screenHeight).
 		Render(lipgloss.PlaceVertical(screenHeight, lipgloss.Center,

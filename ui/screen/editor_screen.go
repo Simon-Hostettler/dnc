@@ -1,29 +1,32 @@
-package ui
+package screen
 
 import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"hostettler.dev/dnc/models"
+	"hostettler.dev/dnc/ui/command"
+	"hostettler.dev/dnc/ui/editor"
+	"hostettler.dev/dnc/ui/util"
 )
 
 type EditorScreen struct {
-	keymap     KeyMap
-	prevScreen ScreenIndex
+	keymap     util.KeyMap
+	prevScreen command.ScreenIndex
 	character  *models.Character
 	cursor     int
-	editors    []ValueEditor
+	editors    []editor.ValueEditor
 }
 
-func NewEditorScreen(keymap KeyMap, editors []ValueEditor) *EditorScreen {
-	return &EditorScreen{keymap, EditScreenIndex, nil, 0, editors}
+func NewEditorScreen(keymap util.KeyMap, editors []editor.ValueEditor) *EditorScreen {
+	return &EditorScreen{keymap, command.EditScreenIndex, nil, 0, editors}
 }
 
 func (s *EditorScreen) Init() tea.Cmd {
 	return nil
 }
 
-func (s *EditorScreen) StartEdit(prevScreen ScreenIndex, c *models.Character, editors []ValueEditor) {
+func (s *EditorScreen) StartEdit(prevScreen command.ScreenIndex, c *models.Character, editors []editor.ValueEditor) {
 	s.prevScreen = prevScreen
 	s.character = c
 	s.editors = editors
@@ -67,7 +70,7 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				for _, e := range s.editors {
 					e.Save()
 				}
-				cmd = tea.Batch(SaveToFileCmd(s.character), SwitchScreenCmd(s.prevScreen))
+				cmd = tea.Batch(command.SaveToFileCmd(s.character), command.SwitchScreenCmd(s.prevScreen))
 			}
 		}
 	}
@@ -77,12 +80,12 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *EditorScreen) View() string {
 	rows := []string{}
 	for _, e := range s.editors {
-		rows = append(rows, ForceWidth(e.View(), SmallScreenWidth-8))
+		rows = append(rows, util.ForceWidth(e.View(), util.SmallScreenWidth-8))
 	}
-	saveButton := RenderItem(s.cursor == len(s.editors), "[ Save ]")
+	saveButton := util.RenderItem(s.cursor == len(s.editors), "[ Save ]")
 	rows = append(rows, saveButton)
 
-	horizontalSeparator := MakeHorizontalSeparator(SmallScreenWidth - 8)
+	horizontalSeparator := util.MakeHorizontalSeparator(util.SmallScreenWidth - 8)
 
 	separated := []string{rows[0]}
 
@@ -90,8 +93,8 @@ func (s *EditorScreen) View() string {
 		separated = append(separated, horizontalSeparator, row)
 	}
 
-	return DefaultBorderStyle.
-		Width(SmallScreenWidth).
+	return util.DefaultBorderStyle.
+		Width(util.SmallScreenWidth).
 		Render(lipgloss.JoinVertical(lipgloss.Center, separated...))
 }
 

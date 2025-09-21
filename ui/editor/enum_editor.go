@@ -1,4 +1,4 @@
-package ui
+package editor
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"hostettler.dev/dnc/ui/util"
 )
 
 type EnumMapping struct {
@@ -14,7 +15,7 @@ type EnumMapping struct {
 }
 
 type EnumEditor struct {
-	keymap      KeyMap
+	keymap      util.KeyMap
 	options     []EnumMapping
 	label       string
 	value       reflect.Value
@@ -23,7 +24,7 @@ type EnumEditor struct {
 	focus       bool
 }
 
-func NewEnumEditor(keymap KeyMap, options []EnumMapping, label string, delegatorPointer interface{}) *EnumEditor {
+func NewEnumEditor(keymap util.KeyMap, options []EnumMapping, label string, delegatorPointer interface{}) *EnumEditor {
 	e := EnumEditor{
 		options: options,
 	}
@@ -31,7 +32,7 @@ func NewEnumEditor(keymap KeyMap, options []EnumMapping, label string, delegator
 	return &e
 }
 
-func (e *EnumEditor) Init(keymap KeyMap, label string, delegatorPointer interface{}) {
+func (e *EnumEditor) Init(keymap util.KeyMap, label string, delegatorPointer interface{}) {
 	e.keymap = keymap
 
 	ptrValue := reflect.ValueOf(delegatorPointer)
@@ -83,7 +84,7 @@ func (e *EnumEditor) View() string {
 	}
 	current := e.options[e.cursor]
 	box := fmt.Sprintf("[ %s ]", current.Label)
-	return RenderItem(e.focus, e.label+":") + " " + ItemStyleDefault.Render(box)
+	return util.RenderItem(e.focus, e.label+":") + " " + util.ItemStyleDefault.Render(box)
 }
 
 func (e *EnumEditor) Save() tea.Cmd {

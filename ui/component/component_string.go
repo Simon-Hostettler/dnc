@@ -1,20 +1,23 @@
-package ui
+package component
 
 import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"hostettler.dev/dnc/ui/editor"
+	"hostettler.dev/dnc/ui/util"
 )
 
 type SimpleStringComponent struct {
-	keymap  KeyMap
-	name    string
-	content *string
-	editor  ValueEditor
-	focus   bool
+	keymap     util.KeyMap
+	name       string
+	content    *string
+	editor     editor.ValueEditor
+	focus      bool
+	renderName bool
 }
 
-func NewSimpleStringComponent(k KeyMap, name string, content *string) *SimpleStringComponent {
-	return &SimpleStringComponent{k, name, content, NewStringEditor(k, name, content), false}
+func NewSimpleStringComponent(k util.KeyMap, name string, content *string, renderName bool) *SimpleStringComponent {
+	return &SimpleStringComponent{k, name, content, editor.NewStringEditor(k, name, content), false, renderName}
 }
 
 func (s *SimpleStringComponent) Init() tea.Cmd {
@@ -26,14 +29,18 @@ func (s *SimpleStringComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, s.keymap.Edit):
-			return s, EditValueCmd([]ValueEditor{s.editor})
+			return s, editor.EditValueCmd([]editor.ValueEditor{s.editor})
 		}
 	}
 	return s, nil
 }
 
 func (s *SimpleStringComponent) View() string {
-	return *s.content
+	prefix := ""
+	if s.renderName {
+		prefix = s.name + ": "
+	}
+	return prefix + *s.content
 }
 
 func (s *SimpleStringComponent) Focus() {

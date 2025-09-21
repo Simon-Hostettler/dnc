@@ -1,16 +1,18 @@
-package ui
+package list
 
 import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"hostettler.dev/dnc/ui/editor"
+	"hostettler.dev/dnc/ui/util"
 )
 
 type LabeledStringRow struct {
-	keymap KeyMap
+	keymap util.KeyMap
 	config LabeledStringRowConfig
 	label  string
 	value  *string
-	editor *StringEditor
+	editor *editor.StringEditor
 }
 
 type LabeledStringRowConfig struct {
@@ -20,10 +22,10 @@ type LabeledStringRowConfig struct {
 }
 
 func DefaultLabeledStringRowConfig() LabeledStringRowConfig {
-	return LabeledStringRowConfig{true, ColWidth, ColWidth}
+	return LabeledStringRowConfig{true, DefaultColWidth, DefaultColWidth}
 }
 
-func NewLabeledStringRow(keymap KeyMap, label string, value *string, editor *StringEditor) *LabeledStringRow {
+func NewLabeledStringRow(keymap util.KeyMap, label string, value *string, editor *editor.StringEditor) *LabeledStringRow {
 	return &LabeledStringRow{keymap, DefaultLabeledStringRowConfig(), label, value, editor}
 }
 
@@ -41,7 +43,7 @@ func (r *LabeledStringRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, r.keymap.Edit):
-			return r, EditValueCmd(r.Editors())
+			return r, editor.EditValueCmd(r.Editors())
 		}
 	}
 	return r, nil
@@ -49,12 +51,12 @@ func (r *LabeledStringRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (r *LabeledStringRow) View() string {
 	if r.config.JustifyValue {
-		return RenderEdgeBound(r.config.LabelWidth, r.config.ValueWidth, r.label, *r.value)
+		return util.RenderEdgeBound(r.config.LabelWidth, r.config.ValueWidth, r.label, *r.value)
 	} else {
-		return RenderLeftBound(r.config.LabelWidth, r.label, *r.value)
+		return util.RenderLeftBound(r.config.LabelWidth, r.label, *r.value)
 	}
 }
 
-func (r *LabeledStringRow) Editors() []ValueEditor {
-	return []ValueEditor{r.editor}
+func (r *LabeledStringRow) Editors() []editor.ValueEditor {
+	return []editor.ValueEditor{r.editor}
 }

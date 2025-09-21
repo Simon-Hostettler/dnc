@@ -1,18 +1,20 @@
-package ui
+package list
 
 import (
 	"strconv"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"hostettler.dev/dnc/ui/editor"
+	"hostettler.dev/dnc/ui/util"
 )
 
 type LabeledIntRow struct {
-	keymap KeyMap
+	keymap util.KeyMap
 	config LabeledIntRowConfig
 	label  string
 	value  *int
-	editor ValueEditor
+	editor editor.ValueEditor
 }
 
 type LabeledIntRowConfig struct {
@@ -23,10 +25,10 @@ type LabeledIntRowConfig struct {
 }
 
 func DefaultLabeledIntRowConfig() LabeledIntRowConfig {
-	return LabeledIntRowConfig{strconv.Itoa, true, ColWidth, ColWidth}
+	return LabeledIntRowConfig{strconv.Itoa, true, DefaultColWidth, DefaultColWidth}
 }
 
-func NewLabeledIntRow(keymap KeyMap, label string, value *int, editor ValueEditor) *LabeledIntRow {
+func NewLabeledIntRow(keymap util.KeyMap, label string, value *int, editor editor.ValueEditor) *LabeledIntRow {
 	return &LabeledIntRow{keymap, DefaultLabeledIntRowConfig(), label, value, editor}
 }
 
@@ -44,7 +46,7 @@ func (r *LabeledIntRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, r.keymap.Edit):
-			return r, EditValueCmd(r.Editors())
+			return r, editor.EditValueCmd(r.Editors())
 		}
 	}
 	return r, nil
@@ -52,12 +54,12 @@ func (r *LabeledIntRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (r *LabeledIntRow) View() string {
 	if r.config.JustifyValue {
-		return RenderEdgeBound(r.config.LabelWidth, r.config.ValueWidth, r.label, r.config.ValuePrinter(*r.value))
+		return util.RenderEdgeBound(r.config.LabelWidth, r.config.ValueWidth, r.label, r.config.ValuePrinter(*r.value))
 	} else {
-		return RenderLeftBound(r.config.LabelWidth, r.label, r.config.ValuePrinter(*r.value))
+		return util.RenderLeftBound(r.config.LabelWidth, r.label, r.config.ValuePrinter(*r.value))
 	}
 }
 
-func (r *LabeledIntRow) Editors() []ValueEditor {
-	return []ValueEditor{r.editor}
+func (r *LabeledIntRow) Editors() []editor.ValueEditor {
+	return []editor.ValueEditor{r.editor}
 }

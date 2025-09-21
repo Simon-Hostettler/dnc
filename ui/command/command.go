@@ -1,4 +1,4 @@
-package ui
+package command
 
 import (
 	"fmt"
@@ -38,11 +38,11 @@ const (
 )
 
 type FileOpMsg struct {
-	op      FileOperation
-	success bool
+	Op      FileOperation
+	Success bool
 }
 
-type SelectCharacterAndSwitchScreenMsg struct {
+type SelectCharacterMsg struct {
 	Character *models.Character
 	Err       error
 }
@@ -56,16 +56,6 @@ type FocusNextElementMsg struct {
 }
 
 type ReturnFocusToParentMsg struct{}
-
-type EditValueMsg struct {
-	Editors []ValueEditor
-}
-
-type SwitchToEditorMsg struct {
-	Originator ScreenIndex
-	Character  *models.Character
-	Editors    []ValueEditor
-}
 
 type AppendElementMsg struct{}
 
@@ -92,32 +82,13 @@ func SaveToFileCmd(c *models.Character) func() tea.Msg {
 	}
 }
 
-func UpdateFilesCmd(t *TitleScreen) func() tea.Msg {
-	return func() tea.Msg {
-		t.UpdateFiles()
-		return FileOpMsg{FileUpdate, true}
-	}
-}
-
-func SelectCharacterAndSwitchScreenCommand(name string) func() tea.Msg {
+func SelectCharacterCmd(name string) func() tea.Msg {
 	return func() tea.Msg {
 		c, err := models.LoadCharacterByName(name)
 		if err != nil {
-			return SelectCharacterAndSwitchScreenMsg{nil, err}
+			return SelectCharacterMsg{nil, err}
 		}
-		return SelectCharacterAndSwitchScreenMsg{c, nil}
-	}
-}
-
-func EditValueCmd(editors []ValueEditor) func() tea.Msg {
-	return func() tea.Msg {
-		return EditValueMsg{editors}
-	}
-}
-
-func SwitchToEditorCmd(caller ScreenIndex, character *models.Character, editors []ValueEditor) func() tea.Msg {
-	return func() tea.Msg {
-		return SwitchToEditorMsg{caller, character, editors}
+		return SelectCharacterMsg{c, nil}
 	}
 }
 

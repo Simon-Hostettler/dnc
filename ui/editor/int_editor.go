@@ -1,14 +1,15 @@
-package ui
+package editor
 
 import (
 	"strconv"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"hostettler.dev/dnc/ui/util"
 )
 
 type IntEditor struct {
-	keymap      KeyMap
+	keymap      util.KeyMap
 	label       string
 	value       *int
 	textInput   textinput.Model
@@ -16,13 +17,13 @@ type IntEditor struct {
 	focus       bool
 }
 
-func NewIntEditor(keymap KeyMap, label string, delegatorPointer interface{}) *IntEditor {
+func NewIntEditor(keymap util.KeyMap, label string, delegatorPointer interface{}) *IntEditor {
 	s := IntEditor{}
 	s.Init(keymap, label, delegatorPointer)
 	return &s
 }
 
-func (s *IntEditor) Init(keymap KeyMap, label string, delegatorPointer interface{}) {
+func (s *IntEditor) Init(keymap util.KeyMap, label string, delegatorPointer interface{}) {
 	ptr, ok := delegatorPointer.(*int)
 	if !ok {
 		panic("Value passed is not a pointer to int")
@@ -55,7 +56,7 @@ func (s *IntEditor) View() string {
 	if !s.initialized {
 		return ""
 	}
-	return RenderItem(s.focus, s.label+":") + " " + ItemStyleDefault.Render(s.textInput.View())
+	return util.RenderItem(s.focus, s.label+":") + " " + util.ItemStyleDefault.Render(s.textInput.View())
 }
 
 func (s *IntEditor) Save() tea.Cmd {
