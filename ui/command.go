@@ -14,7 +14,7 @@ type ScreenIndex int
 
 const (
 	EditScreenIndex ScreenIndex = iota
-	ScoreScreenIndex
+	StatScreenIndex
 	TitleScreenIndex
 )
 

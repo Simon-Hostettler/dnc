@@ -31,7 +31,7 @@ var (
 	TinyColWidth   = 3
 )
 
-type ScoreScreen struct {
+type StatScreen struct {
 	keymap             KeyMap
 	character          *models.Character
 	lastFocusedElement FocusableModel
@@ -47,8 +47,8 @@ type ScoreScreen struct {
 	bonusActions  *SimpleStringComponent
 }
 
-func NewScoreScreen(keymap KeyMap, c *models.Character) *ScoreScreen {
-	return &ScoreScreen{
+func NewStatScreen(keymap KeyMap, c *models.Character) *StatScreen {
+	return &StatScreen{
 		keymap:    keymap,
 		character: c,
 		characterInfo: NewListWithDefaults().
@@ -73,7 +73,7 @@ func NewScoreScreen(keymap KeyMap, c *models.Character) *ScoreScreen {
 	}
 }
 
-func (s *ScoreScreen) Init() tea.Cmd {
+func (s *StatScreen) Init() tea.Cmd {
 	cmds := []tea.Cmd{}
 	cmds = append(cmds, s.characterInfo.Init())
 	cmds = append(cmds, s.abilities.Init())
@@ -95,7 +95,7 @@ func (s *ScoreScreen) Init() tea.Cmd {
 	return nil
 }
 
-func (s *ScoreScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (s *StatScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -106,12 +106,12 @@ func (s *ScoreScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.character.Attacks = append(s.character.Attacks, attack)
 			newRows := GetAttackRows(s.keymap, s.character)
 			s.attacks.WithRows(newRows)
-			cmd = SwitchToEditorCmd(ScoreScreenIndex, s.character, newRows[len(newRows)-1].Editors())
+			cmd = SwitchToEditorCmd(StatScreenIndex, s.character, newRows[len(newRows)-1].Editors())
 		}
 	case FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
 	case EditValueMsg:
-		cmd = SwitchToEditorCmd(ScoreScreenIndex, s.character, msg.Editors)
+		cmd = SwitchToEditorCmd(StatScreenIndex, s.character, msg.Editors)
 	case tea.KeyMsg:
 		switch s.focusedElement.(type) {
 		case *List:
@@ -141,11 +141,11 @@ func (s *ScoreScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, cmd
 }
 
-func (s *ScoreScreen) Focus() {
+func (s *StatScreen) Focus() {
 	s.focusOn(s.lastFocusedElement)
 }
 
-func (s *ScoreScreen) Blur() {
+func (s *StatScreen) Blur() {
 	// blur should be idempotent
 	if s.focusedElement != nil {
 		s.lastFocusedElement = s.focusedElement
@@ -161,12 +161,12 @@ func (s *ScoreScreen) Blur() {
 	s.bonusActions.Blur()
 }
 
-func (s *ScoreScreen) focusOn(m FocusableModel) {
+func (s *StatScreen) focusOn(m FocusableModel) {
 	s.focusedElement = m
 	m.Focus()
 }
 
-func (s *ScoreScreen) moveFocus(d Direction) tea.Cmd {
+func (s *StatScreen) moveFocus(d Direction) tea.Cmd {
 	var cmd tea.Cmd
 	s.Blur()
 
@@ -265,7 +265,7 @@ func (s *ScoreScreen) moveFocus(d Direction) tea.Cmd {
 	return cmd
 }
 
-func (s *ScoreScreen) View() string {
+func (s *StatScreen) View() string {
 	characterInfo := s.characterInfo.View()
 
 	abilities := s.abilities.View()
@@ -381,7 +381,7 @@ func GetCombatInfoRows(k KeyMap, c *models.Character) []Row {
 	return rows
 }
 
-func (s *ScoreScreen) RenderActions() string {
+func (s *StatScreen) RenderActions() string {
 	actionTitle := RenderItem(s.actions.InFocus(), "Actions")
 
 	actionBody := DefaultTextStyle.Width(RightContentWidth).Render(s.actions.View())

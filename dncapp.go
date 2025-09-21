@@ -23,11 +23,11 @@ type DnCApp struct {
 
 	selectedTab     *ScreenTab
 	isScreenFocused bool
-	scoreTab        *ScreenTab
+	statTab         *ScreenTab
 
 	screenInView ui.FocusableModel
 	titleScreen  *ui.TitleScreen
-	scoreScreen  *ui.ScoreScreen
+	statScreen   *ui.StatScreen
 	editorScreen *ui.EditorScreen
 }
 
@@ -47,7 +47,7 @@ func NewApp() (*DnCApp, error) {
 	return &DnCApp{
 		config:       config,
 		keymap:       km,
-		scoreTab:     NewScreenTab(km, "Stats", ui.ScoreScreenIndex, false),
+		statTab:      NewScreenTab(km, "Stats", ui.StatScreenIndex, false),
 		titleScreen:  ui.NewTitleScreen(config.CharacterDir),
 		editorScreen: ui.NewEditorScreen(km, []ui.ValueEditor{}),
 	}, nil
@@ -56,14 +56,14 @@ func NewApp() (*DnCApp, error) {
 func (a *DnCApp) Init() tea.Cmd {
 	cmds := []tea.Cmd{}
 
-	a.selectedTab = a.scoreTab
+	a.selectedTab = a.statTab
 
 	if a.titleScreen != nil {
 		cmds = append(cmds, a.titleScreen.Init())
 		a.switchScreen(ui.TitleScreenIndex)
 	}
-	if a.scoreScreen != nil {
-		cmds = append(cmds, a.scoreScreen.Init())
+	if a.statScreen != nil {
+		cmds = append(cmds, a.statScreen.Init())
 	}
 	if a.editorScreen != nil {
 		cmds = append(cmds, a.editorScreen.Init())
@@ -108,8 +108,8 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ui.SelectCharacterAndSwitchScreenMsg:
 		if msg.Err == nil {
 			a.character = msg.Character
-			a.scoreScreen = ui.NewScoreScreen(a.keymap, a.character)
-			cmd = tea.Batch(a.scoreScreen.Init(), ui.SwitchScreenCmd(ui.ScoreScreenIndex))
+			a.statScreen = ui.NewStatScreen(a.keymap, a.character)
+			cmd = tea.Batch(a.statScreen.Init(), ui.SwitchScreenCmd(ui.StatScreenIndex))
 		}
 	case ui.SwitchToEditorMsg:
 		a.editorScreen.StartEdit(msg.Originator, msg.Character, msg.Editors)
@@ -126,7 +126,7 @@ func (a *DnCApp) View() string {
 
 	pageContent := screenContent
 	if a.displayTabs() {
-		tabs := a.scoreTab.View()
+		tabs := a.statTab.View()
 		pageContent = lipgloss.JoinHorizontal(lipgloss.Left, tabs, pageContent)
 	}
 
@@ -151,8 +151,8 @@ func (a *DnCApp) switchScreen(idx ui.ScreenIndex) {
 	a.isScreenFocused = true
 	a.selectedTab.Blur()
 	switch idx {
-	case ui.ScoreScreenIndex:
-		a.screenInView = a.scoreScreen
+	case ui.StatScreenIndex:
+		a.screenInView = a.statScreen
 	case ui.EditScreenIndex:
 		a.screenInView = a.editorScreen
 	case ui.TitleScreenIndex:
@@ -167,13 +167,13 @@ func (a *DnCApp) displayTabs() bool {
 
 func (a *DnCApp) moveTab(ui.Direction) {
 	switch a.selectedTab {
-	case a.scoreTab:
+	case a.statTab:
 		return
 	}
 }
 
 func (a *DnCApp) Blur() {
-	a.scoreTab.Blur()
+	a.statTab.Blur()
 }
 
 func NewScreenTab(keymap ui.KeyMap, name string, idx ui.ScreenIndex, focus bool) *ScreenTab {
