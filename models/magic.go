@@ -5,7 +5,8 @@ type Spellcasting struct {
 	SpellSaveDC         int         `json:"spell_save_dc"`
 	SpellAttackBonus    int         `json:"spell_attack_bonus"`
 	SpellsKnown         []Spell     `json:"spells_known"`
-	SpellSlots          map[int]int `json:"spell_slots"` // key = level, value = slots
+	SpellSlots          map[int]int `json:"spell_slots"`
+	SpellSlotsUsed      map[int]int `json:"spell_slots_used"`
 }
 
 type Spell struct {

@@ -65,7 +65,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch t := msg.(type) {
 	case FileOpMsg:
-		if t.success && t.op != "update" {
+		if t.success && t.op != FileUpdate {
 			return m, UpdateFilesCmd(m)
 		}
 	}

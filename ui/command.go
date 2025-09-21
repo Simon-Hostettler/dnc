@@ -16,6 +16,7 @@ const (
 	EditScreenIndex ScreenIndex = iota
 	StatScreenIndex
 	TitleScreenIndex
+	SpellScreenIndex
 )
 
 type Direction int
@@ -27,8 +28,17 @@ const (
 	RightDirection
 )
 
+type FileOperation int
+
+const (
+	FileDelete = iota
+	FileUpdate
+	FileCreate
+	FileSave
+)
+
 type FileOpMsg struct {
-	op      string
+	op      FileOperation
 	success bool
 }
 
@@ -64,9 +74,9 @@ func DeleteCharacterFileCmd(characterDir string, name string) tea.Cmd {
 		filename := fmt.Sprintf("%s.json", strings.ToLower(name))
 		err := os.Remove(filepath.Join(characterDir, filename))
 		if err == nil {
-			return FileOpMsg{"delete", true}
+			return FileOpMsg{FileDelete, true}
 		} else {
-			return FileOpMsg{"delete", false}
+			return FileOpMsg{FileDelete, false}
 		}
 	}
 }
@@ -75,9 +85,9 @@ func SaveToFileCmd(c *models.Character) func() tea.Msg {
 	return func() tea.Msg {
 		err := c.SaveToFile()
 		if err == nil {
-			return FileOpMsg{"save", true}
+			return FileOpMsg{FileSave, true}
 		} else {
-			return FileOpMsg{"save", false}
+			return FileOpMsg{FileSave, false}
 		}
 	}
 }
@@ -85,7 +95,7 @@ func SaveToFileCmd(c *models.Character) func() tea.Msg {
 func UpdateFilesCmd(t *TitleScreen) func() tea.Msg {
 	return func() tea.Msg {
 		t.UpdateFiles()
-		return FileOpMsg{"update", true}
+		return FileOpMsg{FileUpdate, true}
 	}
 }
 
@@ -117,6 +127,10 @@ func SwitchScreenCmd(s ScreenIndex) func() tea.Msg {
 	}
 }
 
+/*
+Use to switch focus to other element on same screen.
+For switching to element in parent, use ReturnFocusToParentCmd
+*/
 func FocusNextElementCmd(d Direction) func() tea.Msg {
 	return func() tea.Msg {
 		return FocusNextElementMsg{d}

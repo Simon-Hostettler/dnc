@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 type KeyMap struct {
@@ -52,6 +53,14 @@ func Filter[T any](ts []T, fn func(T) bool) []T {
 		}
 	}
 	return result
+}
+
+type Nilable interface {
+	~*int | ~*string | ~[]int | ~map[string]int | ~func() | tea.Cmd
+}
+
+func DropNil[T Nilable](ts []T) []T {
+	return Filter(ts, func(t T) bool { return t != nil })
 }
 
 func PrettyFileName(file string) string {

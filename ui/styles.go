@@ -7,6 +7,9 @@ import (
 )
 
 var (
+	SmallScreenWidth = 60
+	ScreenWidth      = 100
+
 	HighlightColor  = lipgloss.Color("#7D56F4")
 	TextColor       = lipgloss.Color("#FAFAFA")
 	SecondaryColor  = lipgloss.Color("8")

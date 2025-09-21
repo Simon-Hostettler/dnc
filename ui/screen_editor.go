@@ -7,8 +7,6 @@ import (
 	"hostettler.dev/dnc/models"
 )
 
-var editorWidth = 60
-
 type EditorScreen struct {
 	keymap     KeyMap
 	prevScreen ScreenIndex
@@ -79,12 +77,12 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *EditorScreen) View() string {
 	rows := []string{}
 	for _, e := range s.editors {
-		rows = append(rows, ForceWidth(e.View(), editorWidth-8))
+		rows = append(rows, ForceWidth(e.View(), SmallScreenWidth-8))
 	}
 	saveButton := RenderItem(s.cursor == len(s.editors), "[ Save ]")
 	rows = append(rows, saveButton)
 
-	horizontalSeparator := MakeHorizontalSeparator(editorWidth - 8)
+	horizontalSeparator := MakeHorizontalSeparator(SmallScreenWidth - 8)
 
 	separated := []string{rows[0]}
 
@@ -93,7 +91,7 @@ func (s *EditorScreen) View() string {
 	}
 
 	return DefaultBorderStyle.
-		Width(editorWidth).
+		Width(SmallScreenWidth).
 		Render(lipgloss.JoinVertical(lipgloss.Center, separated...))
 }
 

@@ -13,7 +13,6 @@ import (
 
 var (
 	TopBarHeight = 6
-	TopBarWidth  = LeftColWidth + MidColWidth + RightColWidth + 4
 
 	TopSeparatorWidth = 20
 
@@ -274,7 +273,7 @@ func (s *StatScreen) View() string {
 
 	topBar := DefaultBorderStyle.
 		Height(TopBarHeight).
-		Width(TopBarWidth).
+		Width(ScreenWidth).
 		Render(lipgloss.JoinHorizontal(lipgloss.Center,
 			characterInfo,
 			lipgloss.PlaceHorizontal(20, lipgloss.Center, topBarSeparator),

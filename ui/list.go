@@ -56,6 +56,10 @@ func (t *List) WithTitle(title string) *List {
 	return t
 }
 
+/*
+The appender will simply send out an AppendElementCmd,
+the implementation is the client's responsibility.
+*/
 func (t *List) WithAppender() *List {
 	t.appendable = true
 	return t
