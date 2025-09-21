@@ -6,20 +6,22 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"hostettler.dev/dnc/ui/editor"
+	"hostettler.dev/dnc/ui/util"
 	ui_util "hostettler.dev/dnc/ui/util"
 )
 
 type SimpleIntComponent struct {
-	keymap     ui_util.KeyMap
-	name       string
-	content    *int
-	editor     editor.ValueEditor
-	focus      bool
-	renderName bool
+	keymap           ui_util.KeyMap
+	name             string
+	content          *int
+	editor           editor.ValueEditor
+	focus            bool
+	renderName       bool
+	highlightOnFocus bool
 }
 
-func NewSimpleIntComponent(k ui_util.KeyMap, name string, content *int, renderName bool) *SimpleIntComponent {
-	return &SimpleIntComponent{k, name, content, editor.NewIntEditor(k, name, content), false, renderName}
+func NewSimpleIntComponent(k ui_util.KeyMap, name string, content *int, renderName bool, highlightOnFocus bool) *SimpleIntComponent {
+	return &SimpleIntComponent{k, name, content, editor.NewIntEditor(k, name, content), false, renderName, highlightOnFocus}
 }
 
 func (s *SimpleIntComponent) Init() tea.Cmd {
@@ -42,7 +44,7 @@ func (s *SimpleIntComponent) View() string {
 	if s.renderName {
 		prefix = s.name + ": "
 	}
-	return prefix + strconv.Itoa(*s.content)
+	return util.RenderItem(s.focus && s.highlightOnFocus, prefix+strconv.Itoa(*s.content))
 }
 
 func (s *SimpleIntComponent) Focus() {

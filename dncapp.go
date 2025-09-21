@@ -172,6 +172,9 @@ func (a *DnCApp) populateCharacterScreens() tea.Cmd {
 func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 	a.isScreenFocused = true
 	a.selectedTab.Blur()
+	if a.screenInView != nil {
+		a.screenInView.Blur()
+	}
 	switch idx {
 	case command.StatScreenIndex:
 		a.screenInView = a.statScreen

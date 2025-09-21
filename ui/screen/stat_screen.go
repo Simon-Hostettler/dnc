@@ -72,8 +72,8 @@ func NewStatScreen(keymap util.KeyMap, c *models.Character) *StatScreen {
 			WithTitle("Attacks").
 			WithRows(GetAttackRows(keymap, c)).
 			WithAppender(),
-		actions:      component.NewSimpleStringComponent(keymap, "Actions", &c.Actions, false),
-		bonusActions: component.NewSimpleStringComponent(keymap, "Bonus Actions", &c.BonusActions, false),
+		actions:      component.NewSimpleStringComponent(keymap, "Actions", &c.Actions, false, false),
+		bonusActions: component.NewSimpleStringComponent(keymap, "Bonus Actions", &c.BonusActions, false, false),
 	}
 }
 

@@ -8,16 +8,17 @@ import (
 )
 
 type SimpleStringComponent struct {
-	keymap     util.KeyMap
-	name       string
-	content    *string
-	editor     editor.ValueEditor
-	focus      bool
-	renderName bool
+	keymap           util.KeyMap
+	name             string
+	content          *string
+	editor           editor.ValueEditor
+	focus            bool
+	renderName       bool
+	highlightOnFocus bool
 }
 
-func NewSimpleStringComponent(k util.KeyMap, name string, content *string, renderName bool) *SimpleStringComponent {
-	return &SimpleStringComponent{k, name, content, editor.NewStringEditor(k, name, content), false, renderName}
+func NewSimpleStringComponent(k util.KeyMap, name string, content *string, renderName bool, highlightOnFocus bool) *SimpleStringComponent {
+	return &SimpleStringComponent{k, name, content, editor.NewStringEditor(k, name, content), false, renderName, highlightOnFocus}
 }
 
 func (s *SimpleStringComponent) Init() tea.Cmd {
@@ -40,7 +41,7 @@ func (s *SimpleStringComponent) View() string {
 	if s.renderName {
 		prefix = s.name + ": "
 	}
-	return prefix + *s.content
+	return util.RenderItem(s.focus && s.highlightOnFocus, prefix+*s.content)
 }
 
 func (s *SimpleStringComponent) Focus() {
