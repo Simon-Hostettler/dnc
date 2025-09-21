@@ -7,7 +7,7 @@ import (
 	"hostettler.dev/dnc/models"
 )
 
-var EditorWidth = 60
+var editorWidth = 60
 
 type EditorScreen struct {
 	keymap     KeyMap
@@ -79,12 +79,12 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *EditorScreen) View() string {
 	rows := []string{}
 	for _, e := range s.editors {
-		rows = append(rows, ForceWidth(e.View(), EditorWidth-8))
+		rows = append(rows, ForceWidth(e.View(), editorWidth-8))
 	}
 	saveButton := RenderItem(s.cursor == len(s.editors), "[ Save ]")
 	rows = append(rows, saveButton)
 
-	horizontalSeparator := MakeHorizontalSeparator(EditorWidth - 8)
+	horizontalSeparator := MakeHorizontalSeparator(editorWidth - 8)
 
 	separated := []string{rows[0]}
 
@@ -93,6 +93,11 @@ func (s *EditorScreen) View() string {
 	}
 
 	return DefaultBorderStyle.
-		Width(EditorWidth).
+		Width(editorWidth).
 		Render(lipgloss.JoinVertical(lipgloss.Center, separated...))
 }
+
+// to fulfill FocusableModel interface
+func (s *EditorScreen) Focus() {}
+
+func (s *EditorScreen) Blur() {}

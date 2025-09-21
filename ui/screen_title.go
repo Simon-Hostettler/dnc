@@ -9,6 +9,19 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+type FocusableModel interface {
+	Init() tea.Cmd
+	Update(tea.Msg) (tea.Model, tea.Cmd)
+	View() string
+	Focus()
+	Blur()
+}
+
+var (
+	screenWidth  = 60
+	screenHeight = 15
+)
+
 type TitleScreen struct {
 	KeyMap KeyMap
 
@@ -84,7 +97,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Character selection
 	if m.characters.InFocus() {
 		switch msg.(type) {
-		case ExitTableMsg:
+		case FocusNextElementMsg:
 			m.characters.Blur()
 			m.cursor = 0
 			return m, nil
@@ -119,19 +132,25 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *TitleScreen) View() string {
-	s := ""
-
 	createField := RenderItem(m.cursor == 0, "Create new Character")
 
-	charTable := DefaultBorderStyle.
-		Render(m.characters.View())
+	separator := MakeHorizontalSeparator(screenWidth - 8)
+
+	chars := "\n" + m.characters.View()
 
 	inputField := ""
 	if m.editMode && m.cursor == 0 {
-		inputField = "\n" + m.nameInput.View() + "\n"
+		inputField = "\n" + m.nameInput.View()
 	}
 
-	s += lipgloss.JoinVertical(lipgloss.Center, createField, inputField, charTable)
-
-	return s
+	return DefaultBorderStyle.
+		Width(screenWidth).
+		Height(screenHeight).
+		Render(lipgloss.PlaceVertical(screenHeight, lipgloss.Center,
+			lipgloss.JoinVertical(lipgloss.Center, createField, inputField, separator, chars)))
 }
+
+// to fulfill FocusableModel interface
+func (s *TitleScreen) Focus() {}
+
+func (s *TitleScreen) Blur() {}

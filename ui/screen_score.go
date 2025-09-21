@@ -32,9 +32,10 @@ var (
 )
 
 type ScoreScreen struct {
-	keymap         KeyMap
-	character      *models.Character
-	focusedElement tea.Model
+	keymap             KeyMap
+	character          *models.Character
+	lastFocusedElement FocusableModel
+	focusedElement     FocusableModel
 
 	characterInfo *List
 	abilities     *List
@@ -82,10 +83,15 @@ func (s *ScoreScreen) Init() tea.Cmd {
 	cmds = append(cmds, s.attacks.Init())
 	cmds = append(cmds, s.actions.Init())
 	cmds = append(cmds, s.bonusActions.Init())
+
+	s.lastFocusedElement = s.characterInfo
 	s.focusOn(s.characterInfo)
+
+	cmds = Filter(cmds, func(c tea.Cmd) bool { return c != nil })
 	if len(cmds) > 0 {
 		return tea.Batch(cmds...)
 	}
+
 	return nil
 }
 
@@ -102,7 +108,7 @@ func (s *ScoreScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.attacks.WithRows(newRows)
 			cmd = SwitchToEditorCmd(ScoreScreenIndex, s.character, newRows[len(newRows)-1].Editors())
 		}
-	case ExitTableMsg:
+	case FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
 	case EditValueMsg:
 		cmd = SwitchToEditorCmd(ScoreScreenIndex, s.character, msg.Editors)
@@ -111,22 +117,22 @@ func (s *ScoreScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case *List:
 			switch {
 			case key.Matches(msg, s.keymap.Right):
-				s.moveFocus(RightDirection)
+				cmd = s.moveFocus(RightDirection)
 			case key.Matches(msg, s.keymap.Left):
-				s.moveFocus(LeftDirection)
+				cmd = s.moveFocus(LeftDirection)
 			default:
 				_, cmd = s.focusedElement.Update(msg)
 			}
 		default:
 			switch {
 			case key.Matches(msg, s.keymap.Right):
-				s.moveFocus(RightDirection)
+				cmd = s.moveFocus(RightDirection)
 			case key.Matches(msg, s.keymap.Left):
-				s.moveFocus(LeftDirection)
+				cmd = s.moveFocus(LeftDirection)
 			case key.Matches(msg, s.keymap.Up):
-				s.moveFocus(UpDirection)
+				cmd = s.moveFocus(UpDirection)
 			case key.Matches(msg, s.keymap.Down):
-				s.moveFocus(DownDirection)
+				cmd = s.moveFocus(DownDirection)
 			default:
 				_, cmd = s.focusedElement.Update(msg)
 			}
@@ -135,18 +141,16 @@ func (s *ScoreScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, cmd
 }
 
-func (s *ScoreScreen) focusOn(m interface {
-	Init() tea.Cmd
-	Update(tea.Msg) (tea.Model, tea.Cmd)
-	View() string
-	Focus()
-},
-) {
-	s.focusedElement = m
-	m.Focus()
+func (s *ScoreScreen) Focus() {
+	s.focusOn(s.lastFocusedElement)
 }
 
-func (s *ScoreScreen) moveFocus(d Direction) {
+func (s *ScoreScreen) Blur() {
+	// blur should be idempotent
+	if s.focusedElement != nil {
+		s.lastFocusedElement = s.focusedElement
+	}
+	s.focusedElement = nil
 	s.characterInfo.Blur()
 	s.abilities.Blur()
 	s.skills.Blur()
@@ -155,14 +159,26 @@ func (s *ScoreScreen) moveFocus(d Direction) {
 	s.attacks.Blur()
 	s.actions.Blur()
 	s.bonusActions.Blur()
+}
 
-	switch s.focusedElement {
+func (s *ScoreScreen) focusOn(m FocusableModel) {
+	s.focusedElement = m
+	m.Focus()
+}
+
+func (s *ScoreScreen) moveFocus(d Direction) tea.Cmd {
+	var cmd tea.Cmd
+	s.Blur()
+
+	switch s.lastFocusedElement {
 	case s.characterInfo:
 		switch d {
 		case DownDirection:
 			s.focusOn(s.skills)
 		case RightDirection:
 			s.focusOn(s.abilities)
+		case LeftDirection:
+			cmd = ReturnFocusToParentCmd
 		default:
 			s.focusOn(s.characterInfo)
 		}
@@ -185,6 +201,8 @@ func (s *ScoreScreen) moveFocus(d Direction) {
 			} else {
 				s.focusOn(s.savingThrows)
 			}
+		case LeftDirection:
+			cmd = ReturnFocusToParentCmd
 		default:
 			s.focusOn(s.skills)
 		}
@@ -244,6 +262,7 @@ func (s *ScoreScreen) moveFocus(d Direction) {
 			s.focusOn(s.attacks)
 		}
 	}
+	return cmd
 }
 
 func (s *ScoreScreen) View() string {

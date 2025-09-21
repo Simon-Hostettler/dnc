@@ -15,6 +15,7 @@ type ScreenIndex int
 const (
 	EditScreenIndex ScreenIndex = iota
 	ScoreScreenIndex
+	TitleScreenIndex
 )
 
 type Direction int
@@ -40,9 +41,11 @@ type SwitchScreenMsg struct {
 	Screen ScreenIndex
 }
 
-type ExitTableMsg struct {
+type FocusNextElementMsg struct {
 	Direction Direction
 }
+
+type ReturnFocusToParentMsg struct{}
 
 type EditValueMsg struct {
 	Editors []ValueEditor
@@ -114,12 +117,16 @@ func SwitchScreenCmd(s ScreenIndex) func() tea.Msg {
 	}
 }
 
-func ExitListCmd(d Direction) func() tea.Msg {
+func FocusNextElementCmd(d Direction) func() tea.Msg {
 	return func() tea.Msg {
-		return ExitTableMsg{d}
+		return FocusNextElementMsg{d}
 	}
 }
 
 func AppendElementCmd() tea.Msg {
 	return AppendElementMsg{}
+}
+
+func ReturnFocusToParentCmd() tea.Msg {
+	return ReturnFocusToParentMsg{}
 }

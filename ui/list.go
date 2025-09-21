@@ -86,9 +86,9 @@ func (t *List) MoveCursor(offset int) tea.Cmd {
 		return nil
 	} else {
 		if newCursor < 0 {
-			return ExitListCmd(UpDirection)
+			return FocusNextElementCmd(UpDirection)
 		} else {
-			return ExitListCmd(DownDirection)
+			return FocusNextElementCmd(DownDirection)
 		}
 	}
 }
