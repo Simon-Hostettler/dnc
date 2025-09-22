@@ -62,6 +62,8 @@ func (s *SpellScreen) Init() tea.Cmd {
 				Selected: util.ItemStyleSelected.Align(lipgloss.Left),
 			}).
 			WithAppender().
+			WithFixedWidth(spellColWidth - 6).
+			WithFirstRowSeparator().
 			WithRows(s.GetSpellListByLevel(i))
 	}
 
@@ -212,6 +214,8 @@ func (s *SpellScreen) moveFocus(d command.Direction) tea.Cmd {
 			if s.spellListIndex >= s.colSplitIndex {
 				s.spellListIndex = max(0, s.spellListIndex-s.colSplitIndex)
 				s.focusOn(s.spellLists[s.spellListIndex])
+			} else {
+				cmd = command.ReturnFocusToParentCmd
 			}
 		}
 	}

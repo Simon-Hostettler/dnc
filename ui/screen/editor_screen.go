@@ -85,7 +85,7 @@ func (s *EditorScreen) View() string {
 	saveButton := util.RenderItem(s.cursor == len(s.editors), "[ Save ]")
 	rows = append(rows, saveButton)
 
-	horizontalSeparator := util.MakeHorizontalSeparator(util.SmallScreenWidth - 8)
+	horizontalSeparator := util.MakeHorizontalSeparator(util.SmallScreenWidth-8, 1)
 
 	separated := []string{rows[0]}
 

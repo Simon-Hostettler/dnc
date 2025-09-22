@@ -101,8 +101,6 @@ func MakeVerticalSeparator(height int) string {
 	return GrayTextStyle.Render(lipgloss.JoinVertical(lipgloss.Center, bars...))
 }
 
-func MakeHorizontalSeparator(width int) string {
-	return "\n" +
-		GrayTextStyle.Render(strings.Repeat("─", width)) +
-		"\n"
+func MakeHorizontalSeparator(width int, padding int) string {
+	return GrayTextStyle.Padding(padding, 0).Render(strings.Repeat("─", width))
 }

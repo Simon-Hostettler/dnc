@@ -34,11 +34,13 @@ type List struct {
 	KeyMap util.KeyMap
 	Styles ListStyles
 
-	focus      bool
-	title      string
-	content    []Row
-	cursor     int
-	appendable bool
+	focus         bool
+	title         string
+	content       []Row
+	cursor        int
+	appendable    bool
+	fixedWidth    int
+	separateFirst bool
 }
 
 func (t *List) WithKeyMap(k util.KeyMap) *List {
@@ -67,6 +69,16 @@ the implementation is the client's responsibility.
 */
 func (t *List) WithAppender() *List {
 	t.appendable = true
+	return t
+}
+
+func (t *List) WithFixedWidth(width int) *List {
+	t.fixedWidth = width
+	return t
+}
+
+func (t *List) WithFirstRowSeparator() *List {
+	t.separateFirst = true
 	return t
 }
 
@@ -112,8 +124,9 @@ func (t *List) MoveCursor(offset int) tea.Cmd {
 
 func NewList(k util.KeyMap, s ListStyles) *List {
 	return &List{
-		KeyMap: k,
-		Styles: s,
+		KeyMap:     k,
+		Styles:     s,
+		fixedWidth: -1,
 	}
 }
 
@@ -173,12 +186,29 @@ func (t *List) RenderBody() string {
 
 	for i, el := range t.content {
 		elStr := el.View()
+		var row string
 		if t.focus && i == t.cursor {
-			rows = append(rows,
-				t.Styles.Selected.Render(elStr))
+			if t.fixedWidth != -1 {
+				row = t.Styles.Selected.Width(t.fixedWidth).Render(elStr)
+			} else {
+				row = t.Styles.Selected.Render(elStr)
+			}
 		} else {
-			rows = append(rows,
-				t.Styles.Row.Render(elStr))
+			if t.fixedWidth != -1 {
+				row = t.Styles.Row.Width(t.fixedWidth).Render(elStr)
+			} else {
+				row = t.Styles.Row.Render(elStr)
+			}
+		}
+		rows = append(rows, row)
+		if t.separateFirst && i == 0 {
+			if t.fixedWidth != -1 {
+				rows = append(rows,
+					util.MakeHorizontalSeparator(t.fixedWidth, 0))
+			} else {
+				rows = append(rows,
+					util.MakeHorizontalSeparator(lipgloss.Width(rows[0]), 0))
+			}
 		}
 	}
 	list := lipgloss.JoinVertical(lipgloss.Left, rows...)

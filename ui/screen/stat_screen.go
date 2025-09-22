@@ -292,7 +292,7 @@ func (s *StatScreen) View() string {
 
 	combatInfo := s.combatInfo.View()
 
-	midBoxInnerSeparator := util.MakeHorizontalSeparator(MidColWidth - 4)
+	midBoxInnerSeparator := util.MakeHorizontalSeparator(MidColWidth-4, 1)
 
 	midColumn := util.DefaultBorderStyle.
 		Width(MidColWidth).
@@ -303,7 +303,7 @@ func (s *StatScreen) View() string {
 
 	attacks := s.attacks.View()
 
-	rightBoxInnerSeparator := util.MakeHorizontalSeparator(RightContentWidth)
+	rightBoxInnerSeparator := util.MakeHorizontalSeparator(RightContentWidth, 1)
 
 	rightColumn := util.DefaultBorderStyle.
 		Width(RightColWidth).
@@ -401,7 +401,7 @@ func (s *StatScreen) RenderActions() string {
 
 	actionBody := util.DefaultTextStyle.Width(RightContentWidth).Render(s.actions.View())
 
-	separator := util.MakeHorizontalSeparator(RightContentWidth)
+	separator := util.MakeHorizontalSeparator(RightContentWidth, 1)
 
 	bonusActionTitle := util.RenderItem(s.bonusActions.InFocus(), "Bonus Actions") + "\n"
 
