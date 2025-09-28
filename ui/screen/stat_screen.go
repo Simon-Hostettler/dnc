@@ -70,8 +70,7 @@ func NewStatScreen(keymap util.KeyMap, c *models.Character) *StatScreen {
 			WithRows(GetCombatInfoRows(keymap, c)),
 		attacks: list.NewListWithDefaults().
 			WithTitle("Attacks").
-			WithRows(GetAttackRows(keymap, c)).
-			WithAppender(),
+			WithRows(GetAttackRows(keymap, c)),
 		actions:      component.NewSimpleStringComponent(keymap, "Actions", &c.Actions, false, false),
 		bonusActions: component.NewSimpleStringComponent(keymap, "Bonus Actions", &c.BonusActions, false, false),
 	}
@@ -104,12 +103,13 @@ func (s *StatScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case command.AppendElementMsg:
-		switch s.focusedElement {
-		case s.attacks:
+		if msg.Tag == "attack" {
 			s.character.AddEmptyAttack()
 			newRows := GetAttackRows(s.keymap, s.character)
 			s.attacks.WithRows(newRows)
 			cmd = editor.SwitchToEditorCmd(command.StatScreenIndex, s.character, newRows[len(newRows)-1].Editors())
+		} else {
+			_, cmd = s.focusedElement.Update(msg)
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
@@ -422,6 +422,7 @@ func GetAttackRows(k util.KeyMap, c *models.Character) []list.Row {
 		})
 		rows = append(rows, row)
 	}
+	rows = append(rows, list.NewAppenderRow(k, "attack"))
 	return rows
 }
 

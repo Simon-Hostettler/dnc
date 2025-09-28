@@ -34,13 +34,11 @@ type List struct {
 	KeyMap util.KeyMap
 	Styles ListStyles
 
-	focus         bool
-	title         string
-	content       []Row
-	cursor        int
-	appendable    bool
-	fixedWidth    int
-	separateFirst bool
+	focus      bool
+	title      string
+	content    []Row
+	cursor     int
+	fixedWidth int
 }
 
 func (t *List) WithKeyMap(k util.KeyMap) *List {
@@ -63,22 +61,8 @@ func (t *List) WithTitle(title string) *List {
 	return t
 }
 
-/*
-The appender will simply send out an AppendElementCmd,
-the implementation is the client's responsibility.
-*/
-func (t *List) WithAppender() *List {
-	t.appendable = true
-	return t
-}
-
 func (t *List) WithFixedWidth(width int) *List {
 	t.fixedWidth = width
-	return t
-}
-
-func (t *List) WithFirstRowSeparator() *List {
-	t.separateFirst = true
 	return t
 }
 
@@ -98,6 +82,10 @@ func (t *List) Size() int {
 	return len(t.content)
 }
 
+func (t *List) Content() []Row {
+	return t.content
+}
+
 func (t *List) CursorPos() int {
 	return t.cursor
 }
@@ -110,9 +98,14 @@ func (t *List) SetCursor(idx int) {
 
 func (t *List) MoveCursor(offset int) tea.Cmd {
 	newCursor := t.cursor + offset
-	if newCursor >= 0 && newCursor < len(t.content)+util.B2i(t.appendable) {
+	if newCursor >= 0 && newCursor < len(t.content) {
 		t.cursor = newCursor
-		return nil
+		switch t.content[newCursor].(type) {
+		case *SeparatorRow: // not selectable, skip over
+			return t.MoveCursor(offset)
+		default:
+			return nil
+		}
 	} else {
 		if newCursor < 0 {
 			return command.FocusNextElementCmd(command.UpDirection)
@@ -156,8 +149,6 @@ func (t *List) Update(m tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = t.MoveCursor(1)
 		case key.Matches(msg, t.KeyMap.Escape):
 			t.focus = false
-		case key.Matches(msg, t.KeyMap.Select) && t.cursor == len(t.content):
-			cmd = command.AppendElementCmd
 		default:
 			if t.cursor < len(t.content) {
 				_, cmd = t.content[t.cursor].Update(m)
@@ -201,26 +192,7 @@ func (t *List) RenderBody() string {
 			}
 		}
 		rows = append(rows, row)
-		if t.separateFirst && i == 0 {
-			if t.fixedWidth != -1 {
-				rows = append(rows,
-					util.MakeHorizontalSeparator(t.fixedWidth, 0))
-			} else {
-				rows = append(rows,
-					util.MakeHorizontalSeparator(lipgloss.Width(rows[0]), 0))
-			}
-		}
 	}
 	list := lipgloss.JoinVertical(lipgloss.Left, rows...)
-	if t.appendable {
-		var adder string
-		if t.focus && t.cursor == len(t.content) {
-			adder = t.Styles.Selected.Render("[ + ]")
-		} else {
-			adder = t.Styles.Row.Render("[ + ]")
-		}
-		return lipgloss.JoinVertical(lipgloss.Left, list, adder)
-	} else {
-		return list
-	}
+	return list
 }

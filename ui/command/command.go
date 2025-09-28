@@ -57,7 +57,9 @@ type FocusNextElementMsg struct {
 
 type ReturnFocusToParentMsg struct{}
 
-type AppendElementMsg struct{}
+type AppendElementMsg struct {
+	Tag string
+}
 
 func DeleteCharacterFileCmd(characterDir string, name string) tea.Cmd {
 	return func() tea.Msg {
@@ -108,8 +110,8 @@ func FocusNextElementCmd(d Direction) func() tea.Msg {
 	}
 }
 
-func AppendElementCmd() tea.Msg {
-	return AppendElementMsg{}
+func AppendElementCmd(tag string) func() tea.Msg {
+	return func() tea.Msg { return AppendElementMsg{tag} }
 }
 
 func ReturnFocusToParentCmd() tea.Msg {

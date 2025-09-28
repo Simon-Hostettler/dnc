@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"hostettler.dev/dnc/ui/util"
 )
 
 type Character struct {
@@ -95,8 +97,13 @@ func (c *Character) AddEmptyAttack() {
 	c.Attacks = append(c.Attacks, Attack{})
 }
 
-func (c *Character) AddEmptySpell(l int) {
+func (c *Character) AddEmptySpell(l int) *Spell {
 	c.Spells.SpellsKnown = append(c.Spells.SpellsKnown, Spell{Level: l})
+	return &c.Spells.SpellsKnown[len(c.Spells.SpellsKnown)-1]
+}
+
+func (c *Character) SpellsOfLevel(l int) int {
+	return len(util.Filter(c.Spells.SpellsKnown, func(s Spell) bool { return s.Level == l }))
 }
 
 func LoadCharacterByName(name string) (*Character, error) {

@@ -2,6 +2,7 @@ package screen
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -17,7 +18,7 @@ import (
 
 var (
 	spellColHeight = 30
-	spellColWidth  = util.ScreenWidth/2 - 8
+	spellColWidth  = util.ScreenWidth - 8
 )
 
 type SpellScreen struct {
@@ -26,13 +27,11 @@ type SpellScreen struct {
 
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
-	spellListIndex     int
 
 	spellAbility  *component.SimpleStringComponent
 	spellSaveDC   *component.SimpleIntComponent
 	spellAtkBonus *component.SimpleIntComponent
-	spellLists    map[int]*list.List
-	colSplitIndex int
+	spellList     *list.List
 }
 
 func NewSpellScreen(k util.KeyMap, c *models.Character) *SpellScreen {
@@ -42,7 +41,6 @@ func NewSpellScreen(k util.KeyMap, c *models.Character) *SpellScreen {
 		spellAbility:  component.NewSimpleStringComponent(k, "Spellcasting Ability", &c.Spells.SpellcastingAbility, true, true),
 		spellSaveDC:   component.NewSimpleIntComponent(k, "Spell Save DC", &c.Spells.SpellSaveDC, true, true),
 		spellAtkBonus: component.NewSimpleIntComponent(k, "Spell Attack Bonus", &c.Spells.SpellAttackBonus, true, true),
-		spellLists:    make(map[int]*list.List),
 	}
 }
 
@@ -55,17 +53,7 @@ func (s *SpellScreen) Init() tea.Cmd {
 	s.focusOn(s.spellAbility)
 	s.lastFocusedElement = s.spellAbility
 
-	for i := range 10 {
-		s.spellLists[i] = list.NewList(s.keymap,
-			list.ListStyles{
-				Row:      util.ItemStyleDefault.Align(lipgloss.Left),
-				Selected: util.ItemStyleSelected.Align(lipgloss.Left),
-			}).
-			WithAppender().
-			WithFixedWidth(spellColWidth - 6).
-			WithFirstRowSeparator().
-			WithRows(s.GetSpellListByLevel(i))
-	}
+	s.populateSpells()
 
 	if len(cmds) > 0 {
 		return tea.Batch(cmds...)
@@ -73,20 +61,35 @@ func (s *SpellScreen) Init() tea.Cmd {
 	return nil
 }
 
+func (s *SpellScreen) populateSpells() {
+	if s.spellList == nil {
+		s.spellList = list.NewList(s.keymap,
+			list.ListStyles{
+				Row:      util.ItemStyleDefault.Align(lipgloss.Left),
+				Selected: util.ItemStyleSelected.Align(lipgloss.Left),
+			}).
+			WithFixedWidth(spellColWidth)
+	}
+	rows := []list.Row{}
+	for i := range 10 {
+		rows = append(rows, s.GetSpellListByLevel(i)...)
+	}
+	s.spellList.WithRows(rows)
+}
+
 func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
 	case command.AppendElementMsg:
-		switch s.focusedElement.(type) {
-		case *list.List:
-			s.character.AddEmptySpell(s.spellListIndex)
-			newSpellRows := s.GetSpellListByLevel(s.spellListIndex)
-			s.spellLists[s.spellListIndex].WithRows(newSpellRows)
+		if strings.Contains(msg.Tag, "spell:") {
+			l, _ := strconv.Atoi(strings.Split(msg.Tag, ":")[1])
+			spell := s.character.AddEmptySpell(l)
+			s.populateSpells()
 			cmd = editor.SwitchToEditorCmd(
 				command.SpellScreenIndex,
 				s.character,
-				newSpellRows[len(newSpellRows)-1].Editors(),
+				CreateSpellEditors(s.keymap, spell),
 			)
 		}
 	case command.FocusNextElementMsg:
@@ -124,32 +127,12 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (s *SpellScreen) View() string {
 	topbar := s.RenderSpellScreenTopBar()
-	renderedSpells := []string{}
-	for i := range 10 {
-		renderedSpells = append(renderedSpells, util.WithPadding(s.spellLists[i].View(), 0, 0, 0, 1))
-	}
-
-	columns := util.SplitIntoColumns(renderedSpells, spellColHeight-2)
-	firstCol := columns[0]
-	secondCol := []string{}
-	if len(columns) > 1 {
-		secondCol = columns[1]
-	}
-	s.colSplitIndex = len(firstCol)
-
-	left := lipgloss.PlaceHorizontal(spellColWidth, lipgloss.Left, lipgloss.JoinVertical(lipgloss.Left, firstCol...))
-	separator := lipgloss.PlaceHorizontal(8, lipgloss.Left, util.MakeVerticalSeparator(spellColHeight-2))
-	right := lipgloss.PlaceHorizontal(spellColWidth, lipgloss.Left, lipgloss.JoinVertical(lipgloss.Left, secondCol...))
+	renderedSpells := s.spellList.View()
 
 	content := util.DefaultBorderStyle.
 		Width(util.ScreenWidth).
 		Height(spellColHeight).
-		Render(
-			lipgloss.JoinHorizontal(lipgloss.Left,
-				left,
-				separator,
-				right,
-			))
+		Render(renderedSpells)
 	return lipgloss.JoinVertical(lipgloss.Left, topbar, content)
 }
 
@@ -170,8 +153,9 @@ func (s *SpellScreen) moveFocus(d command.Direction) tea.Cmd {
 		case command.LeftDirection:
 			cmd = command.ReturnFocusToParentCmd
 		case command.DownDirection:
-			s.focusOn(s.spellLists[0])
-			s.spellListIndex = 0
+			s.focusOn(s.spellList)
+		default:
+			s.focusOn(s.spellAbility)
 		}
 	case s.spellSaveDC:
 		switch d {
@@ -180,43 +164,27 @@ func (s *SpellScreen) moveFocus(d command.Direction) tea.Cmd {
 		case command.LeftDirection:
 			s.focusOn(s.spellAbility)
 		case command.DownDirection:
-			s.focusOn(s.spellLists[0])
-			s.spellListIndex = 0
+			s.focusOn(s.spellList)
+		default:
+			s.focusOn(s.spellSaveDC)
 		}
 	case s.spellAtkBonus:
 		switch d {
 		case command.LeftDirection:
 			s.focusOn(s.spellSaveDC)
 		case command.DownDirection:
-			s.focusOn(s.spellLists[0])
-			s.spellListIndex = 0
+			s.focusOn(s.spellList)
+		default:
+			s.focusOn(s.spellAtkBonus)
 		}
-	default:
+	case s.spellList:
 		switch d {
 		case command.UpDirection:
-			if s.spellListIndex == 0 {
-				s.focusOn(s.spellAbility)
-			} else {
-				s.spellListIndex -= 1
-				s.focusOn(s.spellLists[s.spellListIndex])
-			}
-		case command.DownDirection:
-			if s.spellListIndex < 9 {
-				s.spellListIndex += 1
-				s.focusOn(s.spellLists[s.spellListIndex])
-			}
-		case command.RightDirection:
-			if s.spellListIndex < s.colSplitIndex {
-				s.spellListIndex = min(9, s.spellListIndex+s.colSplitIndex)
-				s.focusOn(s.spellLists[s.spellListIndex])
-			}
+			s.focusOn(s.spellAbility)
 		case command.LeftDirection:
-			if s.spellListIndex >= s.colSplitIndex {
-				s.spellListIndex = max(0, s.spellListIndex-s.colSplitIndex)
-				s.focusOn(s.spellLists[s.spellListIndex])
-			} else {
-				cmd = command.ReturnFocusToParentCmd
-			}
+			cmd = command.ReturnFocusToParentCmd
+		default:
+			s.focusOn(s.spellList)
 		}
 	}
 	return cmd
@@ -245,19 +213,27 @@ func (s *SpellScreen) GetSpellListByLevel(l int) []list.Row {
 			editor.NewIntEditor(s.keymap, "Used Spell Slots", &s.character.Spells.SpellSlotsUsed[l]),
 			editor.NewIntEditor(s.keymap, "Max Spell Slots", &s.character.Spells.SpellSlots[l]),
 		}))
+	rows = append(rows, list.NewSeparatorRow("─", spellColWidth-6))
 	for _, spell := range spells {
 		rows = append(rows, list.NewStructRow(s.keymap, spell,
 			RenderSpellInfoRow,
-			[]editor.ValueEditor{
-				editor.NewStringEditor(s.keymap, "Name", &spell.Name),
-				editor.NewStringEditor(s.keymap, "Casting Time", &spell.CastingTime),
-				editor.NewStringEditor(s.keymap, "Range", &spell.Range),
-				editor.NewStringEditor(s.keymap, "Duration", &spell.Duration),
-				editor.NewStringEditor(s.keymap, "Components", &spell.Components),
-				editor.NewStringEditor(s.keymap, "Description", &spell.Description),
-			}))
+			CreateSpellEditors(s.keymap, spell),
+		))
 	}
+	rows = append(rows, list.NewAppenderRow(s.keymap, fmt.Sprintf("spell:%d", l)))
+	rows = append(rows, list.NewSeparatorRow(" ", spellColWidth-6))
 	return rows
+}
+
+func CreateSpellEditors(k util.KeyMap, spell *models.Spell) []editor.ValueEditor {
+	return []editor.ValueEditor{
+		editor.NewStringEditor(k, "Name", &spell.Name),
+		editor.NewStringEditor(k, "Casting Time", &spell.CastingTime),
+		editor.NewStringEditor(k, "Range", &spell.Range),
+		editor.NewStringEditor(k, "Duration", &spell.Duration),
+		editor.NewStringEditor(k, "Components", &spell.Components),
+		editor.NewStringEditor(k, "Description", &spell.Description),
+	}
 }
 
 func (s *SpellScreen) RenderSpellScreenTopBar() string {

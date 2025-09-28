@@ -49,3 +49,7 @@ func (r *StructRow[T]) View() string {
 func (r *StructRow[T]) Editors() []editor.ValueEditor {
 	return r.editors
 }
+
+func (r *StructRow[T]) Value() *T {
+	return r.value
+}
