@@ -139,7 +139,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *TitleScreen) View() string {
 	createField := util.RenderItem(m.cursor == 0, "Create new Character")
 
-	separator := util.MakeHorizontalSeparator(screenWidth-8, 1)
+	separator := util.MakeHorizontalSeparator(screenWidth/2, 1)
 
 	chars := "\n" + m.characters.View()
 

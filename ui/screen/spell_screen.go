@@ -68,13 +68,14 @@ func (s *SpellScreen) populateSpells() {
 				Row:      util.ItemStyleDefault.Align(lipgloss.Left),
 				Selected: util.ItemStyleSelected.Align(lipgloss.Left),
 			}).
-			WithFixedWidth(spellColWidth)
+			WithFixedWidth(spellColWidth).
+			WithViewport(spellColHeight - 2)
 	}
 	rows := []list.Row{}
 	for i := range 10 {
 		rows = append(rows, s.GetSpellListByLevel(i)...)
 	}
-	s.spellList.WithRows(rows)
+	s.spellList.WithRows(rows[:len(rows)-1])
 }
 
 func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

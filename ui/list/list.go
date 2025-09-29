@@ -1,6 +1,8 @@
 package list
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -39,6 +41,10 @@ type List struct {
 	content    []Row
 	cursor     int
 	fixedWidth int
+
+	viewport bool
+	vpHeight int
+	vpCursor int
 }
 
 func (t *List) WithKeyMap(k util.KeyMap) *List {
@@ -63,6 +69,13 @@ func (t *List) WithTitle(title string) *List {
 
 func (t *List) WithFixedWidth(width int) *List {
 	t.fixedWidth = width
+	return t
+}
+
+func (t *List) WithViewport(height int) *List {
+	t.viewport = true
+	t.vpHeight = height
+	t.vpCursor = 0
 	return t
 }
 
@@ -98,20 +111,32 @@ func (t *List) SetCursor(idx int) {
 
 func (t *List) MoveCursor(offset int) tea.Cmd {
 	newCursor := t.cursor + offset
-	if newCursor >= 0 && newCursor < len(t.content) {
-		t.cursor = newCursor
-		switch t.content[newCursor].(type) {
-		case *SeparatorRow: // not selectable, skip over
-			return t.MoveCursor(offset)
-		default:
-			return nil
-		}
-	} else {
+
+	// exiting list
+	if newCursor < 0 || newCursor >= len(t.content) {
 		if newCursor < 0 {
 			return command.FocusNextElementCmd(command.UpDirection)
 		} else {
 			return command.FocusNextElementCmd(command.DownDirection)
 		}
+	}
+
+	// keep cursor in view
+	if t.viewport {
+		if newCursor < t.vpCursor {
+			t.vpCursor = newCursor
+		}
+		if newCursor >= t.viewportEnd() {
+			t.vpCursor += offset
+		}
+	}
+
+	t.cursor = newCursor
+	switch t.content[newCursor].(type) {
+	case *SeparatorRow: // not selectable, skip over
+		return t.MoveCursor(offset)
+	default:
+		return nil
 	}
 }
 
@@ -159,6 +184,22 @@ func (t *List) Update(m tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (t *List) View() string {
+	if t.viewport {
+		return strings.Join(t.toLines()[t.vpCursor:t.viewportEnd()], "\n")
+	} else {
+		return t.RenderFullContent()
+	}
+}
+
+func (t *List) toLines() []string {
+	return strings.Split(t.RenderFullContent(), "\n")
+}
+
+func (t *List) viewportEnd() int {
+	return min(len(t.toLines()), t.vpCursor+t.vpHeight)
+}
+
+func (t *List) RenderFullContent() string {
 	body := t.RenderBody()
 	if t.title != "" {
 		var title string
