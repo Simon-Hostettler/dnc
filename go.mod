@@ -7,6 +7,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.7
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/fatih/structs v1.1.0
+	github.com/google/uuid v1.6.0
 )
 
 require (

@@ -85,7 +85,8 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case command.AppendElementMsg:
 		if strings.Contains(msg.Tag, "spell:") {
 			l, _ := strconv.Atoi(strings.Split(msg.Tag, ":")[1])
-			spell := s.character.AddEmptySpell(l)
+			spell_id := s.character.AddEmptySpell(l)
+			spell := s.character.GetSpell(spell_id)
 			s.populateSpells()
 			cmd = editor.SwitchToEditorCmd(
 				command.SpellScreenIndex,
@@ -219,16 +220,25 @@ func (s *SpellScreen) GetSpellListByLevel(l int) []list.Row {
 		rows = append(rows, list.NewStructRow(s.keymap, spell,
 			RenderSpellInfoRow,
 			CreateSpellEditors(s.keymap, spell),
-		))
+		).WithDestructor(DeleteSpellCallback(s, spell)))
 	}
 	rows = append(rows, list.NewAppenderRow(s.keymap, fmt.Sprintf("spell:%d", l)))
 	rows = append(rows, list.NewSeparatorRow(" ", spellColWidth-6))
 	return rows
 }
 
+func DeleteSpellCallback(s *SpellScreen, sp *models.Spell) func() tea.Cmd {
+	return func() tea.Cmd {
+		s.character.DeleteSpell(sp.Id)
+		s.populateSpells()
+		return command.SaveToFileCmd(s.character)
+	}
+}
+
 func CreateSpellEditors(k util.KeyMap, spell *models.Spell) []editor.ValueEditor {
 	return []editor.ValueEditor{
 		editor.NewStringEditor(k, "Name", &spell.Name),
+		editor.NewStringEditor(k, "Damage", &spell.Damage),
 		editor.NewStringEditor(k, "Casting Time", &spell.CastingTime),
 		editor.NewStringEditor(k, "Range", &spell.Range),
 		editor.NewStringEditor(k, "Duration", &spell.Duration),
@@ -261,7 +271,9 @@ func RenderSpellHeaderRow(h *SpellListHeader) string {
 }
 
 func RenderSpellInfoRow(s *models.Spell) string {
-	return fmt.Sprintf("%s ∙ %s ∙ %s ∙ %s ∙ %s", s.Name, s.Components, s.Range, s.CastingTime, s.Duration)
+	values := []string{s.Name, s.Damage, s.Components, s.Range, s.CastingTime, s.Duration}
+	values = util.Filter(values, func(s string) bool { return s != "" })
+	return strings.Join(values, " ∙ ")
 }
 
 func RenderSpellSlots(used int, max int) string {

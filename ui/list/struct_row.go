@@ -12,6 +12,7 @@ type StructRow[T any] struct {
 	value      *T
 	renderFunc func(val *T) string
 	editors    []editor.ValueEditor
+	destructor func() tea.Cmd
 }
 
 func NewStructRow[T any](
@@ -28,6 +29,11 @@ func NewStructRow[T any](
 	}
 }
 
+func (r *StructRow[T]) WithDestructor(callback func() tea.Cmd) *StructRow[T] {
+	r.destructor = callback
+	return r
+}
+
 func (r *StructRow[T]) Init() tea.Cmd {
 	return nil
 }
@@ -35,8 +41,11 @@ func (r *StructRow[T]) Init() tea.Cmd {
 func (r *StructRow[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if key.Matches(msg, r.keymap.Edit) {
+		switch {
+		case key.Matches(msg, r.keymap.Edit):
 			return r, editor.EditValueCmd(r.editors)
+		case key.Matches(msg, r.keymap.Delete) && r.destructor != nil:
+			return r, r.destructor()
 		}
 	}
 	return r, nil

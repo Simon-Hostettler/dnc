@@ -1,5 +1,7 @@
 package models
 
+import "github.com/google/uuid"
+
 type Spellcasting struct {
 	SpellcastingAbility string  `json:"spellcasting_ability"`
 	SpellSaveDC         int     `json:"spell_save_dc"`
@@ -17,11 +19,13 @@ func NewSpellcasting() Spellcasting {
 }
 
 type Spell struct {
-	Name        string `json:"name"`
-	Level       int    `json:"level"`
-	CastingTime string `json:"casting_time"`
-	Range       string `json:"range"`
-	Duration    string `json:"duration"`
-	Components  string `json:"components"`
-	Description string `json:"description"`
+	Id          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Level       int       `json:"level"`
+	Damage      string    `json:"damage"`
+	CastingTime string    `json:"casting_time"`
+	Range       string    `json:"range"`
+	Duration    string    `json:"duration"`
+	Components  string    `json:"components"`
+	Description string    `json:"description"`
 }

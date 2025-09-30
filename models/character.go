@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/uuid"
 	"hostettler.dev/dnc/ui/util"
 )
 
@@ -97,9 +98,29 @@ func (c *Character) AddEmptyAttack() {
 	c.Attacks = append(c.Attacks, Attack{})
 }
 
-func (c *Character) AddEmptySpell(l int) *Spell {
-	c.Spells.SpellsKnown = append(c.Spells.SpellsKnown, Spell{Level: l})
-	return &c.Spells.SpellsKnown[len(c.Spells.SpellsKnown)-1]
+func (c *Character) AddEmptySpell(l int) uuid.UUID {
+	id := uuid.New()
+	c.Spells.SpellsKnown = append(c.Spells.SpellsKnown, Spell{Id: id, Level: l})
+	return id
+}
+
+func (c *Character) GetSpell(id uuid.UUID) *Spell {
+	for i := range c.Spells.SpellsKnown {
+		if c.Spells.SpellsKnown[i].Id == id {
+			return &c.Spells.SpellsKnown[i]
+		}
+	}
+	return nil
+}
+
+func (c *Character) DeleteSpell(id uuid.UUID) {
+	newSpells := []Spell{}
+	for i := range c.Spells.SpellsKnown {
+		if c.Spells.SpellsKnown[i].Id != id {
+			newSpells = append(newSpells, c.Spells.SpellsKnown[i])
+		}
+	}
+	c.Spells.SpellsKnown = newSpells
 }
 
 func (c *Character) SpellsOfLevel(l int) int {
