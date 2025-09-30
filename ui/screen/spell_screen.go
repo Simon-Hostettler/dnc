@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/google/uuid"
 	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/component"
@@ -86,12 +87,11 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if strings.Contains(msg.Tag, "spell:") {
 			l, _ := strconv.Atoi(strings.Split(msg.Tag, ":")[1])
 			spell_id := s.character.AddEmptySpell(l)
-			spell := s.character.GetSpell(spell_id)
 			s.populateSpells()
 			cmd = editor.SwitchToEditorCmd(
 				command.SpellScreenIndex,
 				s.character,
-				CreateSpellEditors(s.keymap, spell),
+				s.getSpellRow(spell_id).Editors(),
 			)
 		}
 	case command.FocusNextElementMsg:
@@ -225,6 +225,18 @@ func (s *SpellScreen) GetSpellListByLevel(l int) []list.Row {
 	rows = append(rows, list.NewAppenderRow(s.keymap, fmt.Sprintf("spell:%d", l)))
 	rows = append(rows, list.NewSeparatorRow(" ", spellColWidth-6))
 	return rows
+}
+
+func (s *SpellScreen) getSpellRow(id uuid.UUID) list.Row {
+	for _, r := range s.spellList.Content() {
+		switch r := r.(type) {
+		case *list.StructRow[models.Spell]:
+			if r.Value().Id == id {
+				return r
+			}
+		}
+	}
+	return nil
 }
 
 func DeleteSpellCallback(s *SpellScreen, sp *models.Spell) func() tea.Cmd {
