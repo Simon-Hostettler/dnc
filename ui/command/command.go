@@ -17,6 +17,7 @@ const (
 	StatScreenIndex
 	TitleScreenIndex
 	SpellScreenIndex
+	ConfirmationScreenIndex
 )
 
 type Direction int
@@ -59,6 +60,11 @@ type ReturnFocusToParentMsg struct{}
 
 type AppendElementMsg struct {
 	Tag string
+}
+
+type LaunchConfirmationDialogueMsg struct {
+	Originator ScreenIndex
+	Callback   func() tea.Cmd
 }
 
 func DeleteCharacterFileCmd(characterDir string, name string) tea.Cmd {
@@ -116,4 +122,10 @@ func AppendElementCmd(tag string) func() tea.Msg {
 
 func ReturnFocusToParentCmd() tea.Msg {
 	return ReturnFocusToParentMsg{}
+}
+
+func LaunchConfirmationDialogueCmd(caller ScreenIndex, callback func() tea.Cmd) func() tea.Msg {
+	return func() tea.Msg {
+		return LaunchConfirmationDialogueMsg{caller, callback}
+	}
 }

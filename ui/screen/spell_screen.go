@@ -220,7 +220,7 @@ func (s *SpellScreen) GetSpellListByLevel(l int) []list.Row {
 		rows = append(rows, list.NewStructRow(s.keymap, spell,
 			RenderSpellInfoRow,
 			CreateSpellEditors(s.keymap, spell),
-		).WithDestructor(DeleteSpellCallback(s, spell)))
+		).WithDestructor(command.SpellScreenIndex, DeleteSpellCallback(s, spell)))
 	}
 	rows = append(rows, list.NewAppenderRow(s.keymap, fmt.Sprintf("spell:%d", l)))
 	rows = append(rows, list.NewSeparatorRow(" ", spellColWidth-6))

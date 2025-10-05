@@ -3,6 +3,7 @@ package list
 import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/util"
 )
@@ -12,6 +13,7 @@ type StructRow[T any] struct {
 	value      *T
 	renderFunc func(val *T) string
 	editors    []editor.ValueEditor
+	originator command.ScreenIndex
 	destructor func() tea.Cmd
 }
 
@@ -29,7 +31,8 @@ func NewStructRow[T any](
 	}
 }
 
-func (r *StructRow[T]) WithDestructor(callback func() tea.Cmd) *StructRow[T] {
+func (r *StructRow[T]) WithDestructor(caller command.ScreenIndex, callback func() tea.Cmd) *StructRow[T] {
+	r.originator = caller
 	r.destructor = callback
 	return r
 }
@@ -45,7 +48,7 @@ func (r *StructRow[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, r.keymap.Edit):
 			return r, editor.EditValueCmd(r.editors)
 		case key.Matches(msg, r.keymap.Delete) && r.destructor != nil:
-			return r, r.destructor()
+			return r, command.LaunchConfirmationDialogueCmd(r.originator, r.destructor)
 		}
 	}
 	return r, nil

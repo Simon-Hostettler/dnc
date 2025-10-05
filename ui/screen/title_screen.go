@@ -127,10 +127,6 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.nameInput.Focus()
 				cmd = textinput.Blink
 			}
-		case key.Matches(msg, m.KeyMap.Delete):
-			if m.cursor != 0 {
-				cmd = command.DeleteCharacterFileCmd(m.characterDir, m.files[m.cursor-1])
-			}
 		}
 	}
 	return m, cmd

@@ -29,7 +29,12 @@ func (c *CharacterRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, c.keymap.Select):
 			return c, command.SelectCharacterCmd(c.name)
 		case key.Matches(msg, c.keymap.Delete):
-			return c, command.DeleteCharacterFileCmd(c.characterDir, c.name)
+			return c, command.LaunchConfirmationDialogueCmd(
+				command.TitleScreenIndex,
+				func() tea.Cmd {
+					return command.DeleteCharacterFileCmd(c.characterDir, c.name)
+				},
+			)
 		}
 	}
 	return c, nil

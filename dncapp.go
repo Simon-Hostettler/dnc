@@ -29,11 +29,12 @@ type DnCApp struct {
 	statTab         *ScreenTab
 	spellTab        *ScreenTab
 
-	screenInView screen.FocusableModel
-	titleScreen  *screen.TitleScreen
-	editorScreen *screen.EditorScreen
-	statScreen   *screen.StatScreen
-	spellScreen  *screen.SpellScreen
+	screenInView       screen.FocusableModel
+	titleScreen        *screen.TitleScreen
+	editorScreen       *screen.EditorScreen
+	statScreen         *screen.StatScreen
+	spellScreen        *screen.SpellScreen
+	confirmationScreen *screen.ConfirmationScreen
 }
 
 type ScreenTab struct {
@@ -50,12 +51,13 @@ func NewApp() (*DnCApp, error) {
 	}
 	km := util.DefaultKeyMap()
 	return &DnCApp{
-		config:       config,
-		keymap:       km,
-		statTab:      NewScreenTab(km, "Stats", command.StatScreenIndex, false),
-		spellTab:     NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
-		titleScreen:  screen.NewTitleScreen(config.CharacterDir),
-		editorScreen: screen.NewEditorScreen(km, []editor.ValueEditor{}),
+		config:             config,
+		keymap:             km,
+		statTab:            NewScreenTab(km, "Stats", command.StatScreenIndex, false),
+		spellTab:           NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
+		titleScreen:        screen.NewTitleScreen(config.CharacterDir),
+		editorScreen:       screen.NewEditorScreen(km, []editor.ValueEditor{}),
+		confirmationScreen: screen.NewConfirmationScreen(km),
 	}, nil
 }
 
@@ -73,6 +75,9 @@ func (a *DnCApp) Init() tea.Cmd {
 	}
 	if a.editorScreen != nil {
 		cmds = append(cmds, a.editorScreen.Init())
+	}
+	if a.confirmationScreen != nil {
+		cmds = append(cmds, a.confirmationScreen.Init())
 	}
 	cmds = util.DropNil(cmds)
 	if len(cmds) > 0 {
@@ -122,6 +127,9 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case editor.SwitchToEditorMsg:
 		a.editorScreen.StartEdit(msg.Originator, msg.Character, msg.Editors)
 		cmd = command.SwitchScreenCmd(command.EditScreenIndex)
+	case command.LaunchConfirmationDialogueMsg:
+		a.confirmationScreen.LaunchConfirmation(msg.Originator, msg.Callback)
+		cmd = command.SwitchScreenCmd(command.ConfirmationScreenIndex)
 	default:
 		_, cmd = a.screenInView.Update(msg)
 	}
@@ -184,12 +192,14 @@ func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 		a.screenInView = a.titleScreen
 	case command.SpellScreenIndex:
 		a.screenInView = a.spellScreen
+	case command.ConfirmationScreenIndex:
+		a.screenInView = a.confirmationScreen
 	}
 	a.screenInView.Focus()
 }
 
 func (a *DnCApp) displayTabs() bool {
-	return a.screenInView != a.editorScreen && a.screenInView != a.titleScreen
+	return a.screenInView != a.editorScreen && a.screenInView != a.titleScreen && a.screenInView != a.confirmationScreen
 }
 
 func (a *DnCApp) moveTab(d command.Direction) {
