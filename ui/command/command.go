@@ -62,9 +62,10 @@ type AppendElementMsg struct {
 	Tag string
 }
 
+type SwitchToPrevScreenMsg struct{}
+
 type LaunchConfirmationDialogueMsg struct {
-	Originator ScreenIndex
-	Callback   func() tea.Cmd
+	Callback func() tea.Cmd
 }
 
 func DeleteCharacterFileCmd(characterDir string, name string) tea.Cmd {
@@ -106,6 +107,10 @@ func SwitchScreenCmd(s ScreenIndex) func() tea.Msg {
 	}
 }
 
+func SwitchToPrevScreenCmd() tea.Msg {
+	return SwitchToPrevScreenMsg{}
+}
+
 /*
 Use to switch focus to other element on same screen.
 For switching to element in parent, use ReturnFocusToParentCmd
@@ -124,8 +129,8 @@ func ReturnFocusToParentCmd() tea.Msg {
 	return ReturnFocusToParentMsg{}
 }
 
-func LaunchConfirmationDialogueCmd(caller ScreenIndex, callback func() tea.Cmd) func() tea.Msg {
+func LaunchConfirmationDialogueCmd(callback func() tea.Cmd) func() tea.Msg {
 	return func() tea.Msg {
-		return LaunchConfirmationDialogueMsg{caller, callback}
+		return LaunchConfirmationDialogueMsg{callback}
 	}
 }

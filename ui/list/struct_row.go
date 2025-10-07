@@ -48,7 +48,7 @@ func (r *StructRow[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, r.keymap.Edit):
 			return r, editor.EditValueCmd(r.editors)
 		case key.Matches(msg, r.keymap.Delete) && r.destructor != nil:
-			return r, command.LaunchConfirmationDialogueCmd(r.originator, r.destructor)
+			return r, command.LaunchConfirmationDialogueCmd(r.destructor)
 		}
 	}
 	return r, nil

@@ -15,7 +15,6 @@ const (
 
 type ConfirmationScreen struct {
 	keymap       util.KeyMap
-	prevScreen   command.ScreenIndex
 	callback     func() tea.Cmd
 	confirmation bool
 }
@@ -23,7 +22,6 @@ type ConfirmationScreen struct {
 func NewConfirmationScreen(keymap util.KeyMap) *ConfirmationScreen {
 	return &ConfirmationScreen{
 		keymap,
-		command.ConfirmationScreenIndex,
 		func() tea.Cmd { return nil },
 		false,
 	}
@@ -33,8 +31,7 @@ func (s *ConfirmationScreen) Init() tea.Cmd {
 	return nil
 }
 
-func (s *ConfirmationScreen) LaunchConfirmation(prevScreen command.ScreenIndex, callback func() tea.Cmd) {
-	s.prevScreen = prevScreen
+func (s *ConfirmationScreen) LaunchConfirmation(callback func() tea.Cmd) {
 	s.callback = callback
 }
 
@@ -45,9 +42,9 @@ func (s *ConfirmationScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, s.keymap.Enter):
 			if s.confirmation {
-				return s, tea.Batch(s.callback(), command.SwitchScreenCmd(s.prevScreen))
+				return s, tea.Batch(s.callback(), command.SwitchToPrevScreenCmd)
 			} else {
-				return s, command.SwitchScreenCmd(s.prevScreen)
+				return s, command.SwitchToPrevScreenCmd
 			}
 		case key.Matches(msg, s.keymap.Left) && !s.confirmation:
 			s.confirmation = true

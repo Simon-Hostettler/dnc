@@ -11,23 +11,21 @@ import (
 )
 
 type EditorScreen struct {
-	keymap     util.KeyMap
-	prevScreen command.ScreenIndex
-	character  *models.Character
-	cursor     int
-	editors    []editor.ValueEditor
+	keymap    util.KeyMap
+	character *models.Character
+	cursor    int
+	editors   []editor.ValueEditor
 }
 
 func NewEditorScreen(keymap util.KeyMap, editors []editor.ValueEditor) *EditorScreen {
-	return &EditorScreen{keymap, command.EditScreenIndex, nil, 0, editors}
+	return &EditorScreen{keymap, nil, 0, editors}
 }
 
 func (s *EditorScreen) Init() tea.Cmd {
 	return nil
 }
 
-func (s *EditorScreen) StartEdit(prevScreen command.ScreenIndex, c *models.Character, editors []editor.ValueEditor) {
-	s.prevScreen = prevScreen
+func (s *EditorScreen) StartEdit(c *models.Character, editors []editor.ValueEditor) {
 	s.character = c
 	s.editors = editors
 	if len(s.editors) > 0 {
@@ -70,7 +68,7 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				for _, e := range s.editors {
 					e.Save()
 				}
-				cmd = tea.Batch(command.SaveToFileCmd(s.character), command.SwitchScreenCmd(s.prevScreen))
+				cmd = tea.Batch(command.SaveToFileCmd(s.character), command.SwitchToPrevScreenCmd)
 			}
 		}
 	}

@@ -89,7 +89,6 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			spell_id := s.character.AddEmptySpell(l)
 			s.populateSpells()
 			cmd = editor.SwitchToEditorCmd(
-				command.SpellScreenIndex,
 				s.character,
 				s.getSpellRow(spell_id).Editors(),
 			)
@@ -97,7 +96,7 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
 	case editor.EditValueMsg:
-		cmd = editor.SwitchToEditorCmd(command.SpellScreenIndex, s.character, msg.Editors)
+		cmd = editor.SwitchToEditorCmd(s.character, msg.Editors)
 	case tea.KeyMsg:
 		switch s.focusedElement.(type) {
 		case *list.List:

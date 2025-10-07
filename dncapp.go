@@ -29,6 +29,8 @@ type DnCApp struct {
 	statTab         *ScreenTab
 	spellTab        *ScreenTab
 
+	curScreenIdx       command.ScreenIndex
+	prevScreenIdx      command.ScreenIndex
 	screenInView       screen.FocusableModel
 	titleScreen        *screen.TitleScreen
 	editorScreen       *screen.EditorScreen
@@ -125,11 +127,13 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = tea.Batch(cmds, command.SwitchScreenCmd(command.StatScreenIndex))
 		}
 	case editor.SwitchToEditorMsg:
-		a.editorScreen.StartEdit(msg.Originator, msg.Character, msg.Editors)
+		a.editorScreen.StartEdit(msg.Character, msg.Editors)
 		cmd = command.SwitchScreenCmd(command.EditScreenIndex)
 	case command.LaunchConfirmationDialogueMsg:
-		a.confirmationScreen.LaunchConfirmation(msg.Originator, msg.Callback)
+		a.confirmationScreen.LaunchConfirmation(msg.Callback)
 		cmd = command.SwitchScreenCmd(command.ConfirmationScreenIndex)
+	case command.SwitchToPrevScreenMsg:
+		a.switchScreen(a.prevScreenIdx)
 	default:
 		_, cmd = a.screenInView.Update(msg)
 	}
@@ -183,6 +187,7 @@ func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 	if a.screenInView != nil {
 		a.screenInView.Blur()
 	}
+	a.prevScreenIdx = a.curScreenIdx
 	switch idx {
 	case command.StatScreenIndex:
 		a.screenInView = a.statScreen
@@ -195,6 +200,7 @@ func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 	case command.ConfirmationScreenIndex:
 		a.screenInView = a.confirmationScreen
 	}
+	a.curScreenIdx = idx
 	a.screenInView.Focus()
 }
 

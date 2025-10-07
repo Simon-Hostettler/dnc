@@ -107,14 +107,14 @@ func (s *StatScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.character.AddEmptyAttack()
 			newRows := GetAttackRows(s.keymap, s.character)
 			s.attacks.WithRows(newRows)
-			cmd = editor.SwitchToEditorCmd(command.StatScreenIndex, s.character, newRows[len(newRows)-1].Editors())
+			cmd = editor.SwitchToEditorCmd(s.character, newRows[len(newRows)-1].Editors())
 		} else {
 			_, cmd = s.focusedElement.Update(msg)
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
 	case editor.EditValueMsg:
-		cmd = editor.SwitchToEditorCmd(command.StatScreenIndex, s.character, msg.Editors)
+		cmd = editor.SwitchToEditorCmd(s.character, msg.Editors)
 	case tea.KeyMsg:
 		switch s.focusedElement.(type) {
 		case *list.List:
