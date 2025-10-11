@@ -39,6 +39,7 @@ type DnCApp struct {
 	spellScreen        *screen.SpellScreen
 	confirmationScreen *screen.ConfirmationScreen
 	inventoryScreen    *screen.InventoryScreen
+	readerScreen       *screen.ReaderScreen
 }
 
 type ScreenTab struct {
@@ -63,6 +64,7 @@ func NewApp() (*DnCApp, error) {
 		titleScreen:        screen.NewTitleScreen(config.CharacterDir),
 		editorScreen:       screen.NewEditorScreen(km, []editor.ValueEditor{}),
 		confirmationScreen: screen.NewConfirmationScreen(km),
+		readerScreen:       screen.NewReaderScreen(km),
 	}, nil
 }
 
@@ -83,6 +85,9 @@ func (a *DnCApp) Init() tea.Cmd {
 	}
 	if a.confirmationScreen != nil {
 		cmds = append(cmds, a.confirmationScreen.Init())
+	}
+	if a.readerScreen != nil {
+		cmds = append(cmds, a.readerScreen.Init())
 	}
 	cmds = util.DropNil(cmds)
 	if len(cmds) > 0 {
@@ -135,6 +140,9 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case command.LaunchConfirmationDialogueMsg:
 		a.confirmationScreen.LaunchConfirmation(msg.Callback)
 		cmd = command.SwitchScreenCmd(command.ConfirmationScreenIndex)
+	case command.LaunchReaderScreenMsg:
+		a.readerScreen.StartRead(msg.Content)
+		cmd = command.SwitchScreenCmd(command.ReaderScreenIndex)
 	case command.SwitchToPrevScreenMsg:
 		a.switchScreen(a.prevScreenIdx)
 	default:
@@ -216,7 +224,10 @@ func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 }
 
 func (a *DnCApp) displayTabs() bool {
-	return a.screenInView != a.editorScreen && a.screenInView != a.titleScreen && a.screenInView != a.confirmationScreen
+	return a.screenInView != a.editorScreen &&
+		a.screenInView != a.titleScreen &&
+		a.screenInView != a.confirmationScreen &&
+		a.screenInView != a.readerScreen
 }
 
 func (a *DnCApp) moveTab(d command.Direction) {

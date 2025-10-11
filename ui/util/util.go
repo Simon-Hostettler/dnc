@@ -21,6 +21,7 @@ type KeyMap struct {
 	Escape    key.Binding `json:"escape"`
 	Delete    key.Binding `json:"delete"`
 	ForceQuit key.Binding `json:"force_quit"`
+	Show      key.Binding `json:"show"`
 }
 
 func DefaultKeyMap() KeyMap {
@@ -32,9 +33,10 @@ func DefaultKeyMap() KeyMap {
 		Select:    key.NewBinding(key.WithKeys(" ", "enter")),
 		Edit:      key.NewBinding(key.WithKeys("e")),
 		Enter:     key.NewBinding(key.WithKeys("enter")),
-		Escape:    key.NewBinding(key.WithKeys("esc")),
+		Escape:    key.NewBinding(key.WithKeys("esc", "q")),
 		Delete:    key.NewBinding(key.WithKeys("x", "del")),
 		ForceQuit: key.NewBinding(key.WithKeys("ctrl+c")),
+		Show:      key.NewBinding(key.WithKeys(" ")),
 	}
 }
 

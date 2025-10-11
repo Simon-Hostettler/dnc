@@ -19,6 +19,7 @@ const (
 	SpellScreenIndex
 	ConfirmationScreenIndex
 	InventoryScreenIndex
+	ReaderScreenIndex
 )
 
 type Direction int
@@ -67,6 +68,10 @@ type SwitchToPrevScreenMsg struct{}
 
 type LaunchConfirmationDialogueMsg struct {
 	Callback func() tea.Cmd
+}
+
+type LaunchReaderScreenMsg struct {
+	Content string
 }
 
 func DeleteCharacterFileCmd(characterDir string, name string) tea.Cmd {
@@ -133,5 +138,11 @@ func ReturnFocusToParentCmd() tea.Msg {
 func LaunchConfirmationDialogueCmd(callback func() tea.Cmd) func() tea.Msg {
 	return func() tea.Msg {
 		return LaunchConfirmationDialogueMsg{callback}
+	}
+}
+
+func LaunchReaderScreenMsg(content string) func() tea.Msg {
+	return func() tea.Msg {
+		return LaunchReaderScreenMsg{content}
 	}
 }

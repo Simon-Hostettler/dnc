@@ -303,7 +303,11 @@ var AttunementSymbols []editor.EnumMapping = []editor.EnumMapping{
 }
 
 func DrawAttunementSlots(used int) string {
-	s := strings.Repeat("■", used)
-	s += strings.Repeat("□", 3-used)
-	return s
+	if used == 0 {
+		return ""
+	} else {
+		s := strings.Repeat("■", used)
+		s += strings.Repeat("□", 3-used)
+		return s
+	}
 }
