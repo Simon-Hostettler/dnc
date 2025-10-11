@@ -2,6 +2,7 @@ package list
 
 import (
 	"github.com/charmbracelet/lipgloss"
+
 	"hostettler.dev/dnc/ui/util"
 )
 

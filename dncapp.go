@@ -13,7 +13,7 @@ import (
 
 var (
 	defaultPadding = 2
-	tabWidth       = 10
+	tabWidth       = 11
 	tabHeight      = 3
 )
 
@@ -28,6 +28,7 @@ type DnCApp struct {
 	isScreenFocused bool
 	statTab         *ScreenTab
 	spellTab        *ScreenTab
+	inventoryTab    *ScreenTab
 
 	curScreenIdx       command.ScreenIndex
 	prevScreenIdx      command.ScreenIndex
@@ -37,6 +38,7 @@ type DnCApp struct {
 	statScreen         *screen.StatScreen
 	spellScreen        *screen.SpellScreen
 	confirmationScreen *screen.ConfirmationScreen
+	inventoryScreen    *screen.InventoryScreen
 }
 
 type ScreenTab struct {
@@ -57,6 +59,7 @@ func NewApp() (*DnCApp, error) {
 		keymap:             km,
 		statTab:            NewScreenTab(km, "Stats", command.StatScreenIndex, false),
 		spellTab:           NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
+		inventoryTab:       NewScreenTab(km, "Inventory", command.InventoryScreenIndex, false),
 		titleScreen:        screen.NewTitleScreen(config.CharacterDir),
 		editorScreen:       screen.NewEditorScreen(km, []editor.ValueEditor{}),
 		confirmationScreen: screen.NewConfirmationScreen(km),
@@ -146,7 +149,11 @@ func (a *DnCApp) View() string {
 
 	pageContent := screenContent
 	if a.displayTabs() {
-		tabs := lipgloss.JoinVertical(lipgloss.Center, a.statTab.View(), a.spellTab.View())
+		tabs := lipgloss.JoinVertical(lipgloss.Center,
+			a.statTab.View(),
+			a.spellTab.View(),
+			a.inventoryTab.View(),
+		)
 		pageContent = lipgloss.JoinHorizontal(lipgloss.Left, tabs, pageContent)
 	}
 
@@ -173,6 +180,8 @@ func (a *DnCApp) populateCharacterScreens() tea.Cmd {
 	cmds = append(cmds, a.statScreen.Init())
 	a.spellScreen = screen.NewSpellScreen(a.keymap, a.character)
 	cmds = append(cmds, a.spellScreen.Init())
+	a.inventoryScreen = screen.NewInventoryScreen(a.keymap, a.character)
+	cmds = append(cmds, a.inventoryScreen.Init())
 
 	cmds = util.DropNil(cmds)
 	if len(cmds) > 0 {
@@ -199,6 +208,8 @@ func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 		a.screenInView = a.spellScreen
 	case command.ConfirmationScreenIndex:
 		a.screenInView = a.confirmationScreen
+	case command.InventoryScreenIndex:
+		a.screenInView = a.inventoryScreen
 	}
 	a.curScreenIdx = idx
 	a.screenInView.Focus()
@@ -216,9 +227,18 @@ func (a *DnCApp) moveTab(d command.Direction) {
 			a.selectedTab = a.spellTab
 		}
 	case a.spellTab:
-		if d == command.UpDirection {
+		switch d {
+		case command.UpDirection:
 			a.selectedTab = a.statTab
+		case command.DownDirection:
+			a.selectedTab = a.inventoryTab
+
 		}
+	case a.inventoryTab:
+		if d == command.UpDirection {
+			a.selectedTab = a.spellTab
+		}
+
 	}
 	a.selectedTab.Focus()
 }
@@ -226,6 +246,7 @@ func (a *DnCApp) moveTab(d command.Direction) {
 func (a *DnCApp) Blur() {
 	a.statTab.Blur()
 	a.spellTab.Blur()
+	a.inventoryTab.Blur()
 }
 
 func NewScreenTab(keymap util.KeyMap, name string, idx command.ScreenIndex, focus bool) *ScreenTab {

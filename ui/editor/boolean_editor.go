@@ -26,6 +26,8 @@ func (e *BooleanEditor) Init(keymap util.KeyMap, label string, delegatorPointer 
 	if !ok {
 		panic("Value passed is not a pointer to bool")
 	}
+	e.keymap = keymap
+	e.label = label
 	e.value = ptr
 
 	if ptr != nil {
@@ -43,7 +45,7 @@ func (e *BooleanEditor) Update(msg tea.Msg) tea.Cmd {
 	switch m := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(m, e.keymap.Left, e.keymap.Right):
+		case key.Matches(m, e.keymap.Left) || key.Matches(m, e.keymap.Right):
 			e.input = !e.input
 		}
 	}
@@ -54,7 +56,9 @@ func (e *BooleanEditor) View() string {
 	if !e.initialized {
 		return ""
 	}
-	return util.RenderItem(e.focus, e.label+":") + " " + util.ItemStyleDefault.Render(prettyBool(e.input))
+	return util.RenderItem(e.focus, e.label+":") +
+		" " +
+		util.ItemStyleDefault.Render(prettyBool(e.input))
 }
 
 func (e *BooleanEditor) Save() tea.Cmd {

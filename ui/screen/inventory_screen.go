@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/ui/command"
+	"hostettler.dev/dnc/ui/component"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/list"
 	"hostettler.dev/dnc/ui/util"
@@ -27,7 +28,11 @@ type InventoryScreen struct {
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
 
-	wallet   *list.List
+	copper   *component.SimpleIntComponent
+	silver   *component.SimpleIntComponent
+	electrum *component.SimpleIntComponent
+	gold     *component.SimpleIntComponent
+	platinum *component.SimpleIntComponent
 	itemList *list.List
 }
 
@@ -35,31 +40,31 @@ func NewInventoryScreen(k util.KeyMap, c *models.Character) *InventoryScreen {
 	return &InventoryScreen{
 		keymap:    k,
 		character: c,
+		copper:    component.NewSimpleIntComponent(k, "CP", &c.Wallet.Copper, true, true),
+		silver:    component.NewSimpleIntComponent(k, "SP", &c.Wallet.Silver, true, true),
+		electrum:  component.NewSimpleIntComponent(k, "EP", &c.Wallet.Electrum, true, true),
+		gold:      component.NewSimpleIntComponent(k, "GP", &c.Wallet.Gold, true, true),
+		platinum:  component.NewSimpleIntComponent(k, "PP", &c.Wallet.Platinum, true, true),
 	}
 }
 
 func (s *InventoryScreen) Init() tea.Cmd {
-	s.focusOn(s.wallet)
-	s.lastFocusedElement = s.wallet
+	s.populateItems()
 
-	s.populateLists()
+	s.focusOn(s.copper)
+	s.lastFocusedElement = s.copper
 
 	return nil
 }
 
-func (s *InventoryScreen) populateLists() {
+func (s *InventoryScreen) populateItems() {
 	if s.itemList == nil {
 		s.itemList = list.NewList(s.keymap,
 			list.LeftAlignedListStyle).
 			WithFixedWidth(itemColWidth).
 			WithViewport(itemColHeight - 2)
 	}
-	if s.wallet == nil {
-		s.wallet = list.NewList(s.keymap, list.LeftAlignedListStyle).
-			WithFixedWidth(itemColWidth)
-	}
 	s.itemList.WithRows(s.GetItemRows())
-	s.wallet.WithRows(s.GetWalletRows())
 }
 
 func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -69,7 +74,7 @@ func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case command.AppendElementMsg:
 		if strings.Contains(msg.Tag, "item") {
 			item_id := s.character.AddEmptyItem()
-			s.populateLists()
+			s.populateItems()
 			cmd = editor.SwitchToEditorCmd(
 				s.character,
 				s.getItemRow(item_id).Editors(),
@@ -129,21 +134,65 @@ func (s *InventoryScreen) moveFocus(d command.Direction) tea.Cmd {
 	s.Blur()
 
 	switch s.lastFocusedElement {
-	case s.wallet:
+	case s.copper:
 		switch d {
 		case command.LeftDirection:
 			cmd = command.ReturnFocusToParentCmd
+		case command.RightDirection:
+			s.focusOn(s.silver)
 		case command.DownDirection:
 			s.focusOn(s.itemList)
 		default:
-			s.focusOn(s.wallet)
+			s.focusOn(s.copper)
+		}
+	case s.silver:
+		switch d {
+		case command.LeftDirection:
+			s.focusOn(s.copper)
+		case command.RightDirection:
+			s.focusOn(s.electrum)
+		case command.DownDirection:
+			s.focusOn(s.itemList)
+		default:
+			s.focusOn(s.silver)
+		}
+	case s.electrum:
+		switch d {
+		case command.LeftDirection:
+			s.focusOn(s.silver)
+		case command.RightDirection:
+			s.focusOn(s.gold)
+		case command.DownDirection:
+			s.focusOn(s.itemList)
+		default:
+			s.focusOn(s.electrum)
+		}
+	case s.gold:
+		switch d {
+		case command.LeftDirection:
+			s.focusOn(s.electrum)
+		case command.RightDirection:
+			s.focusOn(s.platinum)
+		case command.DownDirection:
+			s.focusOn(s.itemList)
+		default:
+			s.focusOn(s.gold)
+		}
+	case s.platinum:
+		switch d {
+		case command.LeftDirection:
+			s.focusOn(s.gold)
+		case command.DownDirection:
+			s.focusOn(s.itemList)
+		default:
+			s.focusOn(s.platinum)
 		}
 	case s.itemList:
 		switch d {
 		case command.LeftDirection:
 			cmd = command.ReturnFocusToParentCmd
 		case command.UpDirection:
-			s.focusOn(s.wallet)
+			s.focusOn(s.electrum)
 		default:
 			s.focusOn(s.itemList)
 		}
@@ -162,22 +211,6 @@ func (s *InventoryScreen) Blur() {
 	}
 
 	s.focusedElement = nil
-}
-
-func (s *InventoryScreen) GetWalletRows() []list.Row {
-	rows := []list.Row{
-		list.NewLabeledIntRow(s.keymap, "CP", &s.character.Wallet.Copper,
-			editor.NewIntEditor(s.keymap, "CP", &s.character.Wallet.Copper)),
-		list.NewLabeledIntRow(s.keymap, "SP", &s.character.Wallet.Silver,
-			editor.NewIntEditor(s.keymap, "SP", &s.character.Wallet.Silver)),
-		list.NewLabeledIntRow(s.keymap, "EP", &s.character.Wallet.Electrum,
-			editor.NewIntEditor(s.keymap, "EP", &s.character.Wallet.Electrum)),
-		list.NewLabeledIntRow(s.keymap, "GP", &s.character.Wallet.Gold,
-			editor.NewIntEditor(s.keymap, "GP", &s.character.Wallet.Gold)),
-		list.NewLabeledIntRow(s.keymap, "PP", &s.character.Wallet.Platinum,
-			editor.NewIntEditor(s.keymap, "PP", &s.character.Wallet.Platinum)),
-	}
-	return rows
 }
 
 func (s *InventoryScreen) GetItemRows() []list.Row {
@@ -208,7 +241,7 @@ func (s *InventoryScreen) getItemRow(id uuid.UUID) list.Row {
 func DeleteItemCallback(s *InventoryScreen, i *models.Item) func() tea.Cmd {
 	return func() tea.Cmd {
 		s.character.DeleteItem(i.Id)
-		s.populateLists()
+		s.populateItems()
 		return command.SaveToFileCmd(s.character)
 	}
 }
@@ -224,18 +257,31 @@ func CreateItemEditors(k util.KeyMap, item *models.Item) []editor.ValueEditor {
 }
 
 func (s *InventoryScreen) RenderInventoryScreenTopBar() string {
+	separator := util.GrayTextStyle.Width(6).Render(util.MakeVerticalSeparator(1))
 	return util.DefaultBorderStyle.
 		Width(util.ScreenWidth).
-		Render(s.wallet.View())
+		AlignHorizontal(lipgloss.Left).
+		Render(lipgloss.JoinHorizontal(
+			lipgloss.Center,
+			util.ForceWidth(s.copper.View(), 15),
+			separator,
+			util.ForceWidth(s.silver.View(), 15),
+			separator,
+			util.ForceWidth(s.electrum.View(), 15),
+			separator,
+			util.ForceWidth(s.gold.View(), 15),
+			separator,
+			util.ForceWidth(s.platinum.View(), 15),
+		))
 }
 
 func RenderItemInfoRow(i *models.Item) string {
-	values := []string{RenderItemPrefix(i), i.Name, RenderAttunementSlots(i.AttunementSlots)}
+	values := []string{DrawItemPrefix(i), i.Name, DrawAttunementSlots(i.AttunementSlots)}
 	values = util.Filter(values, func(s string) bool { return s != "" })
 	return strings.Join(values, " ∙ ")
 }
 
-func RenderItemPrefix(i *models.Item) string {
+func DrawItemPrefix(i *models.Item) string {
 	s := ""
 	switch {
 	case i.Quantity == 0 && i.Equipped:
@@ -246,7 +292,7 @@ func RenderItemPrefix(i *models.Item) string {
 		s = strconv.Itoa(i.Quantity)
 
 	}
-	return util.DefaultTextStyle.Render(s)
+	return s
 }
 
 var AttunementSymbols []editor.EnumMapping = []editor.EnumMapping{
@@ -256,8 +302,8 @@ var AttunementSymbols []editor.EnumMapping = []editor.EnumMapping{
 	{Value: 3, Label: "■■■"},
 }
 
-func RenderAttunementSlots(used int) string {
+func DrawAttunementSlots(used int) string {
 	s := strings.Repeat("■", used)
 	s += strings.Repeat("□", 3-used)
-	return util.DefaultTextStyle.Render(s)
+	return s
 }
