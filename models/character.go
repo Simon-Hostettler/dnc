@@ -34,6 +34,7 @@ type Character struct {
 	Actions            string        `json:"actions"`
 	BonusActions       string        `json:"bonus_actions"`
 	Attacks            []Attack      `json:"attacks"`
+	Wallet             Wallet        `json:"wallet"`
 	Equipment          []Item        `json:"equipment"`
 	Features           []Feature     `json:"features"`
 	Traits             []string      `json:"traits"`
@@ -96,6 +97,31 @@ func (c *Character) GetSpellsByLevel(l int) []*Spell {
 
 func (c *Character) AddEmptyAttack() {
 	c.Attacks = append(c.Attacks, Attack{})
+}
+
+func (c *Character) AddEmptyItem() uuid.UUID {
+	id := uuid.New()
+	c.Equipment = append(c.Equipment, Item{Id: id})
+	return id
+}
+
+func (c *Character) GetItem(id uuid.UUID) *Item {
+	for i := range c.Equipment {
+		if c.Equipment[i].Id == id {
+			return &c.Equipment[i]
+		}
+	}
+	return nil
+}
+
+func (c *Character) DeleteItem(id uuid.UUID) {
+	newItems := []Item{}
+	for i := range c.Equipment {
+		if c.Equipment[i].Id != id {
+			newItems = append(newItems, c.Equipment[i])
+		}
+	}
+	c.Equipment = newItems
 }
 
 func (c *Character) AddEmptySpell(l int) uuid.UUID {

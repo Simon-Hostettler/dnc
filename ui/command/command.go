@@ -18,6 +18,7 @@ const (
 	TitleScreenIndex
 	SpellScreenIndex
 	ConfirmationScreenIndex
+	InventoryScreenIndex
 )
 
 type Direction int

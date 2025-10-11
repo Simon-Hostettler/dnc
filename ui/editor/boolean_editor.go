@@ -1,0 +1,81 @@
+package editor
+
+import (
+	"github.com/charmbracelet/bubbles/key"
+	tea "github.com/charmbracelet/bubbletea"
+	"hostettler.dev/dnc/ui/util"
+)
+
+type BooleanEditor struct {
+	keymap      util.KeyMap
+	label       string
+	value       *bool
+	input       bool
+	initialized bool
+	focus       bool
+}
+
+func NewBooleanEditor(keymap util.KeyMap, label string, delegatorPointer interface{}) *BooleanEditor {
+	s := BooleanEditor{}
+	s.Init(keymap, label, delegatorPointer)
+	return &s
+}
+
+func (e *BooleanEditor) Init(keymap util.KeyMap, label string, delegatorPointer interface{}) {
+	ptr, ok := delegatorPointer.(*bool)
+	if !ok {
+		panic("Value passed is not a pointer to bool")
+	}
+	e.value = ptr
+
+	if ptr != nil {
+		e.input = *ptr
+	}
+
+	e.initialized = true
+}
+
+func (e *BooleanEditor) Update(msg tea.Msg) tea.Cmd {
+	if !e.initialized {
+		return nil
+	}
+
+	switch m := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(m, e.keymap.Left, e.keymap.Right):
+			e.input = !e.input
+		}
+	}
+	return nil
+}
+
+func (e *BooleanEditor) View() string {
+	if !e.initialized {
+		return ""
+	}
+	return util.RenderItem(e.focus, e.label+":") + " " + util.ItemStyleDefault.Render(prettyBool(e.input))
+}
+
+func (e *BooleanEditor) Save() tea.Cmd {
+	if e.value != nil {
+		*e.value = e.input
+	}
+	return nil
+}
+
+func (e *BooleanEditor) Focus() {
+	e.focus = true
+}
+
+func (e *BooleanEditor) Blur() {
+	e.focus = false
+}
+
+func prettyBool(b bool) string {
+	if b {
+		return "■"
+	} else {
+		return "□"
+	}
+}
