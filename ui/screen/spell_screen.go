@@ -219,7 +219,8 @@ func (s *SpellScreen) GetSpellListByLevel(l int) []list.Row {
 		rows = append(rows, list.NewStructRow(s.keymap, spell,
 			RenderSpellInfoRow,
 			CreateSpellEditors(s.keymap, spell),
-		).WithDestructor(command.SpellScreenIndex, DeleteSpellCallback(s, spell)))
+		).WithDestructor(DeleteSpellCallback(s, spell)).
+			WithReader(RenderFullSpellInfo))
 	}
 	rows = append(rows, list.NewAppenderRow(s.keymap, fmt.Sprintf("spell:%d", l)))
 	rows = append(rows, list.NewSeparatorRow(" ", spellColWidth-6))
@@ -285,6 +286,29 @@ func RenderSpellInfoRow(s *models.Spell) string {
 	values := []string{s.Name, s.Damage, s.Components, s.Range, s.CastingTime, s.Duration}
 	values = util.Filter(values, func(s string) bool { return s != "" })
 	return strings.Join(values, " ∙ ")
+}
+
+func RenderFullSpellInfo(s *models.Spell) string {
+	separator := util.MakeHorizontalSeparator(util.SmallScreenWidth-4, 1)
+	content := strings.Join(
+		[]string{s.Name + " ∙  Level: " + strconv.Itoa(s.Level),
+			separator,
+			"Components: " + s.Components,
+			separator,
+			"Range: " + s.Range,
+			separator,
+			"Damage: " + s.Damage,
+			separator,
+			"Casting time: " + s.CastingTime,
+			separator,
+			"Duration: " + s.Duration,
+			separator,
+			s.Description,
+		},
+		"\n")
+	return util.DefaultTextStyle.
+		AlignHorizontal(lipgloss.Left).
+		Render(content)
 }
 
 func RenderSpellSlots(used int, max int) string {

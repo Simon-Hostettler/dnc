@@ -11,29 +11,33 @@ import (
 type StructRow[T any] struct {
 	keymap     util.KeyMap
 	value      *T
-	renderFunc func(val *T) string
+	renderer   func(*T) string
 	editors    []editor.ValueEditor
-	originator command.ScreenIndex
 	destructor func() tea.Cmd
+	reader     func(*T) string
 }
 
 func NewStructRow[T any](
 	keymap util.KeyMap,
 	value *T,
-	renderFunc func(val *T) string,
+	renderer func(val *T) string,
 	editors []editor.ValueEditor,
 ) *StructRow[T] {
 	return &StructRow[T]{
-		keymap:     keymap,
-		value:      value,
-		renderFunc: renderFunc,
-		editors:    editors,
+		keymap:   keymap,
+		value:    value,
+		renderer: renderer,
+		editors:  editors,
 	}
 }
 
-func (r *StructRow[T]) WithDestructor(caller command.ScreenIndex, callback func() tea.Cmd) *StructRow[T] {
-	r.originator = caller
+func (r *StructRow[T]) WithDestructor(callback func() tea.Cmd) *StructRow[T] {
 	r.destructor = callback
+	return r
+}
+
+func (r *StructRow[T]) WithReader(reader func(*T) string) *StructRow[T] {
+	r.reader = reader
 	return r
 }
 
@@ -49,13 +53,15 @@ func (r *StructRow[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r, editor.EditValueCmd(r.editors)
 		case key.Matches(msg, r.keymap.Delete) && r.destructor != nil:
 			return r, command.LaunchConfirmationDialogueCmd(r.destructor)
+		case key.Matches(msg, r.keymap.Show) && r.reader != nil:
+			return r, command.LaunchReaderScreenCmd(r.reader(r.value))
 		}
 	}
 	return r, nil
 }
 
 func (r *StructRow[T]) View() string {
-	return r.renderFunc(r.value)
+	return r.renderer(r.value)
 }
 
 func (r *StructRow[T]) Editors() []editor.ValueEditor {

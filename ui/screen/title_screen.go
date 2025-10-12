@@ -21,10 +21,10 @@ type FocusableModel interface {
 }
 
 var (
-	screenWidth  = 60
-	screenHeight = 15
-	inputWidth   = 18
-	inputLimit   = 64
+	titleScreenWidth  = 40
+	titleScreenHeight = 15
+	inputWidth        = 18
+	inputLimit        = 64
 )
 
 type TitleScreen struct {
@@ -135,7 +135,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *TitleScreen) View() string {
 	createField := util.RenderItem(m.cursor == 0, "Create new Character")
 
-	separator := util.MakeHorizontalSeparator(screenWidth/2, 1)
+	separator := util.MakeHorizontalSeparator(titleScreenWidth/2, 1)
 
 	chars := "\n" + m.characters.View()
 
@@ -145,9 +145,9 @@ func (m *TitleScreen) View() string {
 	}
 
 	return util.DefaultBorderStyle.
-		Width(screenWidth).
-		Height(screenHeight).
-		Render(lipgloss.PlaceVertical(screenHeight, lipgloss.Center,
+		Width(titleScreenWidth).
+		Height(titleScreenHeight).
+		Render(lipgloss.PlaceVertical(titleScreenHeight, lipgloss.Center,
 			lipgloss.JoinVertical(lipgloss.Center, createField, inputField, separator, chars)))
 }
 

@@ -104,3 +104,11 @@ func MakeVerticalSeparator(height int) string {
 func MakeHorizontalSeparator(width int, padding int) string {
 	return GrayTextStyle.Padding(padding, 0).Render(strings.Repeat("─", width))
 }
+
+func PrettyBool(b bool) string {
+	if b {
+		return "■"
+	} else {
+		return "□"
+	}
+}

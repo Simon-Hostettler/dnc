@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/util"
@@ -29,7 +30,9 @@ func (s *ReaderScreen) Init() tea.Cmd {
 
 func (s *ReaderScreen) StartRead(content string) {
 	s.cursor = 0
-	s.content = content
+	s.content = lipgloss.NewStyle().
+		Width(util.SmallScreenWidth - 2).
+		Render(content)
 }
 
 func (s *ReaderScreen) MoveCursor(offset int) {
@@ -62,8 +65,9 @@ func (s *ReaderScreen) View() string {
 	viewableContent := strings.Join(s.contentToLines()[s.cursor:s.cursorEnd()], "\n")
 
 	return util.DefaultBorderStyle.
-		Width(util.SmallScreenWidth).
-		Render(viewableContent)
+		Width(util.SmallScreenWidth + 2).
+		Height(readerHeight).
+		Render(lipgloss.PlaceVertical(readerHeight, lipgloss.Left, viewableContent))
 }
 
 func (s *ReaderScreen) contentToLines() []string {
@@ -71,7 +75,7 @@ func (s *ReaderScreen) contentToLines() []string {
 }
 
 func (s *ReaderScreen) cursorEnd() int {
-	return min(len(s.contentToLines()), s.cursor+readerHeight)
+	return min(len(s.contentToLines()), s.cursor+readerHeight+1)
 }
 
 // to fulfill FocusableModel interface

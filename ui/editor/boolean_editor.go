@@ -58,7 +58,7 @@ func (e *BooleanEditor) View() string {
 	}
 	return util.RenderItem(e.focus, e.label+":") +
 		" " +
-		util.ItemStyleDefault.Render(prettyBool(e.input))
+		util.ItemStyleDefault.Render(util.PrettyBool(e.input))
 }
 
 func (e *BooleanEditor) Save() tea.Cmd {
@@ -74,12 +74,4 @@ func (e *BooleanEditor) Focus() {
 
 func (e *BooleanEditor) Blur() {
 	e.focus = false
-}
-
-func prettyBool(b bool) string {
-	if b {
-		return "■"
-	} else {
-		return "□"
-	}
 }

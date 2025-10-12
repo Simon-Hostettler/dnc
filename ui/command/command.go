@@ -141,7 +141,7 @@ func LaunchConfirmationDialogueCmd(callback func() tea.Cmd) func() tea.Msg {
 	}
 }
 
-func LaunchReaderScreenMsg(content string) func() tea.Msg {
+func LaunchReaderScreenCmd(content string) func() tea.Msg {
 	return func() tea.Msg {
 		return LaunchReaderScreenMsg{content}
 	}

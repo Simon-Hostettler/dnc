@@ -99,6 +99,10 @@ func (t *List) Content() []Row {
 	return t.content
 }
 
+func (t *List) FocussedRow() Row {
+	return t.content[t.cursor]
+}
+
 func (t *List) CursorPos() int {
 	return t.cursor
 }

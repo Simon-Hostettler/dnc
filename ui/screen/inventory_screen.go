@@ -220,7 +220,8 @@ func (s *InventoryScreen) GetItemRows() []list.Row {
 		rows = append(rows, list.NewStructRow(s.keymap, item,
 			RenderItemInfoRow,
 			CreateItemEditors(s.keymap, item),
-		).WithDestructor(command.InventoryScreenIndex, DeleteItemCallback(s, item)))
+		).WithDestructor(DeleteItemCallback(s, item)).
+			WithReader(RenderFullItemInfo))
 	}
 	rows = append(rows, list.NewAppenderRow(s.keymap, "item"))
 	return rows
@@ -279,6 +280,25 @@ func RenderItemInfoRow(i *models.Item) string {
 	values := []string{DrawItemPrefix(i), i.Name, DrawAttunementSlots(i.AttunementSlots)}
 	values = util.Filter(values, func(s string) bool { return s != "" })
 	return strings.Join(values, " ∙ ")
+}
+
+func RenderFullItemInfo(i *models.Item) string {
+	separator := util.MakeHorizontalSeparator(util.SmallScreenWidth-4, 1)
+	content := strings.Join(
+		[]string{i.Name,
+			separator,
+			"Equipped: " + util.PrettyBool(i.Equipped),
+			separator,
+			"Attunement slots required: " + DrawAttunementSlots(i.AttunementSlots),
+			separator,
+			"Quantity: " + strconv.Itoa(i.Quantity),
+			separator,
+			i.Description,
+		},
+		"\n")
+	return util.DefaultTextStyle.
+		AlignHorizontal(lipgloss.Left).
+		Render(content)
 }
 
 func DrawItemPrefix(i *models.Item) string {

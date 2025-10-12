@@ -218,6 +218,8 @@ func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 		a.screenInView = a.confirmationScreen
 	case command.InventoryScreenIndex:
 		a.screenInView = a.inventoryScreen
+	case command.ReaderScreenIndex:
+		a.screenInView = a.readerScreen
 	}
 	a.curScreenIdx = idx
 	a.screenInView.Focus()

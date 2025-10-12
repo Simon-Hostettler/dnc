@@ -101,7 +101,7 @@ func (c *Character) AddEmptyAttack() {
 
 func (c *Character) AddEmptyItem() uuid.UUID {
 	id := uuid.New()
-	c.Equipment = append(c.Equipment, Item{Id: id})
+	c.Equipment = append(c.Equipment, Item{Id: id, Quantity: 1})
 	return id
 }
 
