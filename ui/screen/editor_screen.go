@@ -46,6 +46,9 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					s.editors[s.cursor].Blur()
 					s.cursor--
 					s.editors[s.cursor].Focus()
+				} else if s.cursor == 0 {
+					s.editors[s.cursor].Blur()
+					s.cursor = len(s.editors)
 				}
 			case key.Matches(msg, s.keymap.Down, s.keymap.Enter):
 				s.editors[s.cursor].Blur()
@@ -63,6 +66,9 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch {
 			case key.Matches(msg, s.keymap.Up):
 				s.cursor--
+				s.editors[s.cursor].Focus()
+			case key.Matches(msg, s.keymap.Down):
+				s.cursor = 0
 				s.editors[s.cursor].Focus()
 			case key.Matches(msg, s.keymap.Enter):
 				for _, e := range s.editors {

@@ -250,6 +250,7 @@ func DeleteSpellCallback(s *SpellScreen, sp *models.Spell) func() tea.Cmd {
 func CreateSpellEditors(k util.KeyMap, spell *models.Spell) []editor.ValueEditor {
 	return []editor.ValueEditor{
 		editor.NewStringEditor(k, "Name", &spell.Name),
+		editor.NewBooleanEditor(k, "Prepared", &spell.Prepared),
 		editor.NewStringEditor(k, "Damage", &spell.Damage),
 		editor.NewStringEditor(k, "Casting Time", &spell.CastingTime),
 		editor.NewStringEditor(k, "Range", &spell.Range),
@@ -285,7 +286,7 @@ func RenderSpellHeaderRow(h *SpellListHeader) string {
 func RenderSpellInfoRow(s *models.Spell) string {
 	values := []string{s.Name, s.Damage, s.Components, s.Range, s.CastingTime, s.Duration}
 	values = util.Filter(values, func(s string) bool { return s != "" })
-	return strings.Join(values, " ∙ ")
+	return util.PrettyBoolCircle(s.Prepared) + " " + strings.Join(values, " ∙ ")
 }
 
 func RenderFullSpellInfo(s *models.Spell) string {

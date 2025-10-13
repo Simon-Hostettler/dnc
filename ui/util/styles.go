@@ -112,3 +112,11 @@ func PrettyBool(b bool) string {
 		return "□"
 	}
 }
+
+func PrettyBoolCircle(b bool) string {
+	if b {
+		return "●"
+	} else {
+		return "○"
+	}
+}

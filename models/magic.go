@@ -22,6 +22,7 @@ type Spell struct {
 	Id          uuid.UUID `json:"id"`
 	Name        string    `json:"name"`
 	Level       int       `json:"level"`
+	Prepared    bool      `json:"prepared"`
 	Damage      string    `json:"damage"`
 	CastingTime string    `json:"casting_time"`
 	Range       string    `json:"range"`
