@@ -70,7 +70,6 @@ func NewApp() (*DnCApp, error) {
 		readerScreen:       screen.NewReaderScreen(km),
 	}
 
-	// Initialize database and run migrations.
 	handle, err := db.Open(config.DatabasePath)
 	if err != nil {
 		return nil, err
