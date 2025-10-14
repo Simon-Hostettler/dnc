@@ -250,7 +250,7 @@ func DeleteItemCallback(s *InventoryScreen, i *models.Item) func() tea.Cmd {
 func CreateItemEditors(k util.KeyMap, item *models.Item) []editor.ValueEditor {
 	return []editor.ValueEditor{
 		editor.NewStringEditor(k, "Name", &item.Name),
-		editor.NewBooleanEditor(k, "Equipped", &item.Equipped),
+		editor.NewEnumEditor(k, EquippedSymbols, "Equipped", &item.Equipped),
 		editor.NewEnumEditor(k, AttunementSymbols, "Attunement Slots", &item.AttunementSlots),
 		editor.NewIntEditor(k, "Quantity", &item.Quantity),
 		editor.NewStringEditor(k, "Description", &item.Description),
@@ -287,7 +287,7 @@ func RenderFullItemInfo(i *models.Item) string {
 	content := strings.Join(
 		[]string{i.Name,
 			separator,
-			"Equipped: " + util.PrettyBool(i.Equipped),
+			"Equipped: " + DrawItemPrefix(i),
 			separator,
 			"Attunement slots required: " + DrawAttunementSlots(i.AttunementSlots),
 			separator,
@@ -303,16 +303,22 @@ func RenderFullItemInfo(i *models.Item) string {
 
 func DrawItemPrefix(i *models.Item) string {
 	s := ""
-	switch {
-	case i.Quantity == 0 && i.Equipped:
+	switch i.Equipped {
+	case models.Equipped:
 		s = "■"
-	case i.Quantity == 0 && !i.Equipped:
+	case models.NotEquipped:
 		s = "□"
 	default:
 		s = strconv.Itoa(i.Quantity)
 
 	}
 	return s
+}
+
+var EquippedSymbols []editor.EnumMapping = []editor.EnumMapping{
+	{Value: int(models.NonEquippable), Label: "Not Equippable"},
+	{Value: int(models.NotEquipped), Label: "Not Equipped"},
+	{Value: int(models.Equipped), Label: "Equipped"},
 }
 
 var AttunementSymbols []editor.EnumMapping = []editor.EnumMapping{

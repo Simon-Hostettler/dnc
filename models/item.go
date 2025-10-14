@@ -2,14 +2,22 @@ package models
 
 import "github.com/google/uuid"
 
+type Equippable int
+
+const (
+	NonEquippable Equippable = iota
+	NotEquipped
+	Equipped
+)
+
 type Item struct {
-	Id              uuid.UUID `json:"id"`
-	Name            string    `json:"name"`
-	Equipped        bool      `json:"equipped"`
-	AttunementSlots int       `json:"attunement_slots"`
-	Description     string    `json:"description"`
-	Quantity        int       `json:"quantity"`
-	Weight          float64   `json:"weight"`
+	Id              uuid.UUID  `json:"id"`
+	Name            string     `json:"name"`
+	Equipped        Equippable `json:"equipped"`
+	AttunementSlots int        `json:"attunement_slots"`
+	Description     string     `json:"description"`
+	Quantity        int        `json:"quantity"`
+	Weight          float64    `json:"weight"`
 }
 
 type Wallet struct {
