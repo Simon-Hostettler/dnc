@@ -4,6 +4,8 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jmoiron/sqlx"
+	"hostettler.dev/dnc/db"
 	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/editor"
@@ -23,6 +25,7 @@ type DnCApp struct {
 	width     int
 	height    int
 	character *models.Character
+	db        *sqlx.DB
 
 	selectedTab     *ScreenTab
 	isScreenFocused bool
@@ -55,7 +58,7 @@ func NewApp() (*DnCApp, error) {
 		return nil, err
 	}
 	km := util.DefaultKeyMap()
-	return &DnCApp{
+	app := &DnCApp{
 		config:             config,
 		keymap:             km,
 		statTab:            NewScreenTab(km, "Stats", command.StatScreenIndex, false),
@@ -65,7 +68,18 @@ func NewApp() (*DnCApp, error) {
 		editorScreen:       screen.NewEditorScreen(km, []editor.ValueEditor{}),
 		confirmationScreen: screen.NewConfirmationScreen(km),
 		readerScreen:       screen.NewReaderScreen(km),
-	}, nil
+	}
+
+	// Initialize database and run migrations.
+	handle, err := db.Open(config.DatabasePath)
+	if err != nil {
+		return nil, err
+	}
+	if err := db.MigrateUp(handle); err != nil {
+		return nil, err
+	}
+	app.db = handle
+	return app, nil
 }
 
 func (a *DnCApp) Init() tea.Cmd {
@@ -101,6 +115,10 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if key.Matches(msg, a.keymap.ForceQuit) {
+			// Close DB before quitting
+			if a.db != nil {
+				_ = a.db.Close()
+			}
 			return a, tea.Quit
 		}
 		if a.isScreenFocused {
