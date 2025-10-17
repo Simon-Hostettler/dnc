@@ -1,0 +1,689 @@
+package repository
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+
+	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
+	"hostettler.dev/dnc/models"
+)
+
+// CharacterAggregate represents a character and all of its dependent rows.
+type CharacterAggregate struct {
+	Character models.CharacterTO
+	Abilities *models.AbilitiesTO
+	Wallet    *models.WalletTO
+	Items     []models.ItemTO
+	Spells    []models.SpellTO
+	Attacks   []models.AttackTO
+	Skills    []models.CharacterSkillTO
+}
+
+// CharacterRepository defines core operations for loading and persisting characters.
+type CharacterRepository interface {
+	Create(ctx context.Context, agg *CharacterAggregate) (uuid.UUID, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*CharacterAggregate, error)
+	GetByName(ctx context.Context, name string) (*CharacterAggregate, error)
+	List(ctx context.Context) ([]models.CharacterTO, error)
+	Update(ctx context.Context, agg *CharacterAggregate) error
+	Delete(ctx context.Context, id uuid.UUID) error
+
+	// Reference data
+	ListSkillDefinitions(ctx context.Context) ([]models.SkillDefinitionTO, error)
+
+	// Partial updates / child-entity operations (spells)
+	AddSpell(ctx context.Context, characterID uuid.UUID, sp models.SpellTO) (uuid.UUID, error)
+	UpdateSpell(ctx context.Context, sp models.SpellTO) error
+	DeleteSpell(ctx context.Context, spellID uuid.UUID) error
+	GetSpell(ctx context.Context, spellID uuid.UUID) (*models.SpellTO, error)
+	ListSpellsByCharacter(ctx context.Context, characterID uuid.UUID) ([]models.SpellTO, error)
+
+	// Partial updates / child-entity operations (items)
+	AddItem(ctx context.Context, characterID uuid.UUID, it models.ItemTO) (uuid.UUID, error)
+	UpdateItem(ctx context.Context, it models.ItemTO) error
+	DeleteItem(ctx context.Context, itemID uuid.UUID) error
+	GetItem(ctx context.Context, itemID uuid.UUID) (*models.ItemTO, error)
+	ListItemsByCharacter(ctx context.Context, characterID uuid.UUID) ([]models.ItemTO, error)
+
+	// Partial updates / child-entity operations (attacks)
+	AddAttack(ctx context.Context, characterID uuid.UUID, a models.AttackTO) (uuid.UUID, error)
+	UpdateAttack(ctx context.Context, a models.AttackTO) error
+	DeleteAttack(ctx context.Context, attackID uuid.UUID) error
+	GetAttack(ctx context.Context, attackID uuid.UUID) (*models.AttackTO, error)
+	ListAttacksByCharacter(ctx context.Context, characterID uuid.UUID) ([]models.AttackTO, error)
+
+	// Partial updates / child-entity operations (skills)
+	UpsertSkill(ctx context.Context, characterID uuid.UUID, skillID int, proficiency int, customModifier int) error
+	DeleteSkill(ctx context.Context, characterID uuid.UUID, skillID int) error
+	ListSkillsByCharacter(ctx context.Context, characterID uuid.UUID) ([]models.CharacterSkillTO, error)
+
+	// Partial 1:1 operations
+	GetAbilities(ctx context.Context, characterID uuid.UUID) (*models.AbilitiesTO, error)
+	UpsertAbilities(ctx context.Context, characterID uuid.UUID, ab models.AbilitiesTO) error
+	GetWallet(ctx context.Context, characterID uuid.UUID) (*models.WalletTO, error)
+	UpsertWallet(ctx context.Context, characterID uuid.UUID, w models.WalletTO) error
+}
+
+// DBCharacterRepository is a CharacterRepository backed by sqlx and DuckDB.
+type DBCharacterRepository struct {
+	db *sqlx.DB
+}
+
+func NewDBCharacterRepository(db *sqlx.DB) *DBCharacterRepository {
+	return &DBCharacterRepository{db: db}
+}
+
+func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggregate) (uuid.UUID, error) {
+	var newID uuid.UUID
+	err := r.withTx(ctx, func(tx *sqlx.Tx) error {
+		c := agg.Character
+		ensureSpellSlots(&c)
+		// Insert character and return id
+		row := tx.QueryRowxContext(ctx, `
+            INSERT INTO character (
+                name, class_levels, background, alignment,
+                proficiency_bonus, armor_class, initiative, speed,
+                max_hit_points, curr_hit_points, temp_hit_points,
+                hit_dice, used_hit_dice, death_save_successes, death_save_failures,
+                actions, bonus_actions, spell_slots, spell_slots_used,
+                spellcasting_ability, spell_save_dc, spell_attack_bonus
+            ) VALUES (
+                ?,?,?,?,?,?,?,?,
+                ?,?,?,
+                ?,?,?,?,
+                ?,?,?,?,
+                ?,?
+            ) RETURNING id`,
+			c.Name, c.ClassLevels, c.Background, c.Alignment,
+			c.ProficiencyBonus, c.ArmorClass, c.Initiative, c.Speed,
+			c.MaxHitPoints, c.CurrHitPoints, c.TempHitPoints,
+			c.HitDice, c.UsedHitDice, c.DeathSaveSuccesses, c.DeathSaveFailures,
+			c.Actions, c.BonusActions, c.SpellSlots, c.SpellSlotsUsed,
+			c.SpellcastingAbility, c.SpellSaveDC, c.SpellAttackBonus,
+		)
+		if err := row.Scan(&newID); err != nil {
+			return err
+		}
+
+		// 1:1 tables
+		if agg.Abilities != nil {
+			if err := upsertAbilities(ctx, tx, newID, agg.Abilities); err != nil {
+				return err
+			}
+		}
+		if agg.Wallet != nil {
+			if err := upsertWallet(ctx, tx, newID, agg.Wallet); err != nil {
+				return err
+			}
+		}
+
+		// 1:N tables (replace strategy)
+		if len(agg.Items) > 0 {
+			if err := replaceItems(ctx, tx, newID, agg.Items); err != nil {
+				return err
+			}
+		}
+		if len(agg.Spells) > 0 {
+			if err := replaceSpells(ctx, tx, newID, agg.Spells); err != nil {
+				return err
+			}
+		}
+		if len(agg.Attacks) > 0 {
+			if err := replaceAttacks(ctx, tx, newID, agg.Attacks); err != nil {
+				return err
+			}
+		}
+		if len(agg.Skills) > 0 {
+			if err := replaceSkills(ctx, tx, newID, agg.Skills); err != nil {
+				return err
+			}
+		}
+		agg.Character.ID = newID
+		return nil
+	})
+	return newID, err
+}
+
+func (r *DBCharacterRepository) GetByID(ctx context.Context, id uuid.UUID) (*CharacterAggregate, error) {
+	var c models.CharacterTO
+	if err := r.db.GetContext(ctx, &c, `SELECT * FROM character WHERE id = ?`, id); err != nil {
+		return nil, err
+	}
+	agg := &CharacterAggregate{Character: c}
+	if ab, err := getAbilities(ctx, r.db, id); err != nil {
+		return nil, err
+	} else {
+		agg.Abilities = ab
+	}
+	if w, err := getWallet(ctx, r.db, id); err != nil {
+		return nil, err
+	} else {
+		agg.Wallet = w
+	}
+	if items, err := listItems(ctx, r.db, id); err != nil {
+		return nil, err
+	} else {
+		agg.Items = items
+	}
+	if spells, err := listSpells(ctx, r.db, id); err != nil {
+		return nil, err
+	} else {
+		agg.Spells = spells
+	}
+	if atks, err := listAttacks(ctx, r.db, id); err != nil {
+		return nil, err
+	} else {
+		agg.Attacks = atks
+	}
+	if skills, err := listSkills(ctx, r.db, id); err != nil {
+		return nil, err
+	} else {
+		agg.Skills = skills
+	}
+	return agg, nil
+}
+
+func (r *DBCharacterRepository) GetByName(ctx context.Context, name string) (*CharacterAggregate, error) {
+	var id uuid.UUID
+	if err := r.db.GetContext(ctx, &id, `SELECT id FROM character WHERE name = ?`, name); err != nil {
+		return nil, err
+	}
+	return r.GetByID(ctx, id)
+}
+
+func (r *DBCharacterRepository) List(ctx context.Context) ([]models.CharacterTO, error) {
+	var list []models.CharacterTO
+	if err := r.db.SelectContext(ctx, &list, `SELECT * FROM character ORDER BY name ASC`); err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggregate) error {
+	if agg == nil {
+		return errors.New("nil aggregate")
+	}
+	id := agg.Character.ID
+	return r.withTx(ctx, func(tx *sqlx.Tx) error {
+		c := agg.Character
+		ensureSpellSlots(&c)
+		// Update character row
+		if _, err := tx.ExecContext(ctx, `
+            UPDATE character SET
+                name=?, class_levels=?, background=?, alignment=?,
+                proficiency_bonus=?, armor_class=?, initiative=?, speed=?,
+                max_hit_points=?, curr_hit_points=?, temp_hit_points=?,
+                hit_dice=?, used_hit_dice=?, death_save_successes=?, death_save_failures=?,
+                actions=?, bonus_actions=?, spell_slots=?, spell_slots_used=?,
+                spellcasting_ability=?, spell_save_dc=?, spell_attack_bonus=?,
+                updated_at = current_timestamp
+            WHERE id=?
+        `,
+			c.Name, c.ClassLevels, c.Background, c.Alignment,
+			c.ProficiencyBonus, c.ArmorClass, c.Initiative, c.Speed,
+			c.MaxHitPoints, c.CurrHitPoints, c.TempHitPoints,
+			c.HitDice, c.UsedHitDice, c.DeathSaveSuccesses, c.DeathSaveFailures,
+			c.Actions, c.BonusActions, c.SpellSlots, c.SpellSlotsUsed,
+			c.SpellcastingAbility, c.SpellSaveDC, c.SpellAttackBonus,
+			id,
+		); err != nil {
+			return err
+		}
+		// Replace dependents
+		if err := upsertAbilities(ctx, tx, id, agg.Abilities); err != nil {
+			return err
+		}
+		if err := upsertWallet(ctx, tx, id, agg.Wallet); err != nil {
+			return err
+		}
+		if err := replaceItems(ctx, tx, id, agg.Items); err != nil {
+			return err
+		}
+		if err := replaceSpells(ctx, tx, id, agg.Spells); err != nil {
+			return err
+		}
+		if err := replaceAttacks(ctx, tx, id, agg.Attacks); err != nil {
+			return err
+		}
+		if err := replaceSkills(ctx, tx, id, agg.Skills); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func (r *DBCharacterRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return r.withTx(ctx, func(tx *sqlx.Tx) error {
+		// Delete children first due to FKs
+		if _, err := tx.ExecContext(ctx, `DELETE FROM wallet WHERE character_id=?`, id); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM abilities WHERE character_id=?`, id); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM item WHERE character_id=?`, id); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM spell WHERE character_id=?`, id); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM attacks WHERE character_id=?`, id); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM character_skill WHERE character_id=?`, id); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM character WHERE id=?`, id); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func (r *DBCharacterRepository) ListSkillDefinitions(ctx context.Context) ([]models.SkillDefinitionTO, error) {
+	var defs []models.SkillDefinitionTO
+	if err := r.db.SelectContext(ctx, &defs, `SELECT * FROM skill_definition ORDER BY id ASC`); err != nil {
+		return nil, err
+	}
+	return defs, nil
+}
+
+// -- Spells: partial update operations --
+
+func (r *DBCharacterRepository) AddSpell(ctx context.Context, characterID uuid.UUID, sp models.SpellTO) (uuid.UUID, error) {
+	// If ID is provided, use it, else let DB generate via DEFAULT/RETURNING.
+	if sp.ID != uuid.Nil {
+		var id uuid.UUID
+		row := r.db.QueryRowxContext(ctx, `
+            INSERT INTO spell (id, character_id, name, level, prepared, damage, casting_time, range, duration, components, description)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING id
+        `, sp.ID, characterID, sp.Name, sp.Level, sp.Prepared, sp.Damage, sp.CastingTime, sp.Range, sp.Duration, sp.Components, sp.Description)
+		if err := row.Scan(&id); err != nil {
+			return uuid.Nil, err
+		}
+		return id, nil
+	}
+	var id uuid.UUID
+	row := r.db.QueryRowxContext(ctx, `
+        INSERT INTO spell (character_id, name, level, prepared, damage, casting_time, range, duration, components, description)
+        VALUES (?,?,?,?,?,?,?,?,?,?) RETURNING id
+    `, characterID, sp.Name, sp.Level, sp.Prepared, sp.Damage, sp.CastingTime, sp.Range, sp.Duration, sp.Components, sp.Description)
+	if err := row.Scan(&id); err != nil {
+		return uuid.Nil, err
+	}
+	return id, nil
+}
+
+func (r *DBCharacterRepository) UpdateSpell(ctx context.Context, sp models.SpellTO) error {
+	if sp.ID == uuid.Nil {
+		return errors.New("UpdateSpell: missing spell ID")
+	}
+	_, err := r.db.ExecContext(ctx, `
+        UPDATE spell SET
+            name=?, level=?, prepared=?, damage=?, casting_time=?, range=?, duration=?, components=?, description=?,
+            updated_at=current_timestamp
+        WHERE id=?
+    `, sp.Name, sp.Level, sp.Prepared, sp.Damage, sp.CastingTime, sp.Range, sp.Duration, sp.Components, sp.Description, sp.ID)
+	return err
+}
+
+func (r *DBCharacterRepository) DeleteSpell(ctx context.Context, spellID uuid.UUID) error {
+	if spellID == uuid.Nil {
+		return errors.New("DeleteSpell: missing spell ID")
+	}
+	_, err := r.db.ExecContext(ctx, `DELETE FROM spell WHERE id=?`, spellID)
+	return err
+}
+
+func (r *DBCharacterRepository) GetSpell(ctx context.Context, spellID uuid.UUID) (*models.SpellTO, error) {
+	if spellID == uuid.Nil {
+		return nil, errors.New("GetSpell: missing spell ID")
+	}
+	var sp models.SpellTO
+	if err := r.db.GetContext(ctx, &sp, `SELECT * FROM spell WHERE id=?`, spellID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &sp, nil
+}
+
+func (r *DBCharacterRepository) ListSpellsByCharacter(ctx context.Context, characterID uuid.UUID) ([]models.SpellTO, error) {
+	return listSpells(ctx, r.db, characterID)
+}
+
+// RunInTransaction executes fn with a tx-backed repository implementing BatchRepository.
+// Note: transactional helpers can be added later if needed.
+
+// -- Items: partial update operations --
+
+func (r *DBCharacterRepository) AddItem(ctx context.Context, characterID uuid.UUID, it models.ItemTO) (uuid.UUID, error) {
+	if it.ID != uuid.Nil {
+		var id uuid.UUID
+		row := r.db.QueryRowxContext(ctx, `
+			INSERT INTO item (id, character_id, name, equipped, attunement_slots, quantity)
+			VALUES (?,?,?,?,?,?) RETURNING id
+		`, it.ID, characterID, it.Name, it.Equipped, it.AttunementSlots, it.Quantity)
+		if err := row.Scan(&id); err != nil {
+			return uuid.Nil, err
+		}
+		return id, nil
+	}
+	var id uuid.UUID
+	row := r.db.QueryRowxContext(ctx, `
+		INSERT INTO item (character_id, name, equipped, attunement_slots, quantity)
+		VALUES (?,?,?,?,?) RETURNING id
+	`, characterID, it.Name, it.Equipped, it.AttunementSlots, it.Quantity)
+	if err := row.Scan(&id); err != nil {
+		return uuid.Nil, err
+	}
+	return id, nil
+}
+
+func (r *DBCharacterRepository) UpdateItem(ctx context.Context, it models.ItemTO) error {
+	if it.ID == uuid.Nil { return errors.New("UpdateItem: missing item ID") }
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE item SET
+			name=?, equipped=?, attunement_slots=?, quantity=?,
+			updated_at=current_timestamp
+		WHERE id=?
+	`, it.Name, it.Equipped, it.AttunementSlots, it.Quantity, it.ID)
+	return err
+}
+
+func (r *DBCharacterRepository) DeleteItem(ctx context.Context, itemID uuid.UUID) error {
+	if itemID == uuid.Nil { return errors.New("DeleteItem: missing item ID") }
+	_, err := r.db.ExecContext(ctx, `DELETE FROM item WHERE id=?`, itemID)
+	return err
+}
+
+func (r *DBCharacterRepository) GetItem(ctx context.Context, itemID uuid.UUID) (*models.ItemTO, error) {
+	if itemID == uuid.Nil { return nil, errors.New("GetItem: missing item ID") }
+	var it models.ItemTO
+	if err := r.db.GetContext(ctx, &it, `SELECT * FROM item WHERE id=?`, itemID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) { return nil, nil }
+		return nil, err
+	}
+	return &it, nil
+}
+
+func (r *DBCharacterRepository) ListItemsByCharacter(ctx context.Context, characterID uuid.UUID) ([]models.ItemTO, error) {
+	return listItems(ctx, r.db, characterID)
+}
+
+// -- Attacks: partial update operations --
+
+func (r *DBCharacterRepository) AddAttack(ctx context.Context, characterID uuid.UUID, a models.AttackTO) (uuid.UUID, error) {
+	if a.ID != uuid.Nil {
+		var id uuid.UUID
+		row := r.db.QueryRowxContext(ctx, `
+			INSERT INTO attacks (id, character_id, name, bonus, damage, damage_type)
+			VALUES (?,?,?,?,?,?) RETURNING id
+		`, a.ID, characterID, a.Name, a.Bonus, a.Damage, a.DamageType)
+		if err := row.Scan(&id); err != nil { return uuid.Nil, err }
+		return id, nil
+	}
+	var id uuid.UUID
+	row := r.db.QueryRowxContext(ctx, `
+		INSERT INTO attacks (character_id, name, bonus, damage, damage_type)
+		VALUES (?,?,?,?,?) RETURNING id
+	`, characterID, a.Name, a.Bonus, a.Damage, a.DamageType)
+	if err := row.Scan(&id); err != nil { return uuid.Nil, err }
+	return id, nil
+}
+
+func (r *DBCharacterRepository) UpdateAttack(ctx context.Context, a models.AttackTO) error {
+	if a.ID == uuid.Nil { return errors.New("UpdateAttack: missing attack ID") }
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE attacks SET
+			name=?, bonus=?, damage=?, damage_type=?,
+			updated_at=current_timestamp
+		WHERE id=?
+	`, a.Name, a.Bonus, a.Damage, a.DamageType, a.ID)
+	return err
+}
+
+func (r *DBCharacterRepository) DeleteAttack(ctx context.Context, attackID uuid.UUID) error {
+	if attackID == uuid.Nil { return errors.New("DeleteAttack: missing attack ID") }
+	_, err := r.db.ExecContext(ctx, `DELETE FROM attacks WHERE id=?`, attackID)
+	return err
+}
+
+func (r *DBCharacterRepository) GetAttack(ctx context.Context, attackID uuid.UUID) (*models.AttackTO, error) {
+	if attackID == uuid.Nil { return nil, errors.New("GetAttack: missing attack ID") }
+	var a models.AttackTO
+	if err := r.db.GetContext(ctx, &a, `SELECT * FROM attacks WHERE id=?`, attackID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) { return nil, nil }
+		return nil, err
+	}
+	return &a, nil
+}
+
+func (r *DBCharacterRepository) ListAttacksByCharacter(ctx context.Context, characterID uuid.UUID) ([]models.AttackTO, error) {
+	return listAttacks(ctx, r.db, characterID)
+}
+
+
+// -- Skills: partial update operations --
+
+func (r *DBCharacterRepository) UpsertSkill(ctx context.Context, characterID uuid.UUID, skillID int, proficiency int, customModifier int) error {
+	// Delete-then-insert to respect UNIQUE(character_id, skill_id)
+	_, err := r.db.ExecContext(ctx, `DELETE FROM character_skill WHERE character_id=? AND skill_id=?`, characterID, skillID)
+	if err != nil { return err }
+	_, err = r.db.ExecContext(ctx, `
+		INSERT INTO character_skill (id, character_id, skill_id, proficiency, custom_modifier)
+		VALUES (?,?,?,?,?)
+	`, uuid.New(), characterID, skillID, proficiency, customModifier)
+	return err
+}
+
+func (r *DBCharacterRepository) DeleteSkill(ctx context.Context, characterID uuid.UUID, skillID int) error {
+	_, err := r.db.ExecContext(ctx, `DELETE FROM character_skill WHERE character_id=? AND skill_id=?`, characterID, skillID)
+	return err
+}
+
+func (r *DBCharacterRepository) ListSkillsByCharacter(ctx context.Context, characterID uuid.UUID) ([]models.CharacterSkillTO, error) {
+	return listSkills(ctx, r.db, characterID)
+}
+
+// -- Abilities/Wallet: partial 1:1 operations --
+
+func (r *DBCharacterRepository) GetAbilities(ctx context.Context, characterID uuid.UUID) (*models.AbilitiesTO, error) {
+	return getAbilities(ctx, r.db, characterID)
+}
+
+func (r *DBCharacterRepository) UpsertAbilities(ctx context.Context, characterID uuid.UUID, ab models.AbilitiesTO) error {
+	return r.withTx(ctx, func(tx *sqlx.Tx) error { return upsertAbilities(ctx, tx, characterID, &ab) })
+}
+
+func (r *DBCharacterRepository) GetWallet(ctx context.Context, characterID uuid.UUID) (*models.WalletTO, error) {
+	return getWallet(ctx, r.db, characterID)
+}
+
+func (r *DBCharacterRepository) UpsertWallet(ctx context.Context, characterID uuid.UUID, w models.WalletTO) error {
+	return r.withTx(ctx, func(tx *sqlx.Tx) error { return upsertWallet(ctx, tx, characterID, &w) })
+}
+
+// Helpers
+
+func (r *DBCharacterRepository) withTx(ctx context.Context, fn func(*sqlx.Tx) error) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	if err := fn(tx); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	return tx.Commit()
+}
+
+func ensureSpellSlots(c *models.CharacterTO) {
+	if c.SpellSlots == nil || len(c.SpellSlots) != 10 {
+		c.SpellSlots = make([]int, 10)
+	}
+	if c.SpellSlotsUsed == nil || len(c.SpellSlotsUsed) != 10 {
+		c.SpellSlotsUsed = make([]int, 10)
+	}
+}
+
+func upsertAbilities(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, ab *models.AbilitiesTO) error {
+	if ab == nil {
+		return nil
+	}
+	// delete then insert for simplicity
+	if _, err := tx.ExecContext(ctx, `DELETE FROM abilities WHERE character_id=?`, characterID); err != nil {
+		return err
+	}
+	_, err := tx.ExecContext(ctx, `
+        INSERT INTO abilities (
+            character_id, strength, dexterity, constitution, intelligence, wisdom, charisma
+        ) VALUES (?,?,?,?,?,?,?)
+    `, characterID, ab.Strength, ab.Dexterity, ab.Constitution, ab.Intelligence, ab.Wisdom, ab.Charisma)
+	return err
+}
+
+func upsertWallet(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, w *models.WalletTO) error {
+	if w == nil {
+		return nil
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM wallet WHERE character_id=?`, characterID); err != nil {
+		return err
+	}
+	_, err := tx.ExecContext(ctx, `
+        INSERT INTO wallet (
+            character_id, copper, silver, electrum, gold, platinum
+        ) VALUES (?,?,?,?,?,?)
+    `, characterID, w.Copper, w.Silver, w.Electrum, w.Gold, w.Platinum)
+	return err
+}
+
+func replaceItems(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, items []models.ItemTO) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM item WHERE character_id=?`, characterID); err != nil {
+		return err
+	}
+	for _, it := range items {
+		if it.ID == uuid.Nil {
+			it.ID = uuid.New()
+		}
+		if _, err := tx.ExecContext(ctx, `
+            INSERT INTO item (id, character_id, name, equipped, attunement_slots, quantity)
+            VALUES (?,?,?,?,?,?)
+        `, it.ID, characterID, it.Name, it.Equipped, it.AttunementSlots, it.Quantity); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func replaceSpells(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, spells []models.SpellTO) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM spell WHERE character_id=?`, characterID); err != nil {
+		return err
+	}
+	for _, sp := range spells {
+		if sp.ID == uuid.Nil {
+			sp.ID = uuid.New()
+		}
+		if _, err := tx.ExecContext(ctx, `
+            INSERT INTO spell (id, character_id, name, level, prepared, damage, casting_time, range, duration, components, description)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        `, sp.ID, characterID, sp.Name, sp.Level, sp.Prepared, sp.Damage, sp.CastingTime, sp.Range, sp.Duration, sp.Components, sp.Description); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func replaceAttacks(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, atks []models.AttackTO) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM attacks WHERE character_id=?`, characterID); err != nil {
+		return err
+	}
+	for _, a := range atks {
+		if a.ID == uuid.Nil {
+			a.ID = uuid.New()
+		}
+		if _, err := tx.ExecContext(ctx, `
+            INSERT INTO attacks (id, character_id, name, bonus, damage, damage_type)
+            VALUES (?,?,?,?,?,?)
+        `, a.ID, characterID, a.Name, a.Bonus, a.Damage, a.DamageType); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func replaceSkills(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, skills []models.CharacterSkillTO) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM character_skill WHERE character_id=?`, characterID); err != nil {
+		return err
+	}
+	for _, s := range skills {
+		if s.ID == uuid.Nil {
+			s.ID = uuid.New()
+		}
+		if _, err := tx.ExecContext(ctx, `
+            INSERT INTO character_skill (id, character_id, skill_id, proficiency, custom_modifier)
+            VALUES (?,?,?,?,?)
+        `, s.ID, characterID, s.SkillID, s.Proficiency, s.CustomModifier); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getAbilities(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) (*models.AbilitiesTO, error) {
+	var ab models.AbilitiesTO
+	if err := sqlx.GetContext(ctx, db, &ab, `SELECT * FROM abilities WHERE character_id=?`, id); err != nil {
+		// Return nil if not found
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &ab, nil
+}
+
+func getWallet(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) (*models.WalletTO, error) {
+	var w models.WalletTO
+	if err := sqlx.GetContext(ctx, db, &w, `SELECT * FROM wallet WHERE character_id=?`, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &w, nil
+}
+
+func listItems(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]models.ItemTO, error) {
+	var items []models.ItemTO
+	if err := sqlx.SelectContext(ctx, db, &items, `SELECT * FROM item WHERE character_id=? ORDER BY created_at ASC`, id); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func listSpells(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]models.SpellTO, error) {
+	var spells []models.SpellTO
+	if err := sqlx.SelectContext(ctx, db, &spells, `SELECT * FROM spell WHERE character_id=? ORDER BY level ASC, name ASC`, id); err != nil {
+		return nil, err
+	}
+	return spells, nil
+}
+
+func listAttacks(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]models.AttackTO, error) {
+	var atks []models.AttackTO
+	if err := sqlx.SelectContext(ctx, db, &atks, `SELECT * FROM attacks WHERE character_id=? ORDER BY created_at ASC`, id); err != nil {
+		return nil, err
+	}
+	return atks, nil
+}
+
+func listSkills(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]models.CharacterSkillTO, error) {
+	var skills []models.CharacterSkillTO
+	if err := sqlx.SelectContext(ctx, db, &skills, `SELECT * FROM character_skill WHERE character_id=? ORDER BY skill_id ASC`, id); err != nil {
+		return nil, err
+	}
+	return skills, nil
+}

@@ -18,7 +18,6 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-// Marker regexes (simple; assumes markers are on their own lines)
 var (
 	rxUp   = regexp.MustCompile(`(?s)--\s*\+duckUp\s*(.*?)\n--\s*\+duckDown`)
 	rxDown = regexp.MustCompile(`(?s)--\s*\+duckUp.*?--\s*\+duckDown\s*(.*)$`)
@@ -254,9 +253,7 @@ func extractDown(content string) (string, error) {
 	return strings.TrimSpace(m[1]), nil
 }
 
-// execStatements splits on semicolons and executes non-empty statements.
 func execStatements(tx *sqlx.Tx, sqlBlob string) error {
-	// Naive split; sufficient for simple DDL. Avoid semicolons inside string literals.
 	for _, stmt := range strings.Split(sqlBlob, ";") {
 		s := strings.TrimSpace(stmt)
 		if s == "" {
