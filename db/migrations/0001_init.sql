@@ -1,6 +1,6 @@
 -- +duckUp
 CREATE TABLE IF NOT EXISTS character (
-    id UUID PRIMARY KEY DEFAULT uuidv4(),
+    id UUID PRIMARY KEY DEFAULT uuid(),
     name TEXT NOT NULL,
     class_levels TEXT NOT NULL DEFAULT '',
     background TEXT NOT NULL DEFAULT '',
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS character (
 );
 
 CREATE TABLE IF NOT EXISTS item (
-    id UUID PRIMARY KEY DEFAULT uuidv4(),
+    id UUID PRIMARY KEY DEFAULT uuid(),
     character_id UUID NOT NULL,
     name TEXT NOT NULL,
     equipped INTEGER NOT NULL DEFAULT 0 CHECK (
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS wallet (
 );
 
 CREATE TABLE IF NOT EXISTS spell (
-    id UUID PRIMARY KEY DEFAULT uuidv4(),
+    id UUID PRIMARY KEY DEFAULT uuid(),
     character_id UUID NOT NULL,
     name TEXT NOT NULL,
     level INTEGER NOT NULL,
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS spell (
 );
 
 CREATE TABLE IF NOT EXISTS attacks (
-    id UUID PRIMARY KEY DEFAULT uuidv4(),
+    id UUID PRIMARY KEY DEFAULT uuid(),
     character_id UUID NOT NULL,
     name TEXT NOT NULL,
     bonus INTEGER NOT NULL DEFAULT 0,
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS skill_definition (
 );
 
 CREATE TABLE IF NOT EXISTS character_skill (
-    id UUID PRIMARY KEY DEFAULT uuidv4(),
+    id UUID PRIMARY KEY DEFAULT uuid(),
     character_id UUID NOT NULL,
     skill_id INTEGER NOT NULL,
     proficiency INTEGER NOT NULL DEFAULT 0 CHECK (
