@@ -2,7 +2,6 @@ package editor
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,48 +14,44 @@ type EnumMapping struct {
 }
 
 type EnumEditor struct {
-	keymap      util.KeyMap
-	options     []EnumMapping
-	label       string
-	value       reflect.Value
-	cursor      int
-	initialized bool
-	focus       bool
+	keymap       util.KeyMap
+	options      []EnumMapping
+	label        string
+	value        int
+	saveCallback func(interface{}) error
+	cursor       int
+	initialized  bool
+	focus        bool
 }
 
-func NewEnumEditor(keymap util.KeyMap, options []EnumMapping, label string, delegatorPointer interface{}) *EnumEditor {
+func NewEnumEditor(keymap util.KeyMap, options []EnumMapping, label string, delegator int, saveCallback func(int) error) *EnumEditor {
 	e := EnumEditor{
 		options: options,
 	}
-	e.Init(keymap, label, delegatorPointer)
+	fn := WrapTypedCallback(saveCallback)
+	e.Init(keymap, label, delegator, fn)
 	return &e
 }
 
-func (e *EnumEditor) Init(keymap util.KeyMap, label string, delegatorPointer interface{}) {
+func (e *EnumEditor) Init(keymap util.KeyMap, label string, delegator interface{}, saveCallback func(interface{}) error) {
 	e.keymap = keymap
+	e.label = label
+	e.saveCallback = saveCallback
 
-	ptrValue := reflect.ValueOf(delegatorPointer)
-	if ptrValue.Kind() != reflect.Ptr || !ptrValue.Elem().IsValid() {
-		panic("Value passed is not a valid pointer")
+	delInt, ok := delegator.(int)
+	if !ok {
+		panic("Value passed is not representable as an int ")
 	}
 
-	elem := ptrValue.Elem()
-	kind := elem.Kind()
-	if kind < reflect.Int || kind > reflect.Int64 {
-		panic(fmt.Sprintf("Value passed is not a pointer to int-like, got: %s", kind))
-	}
+	e.value = delInt
 
-	e.value = ptrValue
-
-	currentValue := int(elem.Int())
 	for i, opt := range e.options {
-		if opt.Value == currentValue {
+		if opt.Value == delInt {
 			e.cursor = i
 			break
 		}
 	}
 
-	e.label = label
 	e.initialized = true
 }
 
@@ -87,9 +82,8 @@ func (e *EnumEditor) View() string {
 	return util.RenderItem(e.focus, e.label+":") + " " + util.ItemStyleDefault.Render(box)
 }
 
-func (e *EnumEditor) Save() tea.Cmd {
-	e.value.Elem().SetInt(int64(e.options[e.cursor].Value))
-	return nil
+func (e *EnumEditor) Save() error {
+	return e.saveCallback(e.value)
 }
 
 func (e *EnumEditor) Focus() {

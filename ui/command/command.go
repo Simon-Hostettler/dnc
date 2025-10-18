@@ -1,13 +1,11 @@
 package command
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
+	"context"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"hostettler.dev/dnc/models"
+	"github.com/google/uuid"
+	"hostettler.dev/dnc/repository"
 )
 
 type ScreenIndex int
@@ -31,23 +29,26 @@ const (
 	RightDirection
 )
 
-type FileOperation int
+type DataOperation int
 
 const (
-	FileDelete = iota
-	FileUpdate
-	FileCreate
-	FileSave
+	DataDelete = iota
+	DataUpdate
+	DataCreate
+	DataSave
 )
 
-type FileOpMsg struct {
-	Op      FileOperation
+type DataOpMsg struct {
+	Op      DataOperation
 	Success bool
 }
 
+type LoadCharacterMsg struct {
+	Character repository.CharacterAggregate
+}
+
 type SelectCharacterMsg struct {
-	Character *models.Character
-	Err       error
+	ID uuid.UUID
 }
 
 type SwitchScreenMsg struct {
@@ -74,36 +75,30 @@ type LaunchReaderScreenMsg struct {
 	Content string
 }
 
-func DeleteCharacterFileCmd(characterDir string, name string) tea.Cmd {
+func DataOperationCommand(callback func() error, op DataOperation) tea.Cmd {
 	return func() tea.Msg {
-		filename := fmt.Sprintf("%s.json", strings.ToLower(name))
-		err := os.Remove(filepath.Join(characterDir, filename))
+		err := callback()
 		if err == nil {
-			return FileOpMsg{FileDelete, true}
+			return DataOpMsg{op, true}
 		} else {
-			return FileOpMsg{FileDelete, false}
+			return DataOpMsg{op, false}
 		}
 	}
 }
 
-func SaveToFileCmd(c *models.Character) func() tea.Msg {
+func LoadCharacterCmd(r repository.CharacterRepository, ctx context.Context, id uuid.UUID) func() tea.Msg {
 	return func() tea.Msg {
-		err := c.SaveToFile()
-		if err == nil {
-			return FileOpMsg{FileSave, true}
-		} else {
-			return FileOpMsg{FileSave, false}
-		}
-	}
-}
-
-func SelectCharacterCmd(name string) func() tea.Msg {
-	return func() tea.Msg {
-		c, err := models.LoadCharacterByName(name)
+		c, err := r.GetByID(ctx, id)
 		if err != nil {
-			return SelectCharacterMsg{nil, err}
+			panic("Character loaded incorrectly. Panicking to avoid corruption.")
 		}
-		return SelectCharacterMsg{c, nil}
+		return LoadCharacterMsg{*c}
+	}
+}
+
+func SelectCharacterCmd(id uuid.UUID) func() tea.Msg {
+	return func() tea.Msg {
+		return SelectCharacterMsg{id}
 	}
 }
 

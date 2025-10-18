@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
+
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jmoiron/sqlx"
 	"hostettler.dev/dnc/db"
-	"hostettler.dev/dnc/models"
+	"hostettler.dev/dnc/repository"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/screen"
@@ -20,12 +22,13 @@ var (
 )
 
 type DnCApp struct {
-	config    Config
-	keymap    util.KeyMap
-	width     int
-	height    int
-	character *models.Character
-	db        *sqlx.DB
+	config     Config
+	keymap     util.KeyMap
+	width      int
+	height     int
+	db         *sqlx.DB
+	ctx        context.Context
+	repository repository.CharacterRepository
 
 	selectedTab     *ScreenTab
 	isScreenFocused bool
@@ -58,17 +61,6 @@ func NewApp() (*DnCApp, error) {
 		return nil, err
 	}
 	km := util.DefaultKeyMap()
-	app := &DnCApp{
-		config:             config,
-		keymap:             km,
-		statTab:            NewScreenTab(km, "Stats", command.StatScreenIndex, false),
-		spellTab:           NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
-		inventoryTab:       NewScreenTab(km, "Inventory", command.InventoryScreenIndex, false),
-		titleScreen:        screen.NewTitleScreen(config.CharacterDir),
-		editorScreen:       screen.NewEditorScreen(km, []editor.ValueEditor{}),
-		confirmationScreen: screen.NewConfirmationScreen(km),
-		readerScreen:       screen.NewReaderScreen(km),
-	}
 
 	handle, err := db.Open(config.DatabasePath)
 	if err != nil {
@@ -77,7 +69,24 @@ func NewApp() (*DnCApp, error) {
 	if err := db.MigrateUp(handle); err != nil {
 		return nil, err
 	}
-	app.db = handle
+	ctx := context.Background()
+	repository := repository.NewDBCharacterRepository(handle)
+
+	app := &DnCApp{
+		config:             config,
+		keymap:             km,
+		db:                 handle,
+		ctx:                ctx,
+		repository:         repository,
+		statTab:            NewScreenTab(km, "Stats", command.StatScreenIndex, false),
+		spellTab:           NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
+		inventoryTab:       NewScreenTab(km, "Inventory", command.InventoryScreenIndex, false),
+		titleScreen:        screen.NewTitleScreen(km, repository, ctx),
+		editorScreen:       screen.NewEditorScreen(km, []editor.ValueEditor{}),
+		confirmationScreen: screen.NewConfirmationScreen(km),
+		readerScreen:       screen.NewReaderScreen(km),
+	}
+
 	return app, nil
 }
 
@@ -152,7 +161,7 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = tea.Batch(cmds, command.SwitchScreenCmd(command.StatScreenIndex))
 		}
 	case editor.SwitchToEditorMsg:
-		a.editorScreen.StartEdit(msg.Character, msg.Editors)
+		a.editorScreen.StartEdit(msg.Editors)
 		cmd = command.SwitchScreenCmd(command.EditScreenIndex)
 	case command.LaunchConfirmationDialogueMsg:
 		a.confirmationScreen.LaunchConfirmation(msg.Callback)

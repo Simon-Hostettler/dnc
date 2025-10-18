@@ -11,6 +11,7 @@ type CharacterTO struct {
 	ID                  uuid.UUID `db:"id"`
 	Name                string    `db:"name"`
 	ClassLevels         string    `db:"class_levels"`
+	Race                string    `db:"race"`
 	Background          string    `db:"background"`
 	Alignment           string    `db:"alignment"`
 	ProficiencyBonus    int       `db:"proficiency_bonus"`
@@ -34,6 +35,19 @@ type CharacterTO struct {
 	CreatedAt           time.Time `db:"created_at"`
 	UpdatedAt           time.Time `db:"updated_at"`
 }
+
+type CharacterSummary struct {
+	ID   uuid.UUID
+	Name string
+}
+
+type Equippable int
+
+const (
+	NonEquippable Equippable = iota
+	NotEquipped
+	Equipped
+)
 
 // ItemTO maps to the `item` table.
 type ItemTO struct {
@@ -118,4 +132,29 @@ type CharacterSkillTO struct {
 	CustomModifier int       `db:"custom_modifier"`
 	CreatedAt      time.Time `db:"created_at"`
 	UpdatedAt      time.Time `db:"updated_at"`
+}
+
+// CharacterSkillDetailTO represents a joined view of character_skill with skill_definition
+type CharacterSkillDetailTO struct {
+	ID             uuid.UUID `db:"id"`
+	CharacterID    uuid.UUID `db:"character_id"`
+	SkillID        int       `db:"skill_id"`
+	Proficiency    int       `db:"proficiency"`
+	CustomModifier int       `db:"custom_modifier"`
+	SkillName      string    `db:"skill_name"`
+	SkillAbility   string    `db:"skill_ability"`
+	CreatedAt      time.Time `db:"created_at"`
+	UpdatedAt      time.Time `db:"updated_at"`
+}
+
+func (c CharacterSkillDetailTO) ToCharacterSkillTO() CharacterSkillTO {
+	return CharacterSkillTO{
+		ID:             c.ID,
+		CharacterID:    c.CharacterID,
+		SkillID:        c.SkillID,
+		Proficiency:    c.Proficiency,
+		CustomModifier: c.CustomModifier,
+		CreatedAt:      c.CreatedAt,
+		UpdatedAt:      c.UpdatedAt,
+	}
 }

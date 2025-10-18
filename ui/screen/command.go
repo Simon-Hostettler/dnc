@@ -5,11 +5,11 @@ import (
 	"hostettler.dev/dnc/ui/command"
 )
 
-func UpdateFilesCmd(t *TitleScreen) func() tea.Msg {
+func ReloadCharactersCmd(t *TitleScreen) func() tea.Msg {
 	return func() tea.Msg {
 		t.UpdateFiles()
-		return command.FileOpMsg{
-			Op:      command.FileUpdate,
+		return command.DataOpMsg{
+			Op:      command.DataUpdate,
 			Success: true,
 		}
 	}

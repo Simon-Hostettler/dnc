@@ -9,33 +9,34 @@ import (
 )
 
 type IntEditor struct {
-	keymap      util.KeyMap
-	label       string
-	value       *int
-	textInput   textinput.Model
-	initialized bool
-	focus       bool
+	keymap       util.KeyMap
+	label        string
+	value        int
+	saveCallback func(int) error
+	textInput    textinput.Model
+	initialized  bool
+	focus        bool
 }
 
-func NewIntEditor(keymap util.KeyMap, label string, delegatorPointer interface{}) *IntEditor {
+func NewIntEditor(keymap util.KeyMap, label string, delegator int, saveCallback func(int) error) *IntEditor {
 	s := IntEditor{}
-	s.Init(keymap, label, delegatorPointer)
+
+	fn := WrapTypedCallback(saveCallback)
+	s.Init(keymap, label, delegator, fn)
 	return &s
 }
 
-func (s *IntEditor) Init(keymap util.KeyMap, label string, delegatorPointer interface{}) {
-	ptr, ok := delegatorPointer.(*int)
+func (s *IntEditor) Init(keymap util.KeyMap, label string, delegator interface{}, saveCallback func(interface{}) error) {
+	delInt, ok := delegator.(int)
 	if !ok {
-		panic("Value passed is not a pointer to int")
+		panic("Value passed is not an int")
 	}
-	s.value = ptr
+	s.value = delInt
 
 	ti := textinput.New()
 	ti.Prompt = ""
 
-	if ptr != nil {
-		ti.SetValue(strconv.Itoa(*ptr))
-	}
+	ti.SetValue(strconv.Itoa(delInt))
 
 	s.textInput = ti
 	s.label = label
@@ -59,15 +60,12 @@ func (s *IntEditor) View() string {
 	return util.RenderItem(s.focus, s.label+":") + " " + util.ItemStyleDefault.Render(s.textInput.View())
 }
 
-func (s *IntEditor) Save() tea.Cmd {
+func (s *IntEditor) Save() error {
 	value, err := strconv.Atoi(s.textInput.Value())
 	if err != nil {
-		return nil
+		return err
 	}
-	if s.value != nil {
-		*s.value = value
-	}
-	return nil
+	return s.saveCallback(value)
 }
 
 func (e *IntEditor) Focus() {

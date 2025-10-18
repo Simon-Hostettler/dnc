@@ -7,33 +7,34 @@ import (
 )
 
 type StringEditor struct {
-	keymap      util.KeyMap
-	label       string
-	value       *string
-	textInput   textinput.Model
-	initialized bool
-	focus       bool
+	keymap       util.KeyMap
+	label        string
+	value        string
+	saveCallback func(interface{}) error
+	textInput    textinput.Model
+	initialized  bool
+	focus        bool
 }
 
-func NewStringEditor(keymap util.KeyMap, label string, delegatorPointer interface{}) *StringEditor {
+func NewStringEditor(keymap util.KeyMap, label string, delegator interface{}, saveCallback func(string) error) *StringEditor {
 	s := StringEditor{}
-	s.Init(keymap, label, delegatorPointer)
+
+	fn := WrapTypedCallback(saveCallback)
+	s.Init(keymap, label, delegator, fn)
 	return &s
 }
 
-func (s *StringEditor) Init(keymap util.KeyMap, label string, delegatorPointer interface{}) {
-	ptr, ok := delegatorPointer.(*string)
+func (s *StringEditor) Init(keymap util.KeyMap, label string, delegator interface{}, saveCallback func(interface{}) error) {
+	str, ok := delegator.(string)
 	if !ok {
-		panic("Value passed is not a pointer to string")
+		panic("Value passed is not a string")
 	}
-	s.value = ptr
+	s.value = str
 
 	ti := textinput.New()
 	ti.Prompt = ""
 
-	if ptr != nil {
-		ti.SetValue(*ptr)
-	}
+	ti.SetValue(str)
 
 	s.textInput = ti
 	s.label = label
@@ -57,11 +58,8 @@ func (s *StringEditor) View() string {
 	return util.RenderItem(s.focus, s.label+":") + " " + util.ItemStyleDefault.Render(s.textInput.View())
 }
 
-func (s *StringEditor) Save() tea.Cmd {
-	if s.value != nil {
-		*s.value = s.textInput.Value()
-	}
-	return nil
+func (s *StringEditor) Save() error {
+	return s.saveCallback(s.value)
 }
 
 func (e *StringEditor) Focus() {

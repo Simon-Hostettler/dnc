@@ -11,7 +11,7 @@ type LabeledStringRow struct {
 	keymap util.KeyMap
 	config LabeledStringRowConfig
 	label  string
-	value  *string
+	value  string
 	editor *editor.StringEditor
 }
 
@@ -25,7 +25,7 @@ func DefaultLabeledStringRowConfig() LabeledStringRowConfig {
 	return LabeledStringRowConfig{true, DefaultColWidth, DefaultColWidth}
 }
 
-func NewLabeledStringRow(keymap util.KeyMap, label string, value *string, editor *editor.StringEditor) *LabeledStringRow {
+func NewLabeledStringRow(keymap util.KeyMap, label string, value string, editor *editor.StringEditor) *LabeledStringRow {
 	return &LabeledStringRow{keymap, DefaultLabeledStringRowConfig(), label, value, editor}
 }
 
@@ -51,9 +51,9 @@ func (r *LabeledStringRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (r *LabeledStringRow) View() string {
 	if r.config.JustifyValue {
-		return util.RenderEdgeBound(r.config.LabelWidth, r.config.ValueWidth, r.label, *r.value)
+		return util.RenderEdgeBound(r.config.LabelWidth, r.config.ValueWidth, r.label, r.value)
 	} else {
-		return util.RenderLeftBound(r.config.LabelWidth, r.label, *r.value)
+		return util.RenderLeftBound(r.config.LabelWidth, r.label, r.value)
 	}
 }
 

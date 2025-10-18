@@ -3,19 +3,20 @@ package list
 import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/util"
 )
 
 type CharacterRow struct {
-	keymap       util.KeyMap
-	characterDir string
-	name         string
+	keymap           util.KeyMap
+	character        models.CharacterSummary
+	deletionCallback func() error
 }
 
-func NewCharacterRow(name string, characterDir string, keymap util.KeyMap) *CharacterRow {
-	return &CharacterRow{keymap, characterDir, name}
+func NewCharacterRow(keymap util.KeyMap, character models.CharacterSummary, deletionCallback func() error) *CharacterRow {
+	return &CharacterRow{keymap, character, deletionCallback}
 }
 
 func (c *CharacterRow) Init() tea.Cmd {
@@ -27,11 +28,11 @@ func (c *CharacterRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, c.keymap.Select):
-			return c, command.SelectCharacterCmd(c.name)
+			return c, command.SelectCharacterCmd(c.character.ID)
 		case key.Matches(msg, c.keymap.Delete):
 			return c, command.LaunchConfirmationDialogueCmd(
 				func() tea.Cmd {
-					return command.DeleteCharacterFileCmd(c.characterDir, c.name)
+					return command.DataOperationCommand(c.deletionCallback, command.DataDelete)
 				},
 			)
 		}
@@ -40,7 +41,7 @@ func (c *CharacterRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (c *CharacterRow) View() string {
-	return c.name
+	return c.character.Name
 }
 
 func (c *CharacterRow) Editors() []editor.ValueEditor {

@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS character (
     id UUID PRIMARY KEY DEFAULT uuid(),
     name TEXT NOT NULL,
     class_levels TEXT NOT NULL DEFAULT '',
+    race TEXT NOT NULL DEFAULT '',
     background TEXT NOT NULL DEFAULT '',
     alignment TEXT NOT NULL DEFAULT '',
     proficiency_bonus INTEGER NOT NULL,

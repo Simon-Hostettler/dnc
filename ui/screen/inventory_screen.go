@@ -243,7 +243,7 @@ func DeleteItemCallback(s *InventoryScreen, i *models.Item) func() tea.Cmd {
 	return func() tea.Cmd {
 		s.character.DeleteItem(i.Id)
 		s.populateItems()
-		return command.SaveToFileCmd(s.character)
+		return command.SaveDataCommand(s.character)
 	}
 }
 
@@ -285,7 +285,8 @@ func RenderItemInfoRow(i *models.Item) string {
 func RenderFullItemInfo(i *models.Item) string {
 	separator := util.MakeHorizontalSeparator(util.SmallScreenWidth-4, 1)
 	content := strings.Join(
-		[]string{i.Name,
+		[]string{
+			i.Name,
 			separator,
 			"Equipped: " + DrawItemPrefix(i),
 			separator,

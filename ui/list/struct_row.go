@@ -10,17 +10,17 @@ import (
 
 type StructRow[T any] struct {
 	keymap     util.KeyMap
-	value      *T
-	renderer   func(*T) string
+	value      T
+	renderer   func(T) string
 	editors    []editor.ValueEditor
 	destructor func() tea.Cmd
-	reader     func(*T) string
+	reader     func(T) string
 }
 
 func NewStructRow[T any](
 	keymap util.KeyMap,
-	value *T,
-	renderer func(val *T) string,
+	value T,
+	renderer func(val T) string,
 	editors []editor.ValueEditor,
 ) *StructRow[T] {
 	return &StructRow[T]{
@@ -36,7 +36,7 @@ func (r *StructRow[T]) WithDestructor(callback func() tea.Cmd) *StructRow[T] {
 	return r
 }
 
-func (r *StructRow[T]) WithReader(reader func(*T) string) *StructRow[T] {
+func (r *StructRow[T]) WithReader(reader func(T) string) *StructRow[T] {
 	r.reader = reader
 	return r
 }
@@ -68,6 +68,6 @@ func (r *StructRow[T]) Editors() []editor.ValueEditor {
 	return r.editors
 }
 
-func (r *StructRow[T]) Value() *T {
+func (r *StructRow[T]) Value() T {
 	return r.value
 }

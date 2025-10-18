@@ -15,14 +15,15 @@ type BooleanEditor struct {
 	focus       bool
 }
 
-func NewBooleanEditor(keymap util.KeyMap, label string, delegatorPointer interface{}) *BooleanEditor {
+func NewBooleanEditor(keymap util.KeyMap, label string, delegator interface{}, saveCallback func(bool) error) *BooleanEditor {
 	s := BooleanEditor{}
-	s.Init(keymap, label, delegatorPointer)
+	fn := WrapTypedCallback(saveCallback)
+	s.Init(keymap, label, delegator, fn)
 	return &s
 }
 
-func (e *BooleanEditor) Init(keymap util.KeyMap, label string, delegatorPointer interface{}) {
-	ptr, ok := delegatorPointer.(*bool)
+func (e *BooleanEditor) Init(keymap util.KeyMap, label string, delegator interface{}, saveCallback func(interface{}) error) {
+	ptr, ok := delegator.(*bool)
 	if !ok {
 		panic("Value passed is not a pointer to bool")
 	}

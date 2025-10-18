@@ -13,7 +13,7 @@ type LabeledIntRow struct {
 	keymap util.KeyMap
 	config LabeledIntRowConfig
 	label  string
-	value  *int
+	value  int
 	editor editor.ValueEditor
 }
 
@@ -28,7 +28,7 @@ func DefaultLabeledIntRowConfig() LabeledIntRowConfig {
 	return LabeledIntRowConfig{strconv.Itoa, true, DefaultColWidth, DefaultColWidth}
 }
 
-func NewLabeledIntRow(keymap util.KeyMap, label string, value *int, editor editor.ValueEditor) *LabeledIntRow {
+func NewLabeledIntRow(keymap util.KeyMap, label string, value int, editor editor.ValueEditor) *LabeledIntRow {
 	return &LabeledIntRow{keymap, DefaultLabeledIntRowConfig(), label, value, editor}
 }
 
@@ -54,9 +54,9 @@ func (r *LabeledIntRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (r *LabeledIntRow) View() string {
 	if r.config.JustifyValue {
-		return util.RenderEdgeBound(r.config.LabelWidth, r.config.ValueWidth, r.label, r.config.ValuePrinter(*r.value))
+		return util.RenderEdgeBound(r.config.LabelWidth, r.config.ValueWidth, r.label, r.config.ValuePrinter(r.value))
 	} else {
-		return util.RenderLeftBound(r.config.LabelWidth, r.label, r.config.ValuePrinter(*r.value))
+		return util.RenderLeftBound(r.config.LabelWidth, r.label, r.config.ValuePrinter(r.value))
 	}
 }
 

@@ -13,15 +13,15 @@ import (
 type SimpleIntComponent struct {
 	keymap           ui_util.KeyMap
 	name             string
-	content          *int
+	value            int
 	editor           editor.ValueEditor
 	focus            bool
 	renderName       bool
 	highlightOnFocus bool
 }
 
-func NewSimpleIntComponent(k ui_util.KeyMap, name string, content *int, renderName bool, highlightOnFocus bool) *SimpleIntComponent {
-	return &SimpleIntComponent{k, name, content, editor.NewIntEditor(k, name, content), false, renderName, highlightOnFocus}
+func NewSimpleIntComponent(k ui_util.KeyMap, name string, value int, saveCallback func(int) error, renderName bool, highlightOnFocus bool) *SimpleIntComponent {
+	return &SimpleIntComponent{k, name, value, editor.NewIntEditor(k, name, value, saveCallback), false, renderName, highlightOnFocus}
 }
 
 func (s *SimpleIntComponent) Init() tea.Cmd {
@@ -44,7 +44,7 @@ func (s *SimpleIntComponent) View() string {
 	if s.renderName {
 		prefix = s.name + ": "
 	}
-	return util.RenderItem(s.focus && s.highlightOnFocus, prefix+strconv.Itoa(*s.content))
+	return util.RenderItem(s.focus && s.highlightOnFocus, prefix+strconv.Itoa(s.value))
 }
 
 func (s *SimpleIntComponent) Focus() {

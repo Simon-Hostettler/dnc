@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -92,20 +91,6 @@ func ForceLineBreaks(s string, w int) string {
 		}
 	}
 	return b.String()
-}
-
-func ListCharacterFiles(dir string) []string {
-	var files []string
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return files
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".json") {
-			files = append(files, entry.Name())
-		}
-	}
-	return files
 }
 
 func SplitIntoColumns(elements []string, maxHeight int) [][]string {

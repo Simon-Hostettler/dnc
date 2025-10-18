@@ -1,7 +1,10 @@
 package screen
 
 import (
+	"context"
+
 	"hostettler.dev/dnc/models"
+	"hostettler.dev/dnc/repository"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/list"
 	"hostettler.dev/dnc/ui/util"
@@ -10,6 +13,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/google/uuid"
 )
 
 type FocusableModel interface {
@@ -28,50 +32,57 @@ var (
 )
 
 type TitleScreen struct {
-	KeyMap util.KeyMap
+	KeyMap              util.KeyMap
+	CharacterRepository repository.CharacterRepository
+	Context             context.Context
 
-	cursor       int
-	characters   *list.List
-	files        []string
-	characterDir string
-	editMode     bool
-	nameInput    textinput.Model
+	cursor     int
+	characters *list.List
+	editMode   bool
+	nameInput  textinput.Model
 }
 
-func NewTitleScreen(character_dir string) *TitleScreen {
+func NewTitleScreen(km util.KeyMap, cr repository.CharacterRepository, ctx context.Context) *TitleScreen {
 	ti := textinput.New()
 	ti.Width = inputWidth
 	ti.CharLimit = inputLimit
 	ti.Placeholder = "Character Name"
 
 	t := TitleScreen{
-		KeyMap:       util.DefaultKeyMap(),
-		cursor:       0,
-		characterDir: character_dir,
-		editMode:     false,
-		nameInput:    ti,
-		characters:   list.NewListWithDefaults(),
+		KeyMap:              km,
+		CharacterRepository: cr,
+		Context:             ctx,
+		cursor:              0,
+		editMode:            false,
+		nameInput:           ti,
+		characters:          list.NewListWithDefaults(),
 	}
 	return &t
 }
 
 func (t *TitleScreen) UpdateFiles() {
-	t.files = util.ListCharacterFiles(t.characterDir)
-	charRows := util.Map(t.files, func(s string) list.Row { return list.NewCharacterRow(util.PrettyFileName(s), t.characterDir, t.KeyMap) })
+	characters := t.listCharacters()
+	charRows := util.Map(characters, func(s models.CharacterSummary) list.Row {
+		return list.NewCharacterRow(
+			t.KeyMap,
+			s,
+			func() error { return t.deleteCharacter(s.ID) },
+		)
+	})
 	t.characters.WithRows(charRows)
 }
 
 func (m *TitleScreen) Init() tea.Cmd {
-	return UpdateFilesCmd(m)
+	return ReloadCharactersCmd(m)
 }
 
 func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch t := msg.(type) {
-	case command.FileOpMsg:
-		if t.Success && t.Op != command.FileUpdate {
-			return m, UpdateFilesCmd(m)
+	case command.DataOpMsg:
+		if t.Success && t.Op != command.DataUpdate {
+			return m, ReloadCharactersCmd(m)
 		}
 	}
 
@@ -84,12 +95,11 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.editMode = false
 				m.nameInput.Reset()
 			case key.Matches(msg, m.KeyMap.Enter):
-				c, err := models.NewCharacter(m.nameInput.Value())
+				cmd = command.DataOperationCommand(
+					func() error { return m.createCharacter(m.nameInput.Value()) },
+					command.DataCreate)
 				m.nameInput.Reset()
 				m.editMode = false
-				if err == nil {
-					cmd = command.SaveToFileCmd(&c)
-				}
 			default:
 				m.nameInput, cmd = m.nameInput.Update(msg)
 			}
@@ -149,6 +159,24 @@ func (m *TitleScreen) View() string {
 		Height(titleScreenHeight).
 		Render(lipgloss.PlaceVertical(titleScreenHeight, lipgloss.Center,
 			lipgloss.JoinVertical(lipgloss.Center, createField, inputField, separator, chars)))
+}
+
+func (m *TitleScreen) listCharacters() []models.CharacterSummary {
+	chars, err := m.CharacterRepository.ListSummary(m.Context)
+	if err != nil {
+		return []models.CharacterSummary{}
+	}
+	return chars
+}
+
+func (m *TitleScreen) createCharacter(name string) error {
+	_, err := m.CharacterRepository.CreateEmpty(m.Context, name)
+	return err
+}
+
+func (m *TitleScreen) deleteCharacter(id uuid.UUID) error {
+	err := m.CharacterRepository.Delete(m.Context, id)
+	return err
 }
 
 // to fulfill FocusableModel interface
