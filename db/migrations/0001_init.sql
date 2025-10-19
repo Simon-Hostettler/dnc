@@ -100,12 +100,12 @@ CREATE TABLE IF NOT EXISTS abilities (
 
 CREATE TABLE IF NOT EXISTS saving_throws (
     character_id UUID PRIMARY KEY,
-    strength INTEGER NOT NULL,
-    dexterity INTEGER NOT NULL,
-    constitution INTEGER NOT NULL,
-    intelligence INTEGER NOT NULL,
-    wisdom INTEGER NOT NULL,
-    charisma INTEGER NOT NULL,
+    strength_proficiency INTEGER NOT NULL,
+    dexterity_proficiency INTEGER NOT NULL,
+    constitution_proficiency INTEGER NOT NULL,
+    intelligence_proficiency INTEGER NOT NULL,
+    wisdom_proficiency INTEGER NOT NULL,
+    charisma_proficiency INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
     updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
     FOREIGN KEY(character_id) REFERENCES character(id)

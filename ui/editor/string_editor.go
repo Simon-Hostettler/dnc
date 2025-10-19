@@ -30,6 +30,7 @@ func (s *StringEditor) Init(keymap util.KeyMap, label string, delegator interfac
 		panic("Value passed is not a string")
 	}
 	s.value = str
+	s.saveCallback = saveCallback
 
 	ti := textinput.New()
 	ti.Prompt = ""

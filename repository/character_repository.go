@@ -9,13 +9,14 @@ import (
 
 // CharacterAggregate represents a character and all of its dependent rows.
 type CharacterAggregate struct {
-	Character *models.CharacterTO
-	Abilities *models.AbilitiesTO
-	Wallet    *models.WalletTO
-	Items     []models.ItemTO
-	Spells    []models.SpellTO
-	Attacks   []models.AttackTO
-	Skills    []models.CharacterSkillDetailTO
+	Character    *models.CharacterTO
+	Abilities    *models.AbilitiesTO
+	SavingThrows *models.SavingThrowsTO
+	Wallet       *models.WalletTO
+	Items        []models.ItemTO
+	Spells       []models.SpellTO
+	Attacks      []models.AttackTO
+	Skills       []models.CharacterSkillDetailTO
 }
 
 // CharacterRepository defines core operations for loading and persisting characters.
@@ -28,6 +29,8 @@ type CharacterRepository interface {
 
 	UpdateCharacter(ctx context.Context, c models.CharacterTO) error
 	UpdateCharacterFields(ctx context.Context, id uuid.UUID, fields map[string]interface{}) error
+	UpdateSpellSlotsMax(ctx context.Context, characterID uuid.UUID, level int, v int) error
+	UpdateSpellSlotsUsed(ctx context.Context, characterID uuid.UUID, level int, v int) error
 
 	ListSkillDefinitions(ctx context.Context) ([]models.SkillDefinitionTO, error)
 
@@ -45,14 +48,19 @@ type CharacterRepository interface {
 	UpdateWalletFields(ctx context.Context, id uuid.UUID, fields map[string]interface{}) error
 
 	AddAttack(ctx context.Context, characterID uuid.UUID, a models.AttackTO) (uuid.UUID, error)
+	UpdateAttackFields(ctx context.Context, id uuid.UUID, fields map[string]interface{}) error
 	DeleteAttack(ctx context.Context, attackID uuid.UUID) error
 	ListAttacksByCharacter(ctx context.Context, characterID uuid.UUID) ([]models.AttackTO, error)
 
 	UpsertSkill(ctx context.Context, characterID uuid.UUID, skillID int, proficiency int, customModifier int) error
+	UpdateSkillFields(ctx context.Context, id uuid.UUID, fields map[string]interface{}) error
 	DeleteSkill(ctx context.Context, characterID uuid.UUID, skillID int) error
 	ListSkillsByCharacter(ctx context.Context, characterID uuid.UUID) ([]models.CharacterSkillTO, error)
 	ListSkillDetailsByCharacter(ctx context.Context, characterID uuid.UUID) ([]models.CharacterSkillDetailTO, error)
 
 	GetAbilities(ctx context.Context, characterID uuid.UUID) (*models.AbilitiesTO, error)
+	UpdateAbilityFields(ctx context.Context, id uuid.UUID, fields map[string]interface{}) error
 	UpsertAbilities(ctx context.Context, characterID uuid.UUID, ab models.AbilitiesTO) error
+
+	UpdateSavingThrowFields(ctx context.Context, id uuid.UUID, fields map[string]interface{}) error
 }

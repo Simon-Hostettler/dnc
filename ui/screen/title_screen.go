@@ -60,9 +60,8 @@ func NewTitleScreen(km util.KeyMap, cr repository.CharacterRepository, ctx conte
 	return &t
 }
 
-func (t *TitleScreen) UpdateFiles() {
-	characters := t.listCharacters()
-	charRows := util.Map(characters, func(s models.CharacterSummary) list.Row {
+func (t *TitleScreen) PopulateCharacters(summaries []models.CharacterSummary) {
+	charRows := util.Map(summaries, func(s models.CharacterSummary) list.Row {
 		return list.NewCharacterRow(
 			t.KeyMap,
 			s,
@@ -73,7 +72,7 @@ func (t *TitleScreen) UpdateFiles() {
 }
 
 func (m *TitleScreen) Init() tea.Cmd {
-	return ReloadCharactersCmd(m)
+	return command.LoadCharacterSummaryCmd(m.CharacterRepository, m.Context)
 }
 
 func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -81,9 +80,11 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch t := msg.(type) {
 	case command.DataOpMsg:
-		if t.Success && t.Op != command.DataUpdate {
-			return m, ReloadCharactersCmd(m)
+		if t.Op != command.DataSave {
+			return m, command.LoadCharacterSummaryCmd(m.CharacterRepository, m.Context)
 		}
+	case command.LoadCharacterSummaryMsg:
+		m.PopulateCharacters(t.Summaries)
 	}
 
 	// New character creation
@@ -95,8 +96,9 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.editMode = false
 				m.nameInput.Reset()
 			case key.Matches(msg, m.KeyMap.Enter):
+				name := m.nameInput.Value()
 				cmd = command.DataOperationCommand(
-					func() error { return m.createCharacter(m.nameInput.Value()) },
+					func() error { return m.createCharacter(name) },
 					command.DataCreate)
 				m.nameInput.Reset()
 				m.editMode = false
@@ -159,14 +161,6 @@ func (m *TitleScreen) View() string {
 		Height(titleScreenHeight).
 		Render(lipgloss.PlaceVertical(titleScreenHeight, lipgloss.Center,
 			lipgloss.JoinVertical(lipgloss.Center, createField, inputField, separator, chars)))
-}
-
-func (m *TitleScreen) listCharacters() []models.CharacterSummary {
-	chars, err := m.CharacterRepository.ListSummary(m.Context)
-	if err != nil {
-		return []models.CharacterSummary{}
-	}
-	return chars
 }
 
 func (m *TitleScreen) createCharacter(name string) error {

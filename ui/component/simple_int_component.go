@@ -24,6 +24,16 @@ func NewSimpleIntComponent(k ui_util.KeyMap, name string, value int, saveCallbac
 	return &SimpleIntComponent{k, name, value, editor.NewIntEditor(k, name, value, saveCallback), false, renderName, highlightOnFocus}
 }
 
+func (s *SimpleIntComponent) WithSaveCallback(saveCallback func(int) error) *SimpleIntComponent {
+	s.editor = editor.NewIntEditor(s.keymap, s.name, s.value, saveCallback)
+	return s
+}
+
+func (s *SimpleIntComponent) WithValue(v int) *SimpleIntComponent {
+	s.value = v
+	return s
+}
+
 func (s *SimpleIntComponent) Init() tea.Cmd {
 	return nil
 }

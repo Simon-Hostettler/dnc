@@ -27,8 +27,8 @@ type CharacterTO struct {
 	DeathSaveFailures   int       `db:"death_save_failures"`
 	Actions             string    `db:"actions"`
 	BonusActions        string    `db:"bonus_actions"`
-	SpellSlots          []int     `db:"spell_slots"`
-	SpellSlotsUsed      []int     `db:"spell_slots_used"`
+	SpellSlots          IntList   `db:"spell_slots"`
+	SpellSlotsUsed      IntList   `db:"spell_slots_used"`
 	SpellcastingAbility string    `db:"spellcasting_ability"`
 	SpellSaveDC         int       `db:"spell_save_dc"`
 	SpellAttackBonus    int       `db:"spell_attack_bonus"`
@@ -102,6 +102,19 @@ type AbilitiesTO struct {
 	Charisma     int       `db:"charisma"`
 	CreatedAt    time.Time `db:"created_at"`
 	UpdatedAt    time.Time `db:"updated_at"`
+}
+
+// SavingThrowsTO maps to the `saving_throws` table.
+type SavingThrowsTO struct {
+	CharacterID             uuid.UUID `db:"character_id"`
+	StrengthProficiency     int       `db:"strength_proficiency"`
+	DexterityProficiency    int       `db:"dexterity_proficiency"`
+	ConstitutionProficiency int       `db:"constitution_proficiency"`
+	IntelligenceProficiency int       `db:"intelligence_proficiency"`
+	WisdomProficiency       int       `db:"wisdom_proficiency"`
+	CharismaProficiency     int       `db:"charisma_proficiency"`
+	CreatedAt               time.Time `db:"created_at"`
+	UpdatedAt               time.Time `db:"updated_at"`
 }
 
 // SkillDefinitionTO maps to the canonical `skill_definition` table.

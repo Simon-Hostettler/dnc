@@ -12,7 +12,7 @@ type IntEditor struct {
 	keymap       util.KeyMap
 	label        string
 	value        int
-	saveCallback func(int) error
+	saveCallback func(interface{}) error
 	textInput    textinput.Model
 	initialized  bool
 	focus        bool
@@ -32,6 +32,7 @@ func (s *IntEditor) Init(keymap util.KeyMap, label string, delegator interface{}
 		panic("Value passed is not an int")
 	}
 	s.value = delInt
+	s.saveCallback = saveCallback
 
 	ti := textinput.New()
 	ti.Prompt = ""

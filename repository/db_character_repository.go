@@ -58,6 +58,7 @@ func buildAllColumnMaps() {
 
 	register("character", reflect.TypeOf(models.CharacterTO{}), commonExclude)
 	register("abilities", reflect.TypeOf(models.AbilitiesTO{}), commonExclude)
+	register("saving_throws", reflect.TypeOf(models.SavingThrowsTO{}), commonExclude)
 	register("wallet", reflect.TypeOf(models.WalletTO{}), commonExclude)
 	register("item", reflect.TypeOf(models.ItemTO{}), commonExclude)
 	register("spell", reflect.TypeOf(models.SpellTO{}), commonExclude)
@@ -105,10 +106,6 @@ func addKey(m map[string]string, key, col string) {
 	if k == "" {
 		return
 	}
-	if m[k] != "" {
-		panic("The data model produced the same key for different columns. Panicking to prevent corruption.")
-	}
-	// last-writer wins if duplicate keys appear; they should map to same col
 	m[k] = col
 }
 
@@ -168,22 +165,19 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
 	err := r.withTx(ctx, func(tx *sqlx.Tx) error {
 		c := agg.Character
 		ensureSpellSlots(c)
-		// Insert character and return id
-		row := tx.QueryRowxContext(ctx, `
+		query := `
             INSERT INTO character (
                 name, class_levels, background, alignment,
                 proficiency_bonus, armor_class, initiative, speed,
                 max_hit_points, curr_hit_points, temp_hit_points,
                 hit_dice, used_hit_dice, death_save_successes, death_save_failures,
-                actions, bonus_actions, spell_slots, spell_slots_used,
+				actions, bonus_actions, spell_slots, spell_slots_used,
                 spellcasting_ability, spell_save_dc, spell_attack_bonus
             ) VALUES (
-                ?,?,?,?,?,?,?,?,
-                ?,?,?,
-                ?,?,?,?,
-                ?,?,?,?,
-                ?,?
-            ) RETURNING id`,
+                ?,?,?,?,?,?,?,?,?,?,?,
+                ?,?,?,?,?,?,?,?,?,?,?
+			) RETURNING id`
+		row := tx.QueryRowxContext(ctx, query,
 			c.Name, c.ClassLevels, c.Background, c.Alignment,
 			c.ProficiencyBonus, c.ArmorClass, c.Initiative, c.Speed,
 			c.MaxHitPoints, c.CurrHitPoints, c.TempHitPoints,
@@ -195,9 +189,13 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
 			return err
 		}
 
-		// 1:1 tables
 		if agg.Abilities != nil {
 			if err := upsertAbilities(ctx, tx, newID, agg.Abilities); err != nil {
+				return err
+			}
+		}
+		if agg.SavingThrows != nil {
+			if err := upsertSavingThrows(ctx, tx, newID, agg.SavingThrows); err != nil {
 				return err
 			}
 		}
@@ -207,7 +205,6 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
 			}
 		}
 
-		// 1:N tables (replace strategy)
 		if len(agg.Items) > 0 {
 			if err := replaceItems(ctx, tx, newID, agg.Items); err != nil {
 				return err
@@ -238,7 +235,14 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
 func (r *DBCharacterRepository) CreateEmpty(ctx context.Context, name string) (uuid.UUID, error) {
 	cSkills := []models.CharacterSkillTO{}
 	agg := CharacterAggregate{
-		Character: &models.CharacterTO{Name: name},
+		Character:    &models.CharacterTO{Name: name},
+		Abilities:    &models.AbilitiesTO{},
+		SavingThrows: &models.SavingThrowsTO{},
+		Wallet:       &models.WalletTO{},
+		Items:        []models.ItemTO{},
+		Spells:       []models.SpellTO{},
+		Attacks:      []models.AttackTO{},
+		Skills:       []models.CharacterSkillDetailTO{},
 	}
 	newID, err := r.Create(ctx, &agg)
 	if err != nil {
@@ -274,6 +278,11 @@ func (r *DBCharacterRepository) GetByID(ctx context.Context, id uuid.UUID) (*Cha
 		return nil, err
 	} else {
 		agg.Abilities = ab
+	}
+	if st, err := getSavingThrows(ctx, r.db, id); err != nil {
+		return nil, err
+	} else {
+		agg.SavingThrows = st
 	}
 	if w, err := getWallet(ctx, r.db, id); err != nil {
 		return nil, err
@@ -313,11 +322,13 @@ func (r *DBCharacterRepository) ListSummary(ctx context.Context) ([]models.Chara
 
 func (r *DBCharacterRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.withTx(ctx, func(tx *sqlx.Tx) error {
-		// Delete children first due to FKs
 		if _, err := tx.ExecContext(ctx, `DELETE FROM wallet WHERE character_id=?`, id); err != nil {
 			return err
 		}
 		if _, err := tx.ExecContext(ctx, `DELETE FROM abilities WHERE character_id=?`, id); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM saving_throws WHERE character_id=?`, id); err != nil {
 			return err
 		}
 		if _, err := tx.ExecContext(ctx, `DELETE FROM item WHERE character_id=?`, id); err != nil {
@@ -342,18 +353,18 @@ func (r *DBCharacterRepository) Delete(ctx context.Context, id uuid.UUID) error 
 func (r *DBCharacterRepository) UpdateCharacter(ctx context.Context, c models.CharacterTO) error {
 	return r.withTx(ctx, func(tx *sqlx.Tx) error {
 		ensureSpellSlots(&c)
-		// Update character row
-		if _, err := tx.ExecContext(ctx, `
+		query := `
             UPDATE character SET
                 name=?, class_levels=?, background=?, alignment=?,
                 proficiency_bonus=?, armor_class=?, initiative=?, speed=?,
                 max_hit_points=?, curr_hit_points=?, temp_hit_points=?,
                 hit_dice=?, used_hit_dice=?, death_save_successes=?, death_save_failures=?,
-                actions=?, bonus_actions=?, spell_slots=?, spell_slots_used=?,
+				actions=?, bonus_actions=?, spell_slots=?, spell_slots_used=?,
                 spellcasting_ability=?, spell_save_dc=?, spell_attack_bonus=?,
                 updated_at = current_timestamp
             WHERE id=?
-        `,
+		`
+		if _, err := tx.ExecContext(ctx, query,
 			c.Name, c.ClassLevels, c.Background, c.Alignment,
 			c.ProficiencyBonus, c.ArmorClass, c.Initiative, c.Speed,
 			c.MaxHitPoints, c.CurrHitPoints, c.TempHitPoints,
@@ -368,7 +379,40 @@ func (r *DBCharacterRepository) UpdateCharacter(ctx context.Context, c models.Ch
 	})
 }
 
+func (r *DBCharacterRepository) UpdateSpellSlotsMax(ctx context.Context, characterID uuid.UUID, level int, v int) error {
+	if level < 0 || level >= 10 {
+		return errors.New("UpdateSpellSlot: level out of range [0..9]")
+	}
+	var c models.CharacterTO
+	if err := r.db.GetContext(ctx, &c, `SELECT id, spell_slots, spell_slots_used FROM character WHERE id=?`, characterID); err != nil {
+		return err
+	}
+	ensureSpellSlots(&c)
+
+	c.SpellSlots[level] = v
+	query := `UPDATE character SET spell_slots=?, updated_at=current_timestamp WHERE id=?`
+	_, err := r.db.ExecContext(ctx, query, c.SpellSlots, characterID)
+	return err
+}
+
+func (r *DBCharacterRepository) UpdateSpellSlotsUsed(ctx context.Context, characterID uuid.UUID, level int, v int) error {
+	if level < 0 || level >= 10 {
+		return errors.New("UpdateSpellSlot: level out of range [0..9]")
+	}
+	var c models.CharacterTO
+	if err := r.db.GetContext(ctx, &c, `SELECT id, spell_slots, spell_slots_used FROM character WHERE id=?`, characterID); err != nil {
+		return err
+	}
+	ensureSpellSlots(&c)
+
+	c.SpellSlotsUsed[level] = v
+	query := `UPDATE character SET spell_slots_used=?, updated_at=current_timestamp WHERE id=?`
+	_, err := r.db.ExecContext(ctx, query, c.SpellSlotsUsed, characterID)
+	return err
+}
+
 func (r *DBCharacterRepository) UpdateCharacterFields(ctx context.Context, id uuid.UUID, fields map[string]interface{}) error {
+	print(fields)
 	return r.updateTableFields(ctx, "character", "id", id, fields)
 }
 
@@ -380,10 +424,7 @@ func (r *DBCharacterRepository) ListSkillDefinitions(ctx context.Context) ([]mod
 	return defs, nil
 }
 
-// -- Spells: partial update operations --
-
 func (r *DBCharacterRepository) AddSpell(ctx context.Context, characterID uuid.UUID, sp models.SpellTO) (uuid.UUID, error) {
-	// If ID is provided, use it, else let DB generate via DEFAULT/RETURNING.
 	if sp.ID != uuid.Nil {
 		var id uuid.UUID
 		row := r.db.QueryRowxContext(ctx, `
@@ -448,11 +489,6 @@ func (r *DBCharacterRepository) UpdateSpellFields(ctx context.Context, id uuid.U
 func (r *DBCharacterRepository) ListSpellsByCharacter(ctx context.Context, characterID uuid.UUID) ([]models.SpellTO, error) {
 	return listSpells(ctx, r.db, characterID)
 }
-
-// RunInTransaction executes fn with a tx-backed repository implementing BatchRepository.
-// Note: transactional helpers can be added later if needed.
-
-// -- Items: partial update operations --
 
 func (r *DBCharacterRepository) AddItem(ctx context.Context, characterID uuid.UUID, it models.ItemTO) (uuid.UUID, error) {
 	if it.ID != uuid.Nil {
@@ -524,8 +560,6 @@ func (r *DBCharacterRepository) UpdateItemFields(ctx context.Context, id uuid.UU
 	return r.updateTableFields(ctx, "item", "id", id, fields)
 }
 
-// -- Attacks: partial update operations --
-
 func (r *DBCharacterRepository) AddAttack(ctx context.Context, characterID uuid.UUID, a models.AttackTO) (uuid.UUID, error) {
 	if a.ID != uuid.Nil {
 		var id uuid.UUID
@@ -562,6 +596,10 @@ func (r *DBCharacterRepository) UpdateAttack(ctx context.Context, a models.Attac
 	return err
 }
 
+func (r *DBCharacterRepository) UpdateAttackFields(ctx context.Context, id uuid.UUID, fields map[string]interface{}) error {
+	return r.updateTableFields(ctx, "attacks", "id", id, fields)
+}
+
 func (r *DBCharacterRepository) DeleteAttack(ctx context.Context, attackID uuid.UUID) error {
 	if attackID == uuid.Nil {
 		return errors.New("DeleteAttack: missing attack ID")
@@ -588,10 +626,7 @@ func (r *DBCharacterRepository) ListAttacksByCharacter(ctx context.Context, char
 	return listAttacks(ctx, r.db, characterID)
 }
 
-// -- Skills: partial update operations --
-
 func (r *DBCharacterRepository) UpsertSkill(ctx context.Context, characterID uuid.UUID, skillID int, proficiency int, customModifier int) error {
-	// Delete-then-insert to respect UNIQUE(character_id, skill_id)
 	_, err := r.db.ExecContext(ctx, `DELETE FROM character_skill WHERE character_id=? AND skill_id=?`, characterID, skillID)
 	if err != nil {
 		return err
@@ -601,6 +636,10 @@ func (r *DBCharacterRepository) UpsertSkill(ctx context.Context, characterID uui
 		VALUES (?,?,?,?,?)
 	`, uuid.New(), characterID, skillID, proficiency, customModifier)
 	return err
+}
+
+func (r *DBCharacterRepository) UpdateSkillFields(ctx context.Context, id uuid.UUID, fields map[string]interface{}) error {
+	return r.updateTableFields(ctx, "character_skill", "skill_id", id, fields)
 }
 
 func (r *DBCharacterRepository) DeleteSkill(ctx context.Context, characterID uuid.UUID, skillID int) error {
@@ -636,14 +675,16 @@ func (r *DBCharacterRepository) ListSkillDetailsByCharacter(ctx context.Context,
 	return rows, nil
 }
 
-// -- Abilities/Wallet: partial 1:1 operations --
-
 func (r *DBCharacterRepository) GetAbilities(ctx context.Context, characterID uuid.UUID) (*models.AbilitiesTO, error) {
 	return getAbilities(ctx, r.db, characterID)
 }
 
 func (r *DBCharacterRepository) UpsertAbilities(ctx context.Context, characterID uuid.UUID, ab models.AbilitiesTO) error {
 	return r.withTx(ctx, func(tx *sqlx.Tx) error { return upsertAbilities(ctx, tx, characterID, &ab) })
+}
+
+func (r *DBCharacterRepository) UpdateAbilityFields(ctx context.Context, id uuid.UUID, fields map[string]interface{}) error {
+	return r.updateTableFields(ctx, "abilities", "character_id", id, fields)
 }
 
 func (r *DBCharacterRepository) GetWallet(ctx context.Context, characterID uuid.UUID) (*models.WalletTO, error) {
@@ -666,10 +707,10 @@ func (r *DBCharacterRepository) withTx(ctx context.Context, fn func(*sqlx.Tx) er
 
 func ensureSpellSlots(c *models.CharacterTO) {
 	if c.SpellSlots == nil || len(c.SpellSlots) != 10 {
-		c.SpellSlots = make([]int, 10)
+		c.SpellSlots = make(models.IntList, 10)
 	}
 	if c.SpellSlotsUsed == nil || len(c.SpellSlotsUsed) != 10 {
-		c.SpellSlotsUsed = make([]int, 10)
+		c.SpellSlotsUsed = make(models.IntList, 10)
 	}
 }
 
@@ -677,7 +718,6 @@ func upsertAbilities(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, ab
 	if ab == nil {
 		return nil
 	}
-	// delete then insert for simplicity
 	if _, err := tx.ExecContext(ctx, `DELETE FROM abilities WHERE character_id=?`, characterID); err != nil {
 		return err
 	}
@@ -686,6 +726,21 @@ func upsertAbilities(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, ab
             character_id, strength, dexterity, constitution, intelligence, wisdom, charisma
         ) VALUES (?,?,?,?,?,?,?)
     `, characterID, ab.Strength, ab.Dexterity, ab.Constitution, ab.Intelligence, ab.Wisdom, ab.Charisma)
+	return err
+}
+
+func upsertSavingThrows(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, st *models.SavingThrowsTO) error {
+	if st == nil {
+		return nil
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM saving_throws WHERE character_id=?`, characterID); err != nil {
+		return err
+	}
+	_, err := tx.ExecContext(ctx, `
+        INSERT INTO saving_throws (
+            character_id, strength_proficiency, dexterity_proficiency, constitution_proficiency, intelligence_proficiency, wisdom_proficiency, charisma_proficiency
+        ) VALUES (?,?,?,?,?,?,?)
+    `, characterID, st.StrengthProficiency, st.DexterityProficiency, st.ConstitutionProficiency, st.IntelligenceProficiency, st.WisdomProficiency, st.CharismaProficiency)
 	return err
 }
 
@@ -779,13 +834,23 @@ func replaceSkills(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, skil
 func getAbilities(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) (*models.AbilitiesTO, error) {
 	var ab models.AbilitiesTO
 	if err := sqlx.GetContext(ctx, db, &ab, `SELECT * FROM abilities WHERE character_id=?`, id); err != nil {
-		// Return nil if not found
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
 	}
 	return &ab, nil
+}
+
+func getSavingThrows(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) (*models.SavingThrowsTO, error) {
+	var st models.SavingThrowsTO
+	if err := sqlx.GetContext(ctx, db, &st, `SELECT * FROM saving_throws WHERE character_id=?`, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &st, nil
 }
 
 func getWallet(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) (*models.WalletTO, error) {
@@ -829,4 +894,8 @@ func listSkills(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]mo
 		return nil, err
 	}
 	return skills, nil
+}
+
+func (r *DBCharacterRepository) UpdateSavingThrowFields(ctx context.Context, id uuid.UUID, fields map[string]interface{}) error {
+	return r.updateTableFields(ctx, "saving_throws", "character_id", id, fields)
 }

@@ -228,10 +228,18 @@ func (s *SpellScreen) GetSpellListByLevel(agg repository.CharacterAggregate, l i
 		&SpellListHeader{l, agg.Character.SpellSlots[l], agg.Character.SpellSlotsUsed[l]},
 		RenderSpellHeaderRow,
 		[]editor.ValueEditor{
-			editor.NewIntEditor(s.keymap, "Used Spell Slots", agg.Character.SpellSlotsUsed[l]),
-			editor.NewIntEditor(s.keymap, "Max Spell Slots", agg.Character.SpellSlots[l]),
+			editor.NewIntEditor(s.keymap, "Used Spell Slots", agg.Character.SpellSlotsUsed[l],
+				func(v int) error {
+					return s.CharacterRepository.UpdateSpellSlotsUsed(s.Context, s.characterId, l, v)
+				}),
+			editor.NewIntEditor(s.keymap, "Max Spell Slots", agg.Character.SpellSlots[l],
+				func(v int) error {
+					return s.CharacterRepository.UpdateSpellSlotsMax(s.Context, s.characterId, l, v)
+				},
+			),
 		}))
 	rows = append(rows, list.NewSeparatorRow("─", spellColWidth-6))
+	spells := util.Filter(agg.Spells, func(spell models.SpellTO) bool { return spell.Level == l })
 	for _, spell := range spells {
 		rows = append(rows, list.NewStructRow(s.keymap, spell,
 			RenderSpellInfoRow,

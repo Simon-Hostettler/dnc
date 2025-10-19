@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/uuid"
@@ -42,6 +43,10 @@ const (
 type DataOpMsg struct {
 	Op      DataOperation
 	Success bool
+}
+
+type LoadCharacterSummaryMsg struct {
+	Summaries []models.CharacterSummary
 }
 
 type LoadCharacterMsg struct {
@@ -94,8 +99,19 @@ func DataOperationCommand(callback func() error, op DataOperation) tea.Cmd {
 		if err == nil {
 			return DataOpMsg{op, true}
 		} else {
+			fmt.Println("%v", err)
 			return DataOpMsg{op, false}
 		}
+	}
+}
+
+func LoadCharacterSummaryCmd(r repository.CharacterRepository, ctx context.Context) func() tea.Msg {
+	return func() tea.Msg {
+		s, err := r.ListSummary(ctx)
+		if err != nil {
+			panic("Character loaded incorrectly. Panicking to avoid corruption.")
+		}
+		return LoadCharacterSummaryMsg{s}
 	}
 }
 
@@ -103,7 +119,7 @@ func LoadCharacterCmd(r repository.CharacterRepository, ctx context.Context, id 
 	return func() tea.Msg {
 		c, err := r.GetByID(ctx, id)
 		if err != nil {
-			panic("Character loaded incorrectly. Panicking to avoid corruption.")
+			panic("Character loaded incorrectly. Panicking to avoid corruption. " + err.Error())
 		}
 		return LoadCharacterMsg{*c}
 	}
