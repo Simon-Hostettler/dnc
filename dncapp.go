@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"hostettler.dev/dnc/db"
 	"hostettler.dev/dnc/repository"
@@ -155,11 +156,8 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case command.SwitchScreenMsg:
 		a.switchScreen(msg.Screen)
 	case command.SelectCharacterMsg:
-		if msg.Err == nil {
-			a.character = msg.Character
-			cmds := a.populateCharacterScreens()
-			cmd = tea.Batch(cmds, command.SwitchScreenCmd(command.StatScreenIndex))
-		}
+		cmds := a.populateCharacterScreens(msg.ID)
+		cmd = tea.Batch(cmds, command.SwitchScreenCmd(command.StatScreenIndex))
 	case editor.SwitchToEditorMsg:
 		a.editorScreen.StartEdit(msg.Editors)
 		cmd = command.SwitchScreenCmd(command.EditScreenIndex)
@@ -208,13 +206,13 @@ func (a *DnCApp) View() string {
 	return s
 }
 
-func (a *DnCApp) populateCharacterScreens() tea.Cmd {
+func (a *DnCApp) populateCharacterScreens(characterId uuid.UUID) tea.Cmd {
 	cmds := []tea.Cmd{}
-	a.statScreen = screen.NewStatScreen(a.keymap, a.character)
+	a.statScreen = screen.NewStatScreen(a.keymap, a.repository, a.ctx, characterId)
 	cmds = append(cmds, a.statScreen.Init())
-	a.spellScreen = screen.NewSpellScreen(a.keymap, a.character)
+	a.spellScreen = screen.NewSpellScreen(a.keymap, a.repository, a.ctx, characterId)
 	cmds = append(cmds, a.spellScreen.Init())
-	a.inventoryScreen = screen.NewInventoryScreen(a.keymap, a.character)
+	a.inventoryScreen = screen.NewInventoryScreen(a.keymap, a.repository, a.ctx, characterId)
 	cmds = append(cmds, a.inventoryScreen.Init())
 
 	cmds = util.DropNil(cmds)

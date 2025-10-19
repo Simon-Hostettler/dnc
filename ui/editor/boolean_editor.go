@@ -7,12 +7,13 @@ import (
 )
 
 type BooleanEditor struct {
-	keymap      util.KeyMap
-	label       string
-	value       *bool
-	input       bool
-	initialized bool
-	focus       bool
+	keymap       util.KeyMap
+	label        string
+	value        bool
+	saveCallback func(interface{}) error
+	input        bool
+	initialized  bool
+	focus        bool
 }
 
 func NewBooleanEditor(keymap util.KeyMap, label string, delegator interface{}, saveCallback func(bool) error) *BooleanEditor {
@@ -23,17 +24,16 @@ func NewBooleanEditor(keymap util.KeyMap, label string, delegator interface{}, s
 }
 
 func (e *BooleanEditor) Init(keymap util.KeyMap, label string, delegator interface{}, saveCallback func(interface{}) error) {
-	ptr, ok := delegator.(*bool)
+	b, ok := delegator.(bool)
 	if !ok {
-		panic("Value passed is not a pointer to bool")
+		panic("Value passed is not a bool")
 	}
 	e.keymap = keymap
+	e.saveCallback = saveCallback
 	e.label = label
-	e.value = ptr
+	e.value = b
 
-	if ptr != nil {
-		e.input = *ptr
-	}
+	e.input = b
 
 	e.initialized = true
 }
@@ -62,11 +62,8 @@ func (e *BooleanEditor) View() string {
 		util.ItemStyleDefault.Render(util.PrettyBool(e.input))
 }
 
-func (e *BooleanEditor) Save() tea.Cmd {
-	if e.value != nil {
-		*e.value = e.input
-	}
-	return nil
+func (e *BooleanEditor) Save() error {
+	return e.saveCallback(e.value)
 }
 
 func (e *BooleanEditor) Focus() {

@@ -36,19 +36,6 @@ type CharacterTO struct {
 	UpdatedAt           time.Time `db:"updated_at"`
 }
 
-type CharacterSummary struct {
-	ID   uuid.UUID
-	Name string
-}
-
-type Equippable int
-
-const (
-	NonEquippable Equippable = iota
-	NotEquipped
-	Equipped
-)
-
 // ItemTO maps to the `item` table.
 type ItemTO struct {
 	ID              uuid.UUID  `db:"id"`
@@ -57,6 +44,7 @@ type ItemTO struct {
 	Equipped        Equippable `db:"equipped"`
 	AttunementSlots int        `db:"attunement_slots"`
 	Quantity        int        `db:"quantity"`
+	Description     string     `db:"description"`
 	CreatedAt       time.Time  `db:"created_at"`
 	UpdatedAt       time.Time  `db:"updated_at"`
 }
@@ -145,16 +133,4 @@ type CharacterSkillDetailTO struct {
 	SkillAbility   string    `db:"skill_ability"`
 	CreatedAt      time.Time `db:"created_at"`
 	UpdatedAt      time.Time `db:"updated_at"`
-}
-
-func (c CharacterSkillDetailTO) ToCharacterSkillTO() CharacterSkillTO {
-	return CharacterSkillTO{
-		ID:             c.ID,
-		CharacterID:    c.CharacterID,
-		SkillID:        c.SkillID,
-		Proficiency:    c.Proficiency,
-		CustomModifier: c.CustomModifier,
-		CreatedAt:      c.CreatedAt,
-		UpdatedAt:      c.UpdatedAt,
-	}
 }

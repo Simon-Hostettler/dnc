@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS item (
     ),
     attunement_slots INTEGER NOT NULL DEFAULT 0,
     quantity INTEGER NOT NULL DEFAULT 1,
+    description TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
     updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
     FOREIGN KEY(character_id) REFERENCES character(id)
@@ -85,6 +86,19 @@ CREATE TABLE IF NOT EXISTS attacks (
 );
 
 CREATE TABLE IF NOT EXISTS abilities (
+    character_id UUID PRIMARY KEY,
+    strength INTEGER NOT NULL,
+    dexterity INTEGER NOT NULL,
+    constitution INTEGER NOT NULL,
+    intelligence INTEGER NOT NULL,
+    wisdom INTEGER NOT NULL,
+    charisma INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
+    updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
+    FOREIGN KEY(character_id) REFERENCES character(id)
+);
+
+CREATE TABLE IF NOT EXISTS saving_throws (
     character_id UUID PRIMARY KEY,
     strength INTEGER NOT NULL,
     dexterity INTEGER NOT NULL,

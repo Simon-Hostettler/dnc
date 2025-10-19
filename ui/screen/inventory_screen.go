@@ -1,6 +1,7 @@
 package screen
 
 import (
+	"context"
 	"strconv"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/models"
+	"hostettler.dev/dnc/repository"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/component"
 	"hostettler.dev/dnc/ui/editor"
@@ -22,68 +24,97 @@ var (
 )
 
 type InventoryScreen struct {
-	keymap    util.KeyMap
-	character *models.Character
+	keymap              util.KeyMap
+	CharacterRepository repository.CharacterRepository
+	Context             context.Context
 
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
 
-	copper   *component.SimpleIntComponent
-	silver   *component.SimpleIntComponent
-	electrum *component.SimpleIntComponent
-	gold     *component.SimpleIntComponent
-	platinum *component.SimpleIntComponent
-	itemList *list.List
+	characterId uuid.UUID
+	copper      *component.SimpleIntComponent
+	silver      *component.SimpleIntComponent
+	electrum    *component.SimpleIntComponent
+	gold        *component.SimpleIntComponent
+	platinum    *component.SimpleIntComponent
+	itemList    *list.List
 }
 
-func NewInventoryScreen(k util.KeyMap, c *models.Character) *InventoryScreen {
-	return &InventoryScreen{
-		keymap:    k,
-		character: c,
-		copper:    component.NewSimpleIntComponent(k, "CP", &c.Wallet.Copper, true, true),
-		silver:    component.NewSimpleIntComponent(k, "SP", &c.Wallet.Silver, true, true),
-		electrum:  component.NewSimpleIntComponent(k, "EP", &c.Wallet.Electrum, true, true),
-		gold:      component.NewSimpleIntComponent(k, "GP", &c.Wallet.Gold, true, true),
-		platinum:  component.NewSimpleIntComponent(k, "PP", &c.Wallet.Platinum, true, true),
+func NewInventoryScreen(k util.KeyMap, cr repository.CharacterRepository, ctx context.Context, characterId uuid.UUID) *InventoryScreen {
+	s := InventoryScreen{
+		keymap:              k,
+		CharacterRepository: cr,
+		Context:             ctx,
+		characterId:         characterId,
 	}
+
+	s.copper = component.NewSimpleIntComponent(k, "CP", 0, s.persistWalletField("copper"), true, true)
+	s.silver = component.NewSimpleIntComponent(k, "SP", 0, s.persistWalletField("silver"), true, true)
+	s.electrum = component.NewSimpleIntComponent(k, "EP", 0, s.persistWalletField("electrum"), true, true)
+	s.gold = component.NewSimpleIntComponent(k, "GP", 0, s.persistWalletField("gold"), true, true)
+	s.platinum = component.NewSimpleIntComponent(k, "PP", 0, s.persistWalletField("platinum"), true, true)
+	return &s
 }
 
 func (s *InventoryScreen) Init() tea.Cmd {
-	s.populateItems()
-
 	s.focusOn(s.copper)
 	s.lastFocusedElement = s.copper
 
-	return nil
+	return s.reloadDataCmd()
 }
 
-func (s *InventoryScreen) populateItems() {
+func (s *InventoryScreen) reloadDataCmd() tea.Cmd {
+	return tea.Batch(command.LoadItemsCmd(s.CharacterRepository, s.Context, s.characterId),
+		command.LoadWalletCommand(s.CharacterRepository, s.Context, s.characterId))
+}
+
+func (s *InventoryScreen) populateItems(items []models.ItemTO) {
 	if s.itemList == nil {
 		s.itemList = list.NewList(s.keymap,
 			list.LeftAlignedListStyle).
 			WithFixedWidth(itemColWidth).
 			WithViewport(itemColHeight - 2)
 	}
-	s.itemList.WithRows(s.GetItemRows())
+	s.itemList.WithRows(s.GetItemRows(items))
+}
+
+func (s *InventoryScreen) populateWallet(wallet models.WalletTO) {
+	s.copper = component.NewSimpleIntComponent(s.keymap, "CP", wallet.Copper, s.persistWalletField("copper"), true, true)
+	s.silver = component.NewSimpleIntComponent(s.keymap, "SP", wallet.Silver, s.persistWalletField("silver"), true, true)
+	s.electrum = component.NewSimpleIntComponent(s.keymap, "EP", wallet.Electrum, s.persistWalletField("electrum"), true, true)
+	s.gold = component.NewSimpleIntComponent(s.keymap, "GP", wallet.Gold, s.persistWalletField("gold"), true, true)
+	s.platinum = component.NewSimpleIntComponent(s.keymap, "PP", wallet.Platinum, s.persistWalletField("platinum"), true, true)
+}
+
+func (s *InventoryScreen) persistWalletField(field string) func(int) error {
+	return func(v int) error {
+		return s.CharacterRepository.UpdateWalletFields(s.Context, s.characterId, map[string]interface{}{field: v})
+	}
 }
 
 func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case command.DataOpMsg:
+		if msg.Op != command.DataSave {
+			cmd = s.reloadDataCmd()
+		}
+	case command.LoadWalletMsg:
+		s.populateWallet(msg.Wallet)
+	case command.LoadItemMsg:
+		s.populateItems(msg.Items)
 	case command.AppendElementMsg:
 		if strings.Contains(msg.Tag, "item") {
-			item_id := s.character.AddEmptyItem()
-			s.populateItems()
-			cmd = editor.SwitchToEditorCmd(
-				s.character,
-				s.getItemRow(item_id).Editors(),
-			)
+			cmd = command.DataOperationCommand(func() error {
+				_, err := s.CharacterRepository.AddItem(s.Context, s.characterId, models.ItemTO{})
+				return err
+			}, command.DataCreate)
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
 	case editor.EditValueMsg:
-		cmd = editor.SwitchToEditorCmd(s.character, msg.Editors)
+		cmd = editor.SwitchToEditorCmd(msg.Editors)
 	case tea.KeyMsg:
 		switch s.focusedElement.(type) {
 		case *list.List:
@@ -213,13 +244,13 @@ func (s *InventoryScreen) Blur() {
 	s.focusedElement = nil
 }
 
-func (s *InventoryScreen) GetItemRows() []list.Row {
+func (s *InventoryScreen) GetItemRows(items []models.ItemTO) []list.Row {
 	rows := []list.Row{}
-	for i := range s.character.Equipment {
-		item := &s.character.Equipment[i]
+	for i := range items {
+		item := items[i]
 		rows = append(rows, list.NewStructRow(s.keymap, item,
 			RenderItemInfoRow,
-			CreateItemEditors(s.keymap, item),
+			s.CreateItemEditors(item),
 		).WithDestructor(DeleteItemCallback(s, item)).
 			WithReader(RenderFullItemInfo))
 	}
@@ -227,33 +258,31 @@ func (s *InventoryScreen) GetItemRows() []list.Row {
 	return rows
 }
 
-func (s *InventoryScreen) getItemRow(id uuid.UUID) list.Row {
-	for _, r := range s.itemList.Content() {
-		switch r := r.(type) {
-		case *list.StructRow[models.Item]:
-			if r.Value().Id == id {
-				return r
-			}
-		}
-	}
-	return nil
-}
-
-func DeleteItemCallback(s *InventoryScreen, i *models.Item) func() tea.Cmd {
+func DeleteItemCallback(s *InventoryScreen, i models.ItemTO) func() tea.Cmd {
 	return func() tea.Cmd {
-		s.character.DeleteItem(i.Id)
-		s.populateItems()
-		return command.SaveDataCommand(s.character)
+		return command.DataOperationCommand(func() error { return s.CharacterRepository.DeleteItem(s.Context, i.ID) }, command.DataDelete)
 	}
 }
 
-func CreateItemEditors(k util.KeyMap, item *models.Item) []editor.ValueEditor {
+func (s *InventoryScreen) CreateItemEditors(item models.ItemTO) []editor.ValueEditor {
 	return []editor.ValueEditor{
-		editor.NewStringEditor(k, "Name", &item.Name),
-		editor.NewEnumEditor(k, EquippedSymbols, "Equipped", &item.Equipped),
-		editor.NewEnumEditor(k, AttunementSymbols, "Attunement Slots", &item.AttunementSlots),
-		editor.NewIntEditor(k, "Quantity", &item.Quantity),
-		editor.NewStringEditor(k, "Description", &item.Description),
+		editor.NewStringEditor(s.keymap, "Name", item.Name, s.persistItemStringField(item.ID, "name")),
+		editor.NewEnumEditor(s.keymap, EquippedSymbols, "Equipped", int(item.Equipped), s.persistItemIntField(item.ID, "equipped")),
+		editor.NewEnumEditor(s.keymap, AttunementSymbols, "Attunement Slots", item.AttunementSlots, s.persistItemIntField(item.ID, "attunement_slots")),
+		editor.NewIntEditor(s.keymap, "Quantity", item.Quantity, s.persistItemIntField(item.ID, "quantity")),
+		editor.NewStringEditor(s.keymap, "Description", item.Description, s.persistItemStringField(item.ID, "description")),
+	}
+}
+
+func (s *InventoryScreen) persistItemStringField(id uuid.UUID, field string) func(string) error {
+	return func(v string) error {
+		return s.CharacterRepository.UpdateItemFields(s.Context, id, map[string]interface{}{field: v})
+	}
+}
+
+func (s *InventoryScreen) persistItemIntField(id uuid.UUID, field string) func(int) error {
+	return func(v int) error {
+		return s.CharacterRepository.UpdateItemFields(s.Context, id, map[string]interface{}{field: v})
 	}
 }
 
@@ -276,13 +305,13 @@ func (s *InventoryScreen) RenderInventoryScreenTopBar() string {
 		))
 }
 
-func RenderItemInfoRow(i *models.Item) string {
+func RenderItemInfoRow(i models.ItemTO) string {
 	values := []string{DrawItemPrefix(i), i.Name, DrawAttunementSlots(i.AttunementSlots)}
 	values = util.Filter(values, func(s string) bool { return s != "" })
 	return strings.Join(values, " ∙ ")
 }
 
-func RenderFullItemInfo(i *models.Item) string {
+func RenderFullItemInfo(i models.ItemTO) string {
 	separator := util.MakeHorizontalSeparator(util.SmallScreenWidth-4, 1)
 	content := strings.Join(
 		[]string{
@@ -302,7 +331,7 @@ func RenderFullItemInfo(i *models.Item) string {
 		Render(content)
 }
 
-func DrawItemPrefix(i *models.Item) string {
+func DrawItemPrefix(i models.ItemTO) string {
 	s := ""
 	switch i.Equipped {
 	case models.Equipped:

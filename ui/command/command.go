@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/uuid"
+	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/repository"
 )
 
@@ -45,6 +46,18 @@ type DataOpMsg struct {
 
 type LoadCharacterMsg struct {
 	Character repository.CharacterAggregate
+}
+
+type LoadItemMsg struct {
+	Items []models.ItemTO
+}
+
+type LoadWalletMsg struct {
+	Wallet models.WalletTO
+}
+
+type LoadSpellsMsg struct {
+	Spells []models.SpellTO
 }
 
 type SelectCharacterMsg struct {
@@ -93,6 +106,36 @@ func LoadCharacterCmd(r repository.CharacterRepository, ctx context.Context, id 
 			panic("Character loaded incorrectly. Panicking to avoid corruption.")
 		}
 		return LoadCharacterMsg{*c}
+	}
+}
+
+func LoadWalletCommand(r repository.CharacterRepository, ctx context.Context, id uuid.UUID) func() tea.Msg {
+	return func() tea.Msg {
+		w, err := r.GetWallet(ctx, id)
+		if err != nil {
+			panic("Wallet loaded incorrectly. Panicking to avoid corruption.")
+		}
+		return LoadWalletMsg{*w}
+	}
+}
+
+func LoadItemsCmd(r repository.CharacterRepository, ctx context.Context, id uuid.UUID) func() tea.Msg {
+	return func() tea.Msg {
+		i, err := r.ListItemsByCharacter(ctx, id)
+		if err != nil {
+			panic("Items loaded incorrectly. Panicking to avoid corruption.")
+		}
+		return LoadItemMsg{i}
+	}
+}
+
+func LoadSpellsCommand(r repository.CharacterRepository, ctx context.Context, id uuid.UUID) func() tea.Msg {
+	return func() tea.Msg {
+		s, err := r.ListSpellsByCharacter(ctx, id)
+		if err != nil {
+			panic("Spells loaded incorrectly. Panicking to avoid corruption.")
+		}
+		return LoadSpellsMsg{s}
 	}
 }
 
