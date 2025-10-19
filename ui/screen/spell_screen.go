@@ -243,7 +243,7 @@ func DeleteSpellCallback(s *SpellScreen, sp *models.Spell) func() tea.Cmd {
 	return func() tea.Cmd {
 		s.character.DeleteSpell(sp.Id)
 		s.populateSpells()
-		return command.SaveToFileCmd(s.character)
+		return command.WriteBackCmd(s.character)
 	}
 }
 
@@ -292,7 +292,8 @@ func RenderSpellInfoRow(s *models.Spell) string {
 func RenderFullSpellInfo(s *models.Spell) string {
 	separator := util.MakeHorizontalSeparator(util.SmallScreenWidth-4, 1)
 	content := strings.Join(
-		[]string{s.Name + " ∙  Level: " + strconv.Itoa(s.Level),
+		[]string{
+			s.Name + " ∙  Level: " + strconv.Itoa(s.Level),
 			separator,
 			"Components: " + s.Components,
 			separator,

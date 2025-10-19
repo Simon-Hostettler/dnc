@@ -8,8 +8,8 @@ import (
 func UpdateFilesCmd(t *TitleScreen) func() tea.Msg {
 	return func() tea.Msg {
 		t.UpdateFiles()
-		return command.FileOpMsg{
-			Op:      command.FileUpdate,
+		return command.DataOpMsg{
+			Op:      command.DataUpdate,
 			Success: true,
 		}
 	}

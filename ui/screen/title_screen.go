@@ -69,8 +69,8 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch t := msg.(type) {
-	case command.FileOpMsg:
-		if t.Success && t.Op != command.FileUpdate {
+	case command.DataOpMsg:
+		if t.Success && t.Op != command.DataUpdate {
 			return m, UpdateFilesCmd(m)
 		}
 	}
@@ -88,7 +88,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.nameInput.Reset()
 				m.editMode = false
 				if err == nil {
-					cmd = command.SaveToFileCmd(&c)
+					cmd = command.WriteBackCmd(&c)
 				}
 			default:
 				m.nameInput, cmd = m.nameInput.Update(msg)

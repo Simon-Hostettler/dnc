@@ -4,29 +4,27 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/util"
 )
 
 type EditorScreen struct {
-	keymap    util.KeyMap
-	character *models.Character
-	cursor    int
-	editors   []editor.ValueEditor
+	keymap       util.KeyMap
+	cursor       int
+	editors      []editor.ValueEditor
+	writebackCmd tea.Cmd
 }
 
-func NewEditorScreen(keymap util.KeyMap, editors []editor.ValueEditor) *EditorScreen {
-	return &EditorScreen{keymap, nil, 0, editors}
+func NewEditorScreen(keymap util.KeyMap, editors []editor.ValueEditor, writebackCmd tea.Cmd) *EditorScreen {
+	return &EditorScreen{keymap, 0, editors, writebackCmd}
 }
 
 func (s *EditorScreen) Init() tea.Cmd {
 	return nil
 }
 
-func (s *EditorScreen) StartEdit(c *models.Character, editors []editor.ValueEditor) {
-	s.character = c
+func (s *EditorScreen) StartEdit(editors []editor.ValueEditor) {
 	s.editors = editors
 	if len(s.editors) > 0 {
 		s.cursor = 0
@@ -74,7 +72,7 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				for _, e := range s.editors {
 					e.Save()
 				}
-				cmd = tea.Batch(command.SaveToFileCmd(s.character), command.SwitchToPrevScreenCmd)
+				cmd = tea.Batch(s.writebackCmd, command.SwitchToPrevScreenCmd)
 			}
 		}
 	}
