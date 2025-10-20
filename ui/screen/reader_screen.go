@@ -6,7 +6,6 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/util"
 )
@@ -14,14 +13,13 @@ import (
 var readerHeight = 30
 
 type ReaderScreen struct {
-	keymap    util.KeyMap
-	character *models.Character
-	cursor    int
-	content   string
+	keymap  util.KeyMap
+	cursor  int
+	content string
 }
 
 func NewReaderScreen(keymap util.KeyMap) *ReaderScreen {
-	return &ReaderScreen{keymap, nil, 0, ""}
+	return &ReaderScreen{keymap, 0, ""}
 }
 
 func (s *ReaderScreen) Init() tea.Cmd {
@@ -41,7 +39,6 @@ func (s *ReaderScreen) MoveCursor(offset int) {
 	if newCursor >= 0 && newCursor+readerHeight < len(s.contentToLines()) {
 		s.cursor = newCursor
 	}
-
 }
 
 func (s *ReaderScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

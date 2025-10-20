@@ -239,15 +239,15 @@ func (s *InventoryScreen) getItemRow(id uuid.UUID) list.Row {
 	return nil
 }
 
-func DeleteItemCallback(s *InventoryScreen, i *models.Item) func() tea.Cmd {
+func DeleteItemCallback(s *InventoryScreen, i *models.ItemTO) func() tea.Cmd {
 	return func() tea.Cmd {
-		s.character.DeleteItem(i.Id)
+		s.character.DeleteItem(i.ID)
 		s.populateItems()
-		return command.WriteBackCmd(s.character)
+		return command.WriteBackRequest
 	}
 }
 
-func CreateItemEditors(k util.KeyMap, item *models.Item) []editor.ValueEditor {
+func CreateItemEditors(k util.KeyMap, item *models.ItemTO) []editor.ValueEditor {
 	return []editor.ValueEditor{
 		editor.NewStringEditor(k, "Name", &item.Name),
 		editor.NewEnumEditor(k, EquippedSymbols, "Equipped", &item.Equipped),
@@ -276,13 +276,13 @@ func (s *InventoryScreen) RenderInventoryScreenTopBar() string {
 		))
 }
 
-func RenderItemInfoRow(i *models.Item) string {
+func RenderItemInfoRow(i *models.ItemTO) string {
 	values := []string{DrawItemPrefix(i), i.Name, DrawAttunementSlots(i.AttunementSlots)}
 	values = util.Filter(values, func(s string) bool { return s != "" })
 	return strings.Join(values, " ∙ ")
 }
 
-func RenderFullItemInfo(i *models.Item) string {
+func RenderFullItemInfo(i *models.ItemTO) string {
 	separator := util.MakeHorizontalSeparator(util.SmallScreenWidth-4, 1)
 	content := strings.Join(
 		[]string{
@@ -302,7 +302,7 @@ func RenderFullItemInfo(i *models.Item) string {
 		Render(content)
 }
 
-func DrawItemPrefix(i *models.Item) string {
+func DrawItemPrefix(i *models.ItemTO) string {
 	s := ""
 	switch i.Equipped {
 	case models.Equipped:

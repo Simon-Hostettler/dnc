@@ -47,6 +47,10 @@ func (c CharacterSkillDetailTO) ToModifier(score int, profMod int) int {
 	return (score-10)/2 + profMod*c.Proficiency
 }
 
+func ToModifier(score int) int {
+	return (score - 10) / 2
+}
+
 func (a AbilitiesTO) ToScoreByName(ability string) int {
 	switch ability {
 	case "strength":

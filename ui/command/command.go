@@ -43,6 +43,8 @@ type DataOpMsg struct {
 	Success bool
 }
 
+type WriteBackRequestMsg struct{}
+
 type LoadCharacterMsg struct {
 	c *repository.CharacterAggregate
 }
@@ -80,6 +82,10 @@ func DeleteCharacterCmd(r repository.CharacterRepository, ctx context.Context, i
 		err := r.Delete(ctx, id)
 		return DataOpMsg{DataDelete, err == nil}
 	}
+}
+
+func WriteBackRequest() tea.Msg {
+	return WriteBackRequestMsg{}
 }
 
 func WriteBackCmd(r repository.CharacterRepository, ctx context.Context, c *repository.CharacterAggregate) func() tea.Msg {

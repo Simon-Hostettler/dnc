@@ -10,14 +10,13 @@ import (
 )
 
 type EditorScreen struct {
-	keymap       util.KeyMap
-	cursor       int
-	editors      []editor.ValueEditor
-	writebackCmd tea.Cmd
+	keymap  util.KeyMap
+	cursor  int
+	editors []editor.ValueEditor
 }
 
-func NewEditorScreen(keymap util.KeyMap, editors []editor.ValueEditor, writebackCmd tea.Cmd) *EditorScreen {
-	return &EditorScreen{keymap, 0, editors, writebackCmd}
+func NewEditorScreen(keymap util.KeyMap, editors []editor.ValueEditor) *EditorScreen {
+	return &EditorScreen{keymap, 0, editors}
 }
 
 func (s *EditorScreen) Init() tea.Cmd {
@@ -72,7 +71,7 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				for _, e := range s.editors {
 					e.Save()
 				}
-				cmd = tea.Batch(s.writebackCmd, command.SwitchToPrevScreenCmd)
+				cmd = tea.Batch(command.WriteBackRequest, command.SwitchToPrevScreenCmd)
 			}
 		}
 	}

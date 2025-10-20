@@ -37,6 +37,7 @@ type DnCApp struct {
 	spellTab        *ScreenTab
 	inventoryTab    *ScreenTab
 
+	character          *repository.CharacterAggregate
 	curScreenIdx       command.ScreenIndex
 	prevScreenIdx      command.ScreenIndex
 	screenInView       screen.FocusableModel
@@ -155,6 +156,8 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.selectedTab.Focus()
 	case command.SwitchScreenMsg:
 		a.switchScreen(msg.Screen)
+	case command.WriteBackRequestMsg:
+		cmd = command.WriteBackCmd(a.repository, a.ctx, a.character)
 	case command.LoadCharacterMsg:
 		cmds := a.populateCharacterScreens(msg.ID)
 		cmd = tea.Batch(cmds, command.SwitchScreenCmd(command.StatScreenIndex))

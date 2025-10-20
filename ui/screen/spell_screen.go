@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/models"
+	"hostettler.dev/dnc/repository"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/component"
 	"hostettler.dev/dnc/ui/editor"
@@ -24,7 +25,7 @@ var (
 
 type SpellScreen struct {
 	keymap    util.KeyMap
-	character *models.Character
+	character *repository.CharacterAggregate
 
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
@@ -35,13 +36,13 @@ type SpellScreen struct {
 	spellList     *list.List
 }
 
-func NewSpellScreen(k util.KeyMap, c *models.Character) *SpellScreen {
+func NewSpellScreen(k util.KeyMap, c *repository.CharacterAggregate) *SpellScreen {
 	return &SpellScreen{
 		keymap:        k,
 		character:     c,
-		spellAbility:  component.NewSimpleStringComponent(k, "Spellcasting Ability", &c.Spells.SpellcastingAbility, true, true),
-		spellSaveDC:   component.NewSimpleIntComponent(k, "Spell Save DC", &c.Spells.SpellSaveDC, true, true),
-		spellAtkBonus: component.NewSimpleIntComponent(k, "Spell Attack Bonus", &c.Spells.SpellAttackBonus, true, true),
+		spellAbility:  component.NewSimpleStringComponent(k, "Spellcasting Ability", &c.Character.SpellcastingAbility, true, true),
+		spellSaveDC:   component.NewSimpleIntComponent(k, "Spell Save DC", &c.Character.SpellSaveDC, true, true),
+		spellAtkBonus: component.NewSimpleIntComponent(k, "Spell Attack Bonus", &c.Character.SpellAttackBonus, true, true),
 	}
 }
 
@@ -89,14 +90,13 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			spell_id := s.character.AddEmptySpell(l)
 			s.populateSpells()
 			cmd = editor.SwitchToEditorCmd(
-				s.character,
 				s.getSpellRow(spell_id).Editors(),
 			)
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
 	case editor.EditValueMsg:
-		cmd = editor.SwitchToEditorCmd(s.character, msg.Editors)
+		cmd = editor.SwitchToEditorCmd(msg.Editors)
 	case tea.KeyMsg:
 		switch s.focusedElement.(type) {
 		case *list.List:
@@ -208,11 +208,11 @@ func (s *SpellScreen) GetSpellListByLevel(l int) []list.Row {
 	rows := []list.Row{}
 	spells := s.character.GetSpellsByLevel(l)
 	rows = append(rows, list.NewStructRow(s.keymap,
-		&SpellListHeader{l, &s.character.Spells.SpellSlots[l], &s.character.Spells.SpellSlotsUsed[l]},
+		&SpellListHeader{l, &s.character.Character.SpellSlots[l], &s.character.Character.SpellSlotsUsed[l]},
 		RenderSpellHeaderRow,
 		[]editor.ValueEditor{
-			editor.NewIntEditor(s.keymap, "Used Spell Slots", &s.character.Spells.SpellSlotsUsed[l]),
-			editor.NewIntEditor(s.keymap, "Max Spell Slots", &s.character.Spells.SpellSlots[l]),
+			editor.NewIntEditor(s.keymap, "Used Spell Slots", &s.character.Character.SpellSlotsUsed[l]),
+			editor.NewIntEditor(s.keymap, "Max Spell Slots", &s.character.Character.SpellSlots[l]),
 		}))
 	rows = append(rows, list.NewSeparatorRow("─", spellColWidth-6))
 	for _, spell := range spells {
@@ -230,8 +230,8 @@ func (s *SpellScreen) GetSpellListByLevel(l int) []list.Row {
 func (s *SpellScreen) getSpellRow(id uuid.UUID) list.Row {
 	for _, r := range s.spellList.Content() {
 		switch r := r.(type) {
-		case *list.StructRow[models.Spell]:
-			if r.Value().Id == id {
+		case *list.StructRow[models.SpellTO]:
+			if r.Value().ID == id {
 				return r
 			}
 		}
@@ -239,15 +239,15 @@ func (s *SpellScreen) getSpellRow(id uuid.UUID) list.Row {
 	return nil
 }
 
-func DeleteSpellCallback(s *SpellScreen, sp *models.Spell) func() tea.Cmd {
+func DeleteSpellCallback(s *SpellScreen, sp *models.SpellTO) func() tea.Cmd {
 	return func() tea.Cmd {
-		s.character.DeleteSpell(sp.Id)
+		s.character.DeleteSpell(sp.ID)
 		s.populateSpells()
-		return command.WriteBackCmd(s.character)
+		return command.WriteBackRequest
 	}
 }
 
-func CreateSpellEditors(k util.KeyMap, spell *models.Spell) []editor.ValueEditor {
+func CreateSpellEditors(k util.KeyMap, spell *models.SpellTO) []editor.ValueEditor {
 	return []editor.ValueEditor{
 		editor.NewStringEditor(k, "Name", &spell.Name),
 		editor.NewBooleanEditor(k, "Prepared", &spell.Prepared),
@@ -283,13 +283,13 @@ func RenderSpellHeaderRow(h *SpellListHeader) string {
 		RenderSpellSlots(*h.used, *h.slots))
 }
 
-func RenderSpellInfoRow(s *models.Spell) string {
+func RenderSpellInfoRow(s *models.SpellTO) string {
 	values := []string{s.Name, s.Damage, s.Components, s.Range, s.CastingTime, s.Duration}
 	values = util.Filter(values, func(s string) bool { return s != "" })
-	return util.PrettyBoolCircle(s.Prepared) + " " + strings.Join(values, " ∙ ")
+	return util.PrettyBoolCircle(util.I2b(s.Prepared)) + " " + strings.Join(values, " ∙ ")
 }
 
-func RenderFullSpellInfo(s *models.Spell) string {
+func RenderFullSpellInfo(s *models.SpellTO) string {
 	separator := util.MakeHorizontalSeparator(util.SmallScreenWidth-4, 1)
 	content := strings.Join(
 		[]string{
