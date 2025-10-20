@@ -6,7 +6,6 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"hostettler.dev/dnc/db"
 	"hostettler.dev/dnc/repository"
@@ -83,7 +82,7 @@ func NewApp() (*DnCApp, error) {
 		statTab:            NewScreenTab(km, "Stats", command.StatScreenIndex, false),
 		spellTab:           NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
 		inventoryTab:       NewScreenTab(km, "Inventory", command.InventoryScreenIndex, false),
-		titleScreen:        screen.NewTitleScreen(config.CharacterDir),
+		titleScreen:        screen.NewTitleScreen(),
 		editorScreen:       screen.NewEditorScreen(km, []editor.ValueEditor{}),
 		confirmationScreen: screen.NewConfirmationScreen(km),
 		readerScreen:       screen.NewReaderScreen(km),
@@ -156,11 +155,25 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.selectedTab.Focus()
 	case command.SwitchScreenMsg:
 		a.switchScreen(msg.Screen)
+	case command.LoadSummariesRequestMsg:
+		cmd = command.LoadSummariesCommand(a.repository, a.ctx)
+	case command.LoadSummariesMsg:
+		a.titleScreen.SetSummaries(msg.Summaries)
 	case command.WriteBackRequestMsg:
 		cmd = command.WriteBackCmd(a.repository, a.ctx, a.character)
+	case command.CreateCharacterRequestMsg:
+		cmd = command.CreateCharacterCmd(a.repository, a.ctx, msg.Name)
+	case command.CreateCharacterMsg:
+		cmd = command.LoadSummariesCommand(a.repository, a.ctx)
+	case command.DeleteCharacterRequestMsg:
+		cmd = command.DeleteCharacterCmd(a.repository, a.ctx, msg.ID)
+	case command.DeleteCharacterMsg:
+		cmd = command.LoadSummariesCommand(a.repository, a.ctx)
 	case command.LoadCharacterMsg:
-		cmds := a.populateCharacterScreens(msg.ID)
-		cmd = tea.Batch(cmds, command.SwitchScreenCmd(command.StatScreenIndex))
+		cmds := a.populateCharacterScreens(msg.Agg)
+		cmd = tea.Sequence(cmds, command.SwitchScreenCmd(command.StatScreenIndex))
+	case command.SelectCharacterMsg:
+		cmd = command.LoadCharacterCmd(a.repository, a.ctx, msg.ID)
 	case editor.SwitchToEditorMsg:
 		a.editorScreen.StartEdit(msg.Editors)
 		cmd = command.SwitchScreenCmd(command.EditScreenIndex)
@@ -209,13 +222,14 @@ func (a *DnCApp) View() string {
 	return s
 }
 
-func (a *DnCApp) populateCharacterScreens(characterId uuid.UUID) tea.Cmd {
+func (a *DnCApp) populateCharacterScreens(agg *repository.CharacterAggregate) tea.Cmd {
 	cmds := []tea.Cmd{}
-	a.statScreen = screen.NewStatScreen(a.keymap, a.repository, a.ctx, characterId)
+	a.character = agg
+	a.statScreen = screen.NewStatScreen(a.keymap, agg)
 	cmds = append(cmds, a.statScreen.Init())
-	a.spellScreen = screen.NewSpellScreen(a.keymap, a.repository, a.ctx, characterId)
+	a.spellScreen = screen.NewSpellScreen(a.keymap, agg)
 	cmds = append(cmds, a.spellScreen.Init())
-	a.inventoryScreen = screen.NewInventoryScreen(a.keymap, a.repository, a.ctx, characterId)
+	a.inventoryScreen = screen.NewInventoryScreen(a.keymap, agg)
 	cmds = append(cmds, a.inventoryScreen.Init())
 
 	cmds = util.DropNil(cmds)

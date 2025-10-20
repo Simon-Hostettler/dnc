@@ -30,50 +30,41 @@ var (
 type TitleScreen struct {
 	KeyMap util.KeyMap
 
-	cursor       int
-	characters   *list.List
-	files        []string
-	characterDir string
-	editMode     bool
-	nameInput    textinput.Model
+	cursor     int
+	characters *list.List
+	editMode   bool
+	nameInput  textinput.Model
 }
 
-func NewTitleScreen(character_dir string) *TitleScreen {
+func NewTitleScreen() *TitleScreen {
 	ti := textinput.New()
 	ti.Width = inputWidth
 	ti.CharLimit = inputLimit
 	ti.Placeholder = "Character Name"
 
 	t := TitleScreen{
-		KeyMap:       util.DefaultKeyMap(),
-		cursor:       0,
-		characterDir: character_dir,
-		editMode:     false,
-		nameInput:    ti,
-		characters:   list.NewListWithDefaults(),
+		KeyMap:     util.DefaultKeyMap(),
+		cursor:     0,
+		editMode:   false,
+		nameInput:  ti,
+		characters: list.NewListWithDefaults(),
 	}
 	return &t
 }
 
-func (t *TitleScreen) UpdateFiles() {
-	t.files = util.ListCharacterFiles(t.characterDir)
-	charRows := util.Map(t.files, func(s string) list.Row { return list.NewCharacterRow(util.PrettyFileName(s), t.characterDir, t.KeyMap) })
+func (t *TitleScreen) SetSummaries(s []models.CharacterSummary) {
+	charRows := util.Map(s, func(sum models.CharacterSummary) list.Row {
+		return list.NewCharacterRow(t.KeyMap, &sum)
+	})
 	t.characters.WithRows(charRows)
 }
 
 func (m *TitleScreen) Init() tea.Cmd {
-	return UpdateFilesCmd(m)
+	return command.LoadSummariesRequest
 }
 
 func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-
-	switch t := msg.(type) {
-	case command.DataOpMsg:
-		if t.Success && t.Op != command.DataUpdate {
-			return m, UpdateFilesCmd(m)
-		}
-	}
 
 	// New character creation
 	if m.editMode {
@@ -84,12 +75,10 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.editMode = false
 				m.nameInput.Reset()
 			case key.Matches(msg, m.KeyMap.Enter):
-				c, err := models.NewCharacter(m.nameInput.Value())
+				name := m.nameInput.Value()
 				m.nameInput.Reset()
 				m.editMode = false
-				if err == nil {
-					cmd = command.WriteBackCmd(&c)
-				}
+				cmd = command.CreateCharacterRequest(name)
 			default:
 				m.nameInput, cmd = m.nameInput.Update(msg)
 			}

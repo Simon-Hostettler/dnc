@@ -68,10 +68,12 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				s.cursor = 0
 				s.editors[s.cursor].Focus()
 			case key.Matches(msg, s.keymap.Enter):
+				cmds := []tea.Cmd{}
 				for _, e := range s.editors {
-					e.Save()
+					cmds = append(cmds, e.Save())
 				}
-				cmd = tea.Batch(command.WriteBackRequest, command.SwitchToPrevScreenCmd)
+				saveCmds := tea.Batch(cmds...)
+				cmd = tea.Sequence(saveCmds, command.SwitchToPrevScreenCmd, command.WriteBackRequest)
 			}
 		}
 	}

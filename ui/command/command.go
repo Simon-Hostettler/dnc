@@ -5,6 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/uuid"
+	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/repository"
 )
 
@@ -45,8 +46,22 @@ type DataOpMsg struct {
 
 type WriteBackRequestMsg struct{}
 
+type LoadSummariesRequestMsg struct{}
+
+type LoadSummariesMsg struct {
+	Summaries []models.CharacterSummary
+}
+
 type LoadCharacterMsg struct {
-	c *repository.CharacterAggregate
+	Agg *repository.CharacterAggregate
+}
+
+type CreateCharacterRequestMsg struct {
+	Name string
+}
+
+type CreateCharacterMsg struct {
+	ID uuid.UUID
 }
 
 type SelectCharacterMsg struct {
@@ -77,15 +92,62 @@ type LaunchReaderScreenMsg struct {
 	Content string
 }
 
+type DeleteCharacterRequestMsg struct {
+	ID uuid.UUID
+}
+
+type DeleteCharacterMsg struct {
+	Success bool
+}
+
 func DeleteCharacterCmd(r repository.CharacterRepository, ctx context.Context, id uuid.UUID) tea.Cmd {
 	return func() tea.Msg {
 		err := r.Delete(ctx, id)
-		return DataOpMsg{DataDelete, err == nil}
+		if err != nil {
+			return DeleteCharacterMsg{false}
+		}
+		return DeleteCharacterMsg{true}
 	}
 }
 
 func WriteBackRequest() tea.Msg {
 	return WriteBackRequestMsg{}
+}
+
+func LoadSummariesRequest() tea.Msg {
+	return LoadSummariesRequestMsg{}
+}
+
+func LoadSummariesCommand(r repository.CharacterRepository, ctx context.Context) func() tea.Msg {
+	return func() tea.Msg {
+		if sum, err := r.ListSummary(ctx); err != nil {
+			return LoadSummariesMsg{[]models.CharacterSummary{}}
+		} else {
+			return LoadSummariesMsg{sum}
+		}
+	}
+}
+
+func DeleteCharacterRequest(id uuid.UUID) func() tea.Msg {
+	return func() tea.Msg {
+		return DeleteCharacterRequestMsg{id}
+	}
+}
+
+func CreateCharacterRequest(name string) func() tea.Msg {
+	return func() tea.Msg {
+		return CreateCharacterRequestMsg{name}
+	}
+}
+
+func CreateCharacterCmd(r repository.CharacterRepository, ctx context.Context, name string) func() tea.Msg {
+	return func() tea.Msg {
+		if id, err := r.CreateEmpty(ctx, name); err != nil {
+			return CreateCharacterMsg{}
+		} else {
+			return CreateCharacterMsg{id}
+		}
+	}
 }
 
 func WriteBackCmd(r repository.CharacterRepository, ctx context.Context, c *repository.CharacterAggregate) func() tea.Msg {
@@ -99,9 +161,9 @@ func LoadCharacterCmd(r repository.CharacterRepository, ctx context.Context, id 
 	return func() tea.Msg {
 		c, err := r.GetByID(ctx, id)
 		if err != nil {
-			return LoadCharacterMsg{c}
+			return LoadCharacterMsg{nil}
 		}
-		return LoadCharacterMsg{nil}
+		return LoadCharacterMsg{c}
 	}
 }
 

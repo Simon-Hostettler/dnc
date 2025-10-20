@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/google/uuid"
 	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/repository"
 	"hostettler.dev/dnc/ui/command"
@@ -63,19 +64,19 @@ func NewStatScreen(keymap util.KeyMap, c *repository.CharacterAggregate) *StatSc
 	s.characterInfo = list.NewListWithDefaults().
 		WithRows(s.GetCharacterInfoRows())
 	s.abilities = list.NewListWithDefaults().
-		WithRows(GetAbilityRows(keymap, c))
+		WithRows(s.GetAbilityRows())
 	s.skills = list.NewListWithDefaults().
 		WithTitle("Skills").
-		WithRows(GetSkillRows(keymap, c))
+		WithRows(s.GetSkillRows())
 	s.savingThrows = list.NewListWithDefaults().
 		WithTitle("Saving Throws").
-		WithRows(GetSavingThrowRows(keymap, c))
+		WithRows(s.GetSavingThrowRows())
 	s.combatInfo = list.NewListWithDefaults().
 		WithTitle("Combat").
-		WithRows(GetCombatInfoRows(keymap, c))
+		WithRows(s.GetCombatInfoRows())
 	s.attacks = list.NewListWithDefaults().
 		WithTitle("Attacks").
-		WithRows(GetAttackRows(keymap, c))
+		WithRows(s.GetAttackRows())
 	return s
 }
 
@@ -107,10 +108,11 @@ func (s *StatScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case command.AppendElementMsg:
 		if msg.Tag == "attack" {
-			s.agg.AddEmptyAttack()
-			newRows := GetAttackRows(s.keymap, s.agg)
-			s.attacks.WithRows(newRows)
-			cmd = editor.SwitchToEditorCmd(newRows[len(newRows)-1].Editors())
+			id := s.agg.AddEmptyAttack()
+			s.attacks.WithRows(s.GetAttackRows())
+			cmd = editor.SwitchToEditorCmd(
+				s.getAttackRow(id).Editors(),
+			)
 		} else {
 			_, cmd = s.focusedElement.Update(msg)
 		}
@@ -429,12 +431,24 @@ func (s *StatScreen) GetAttackRows() []list.Row {
 	return rows
 }
 
+func (s *StatScreen) getAttackRow(id uuid.UUID) list.Row {
+	for _, r := range s.attacks.Content() {
+		switch r := r.(type) {
+		case *list.StructRow[models.AttackTO]:
+			if r.Value().ID == id {
+				return r
+			}
+		}
+	}
+	return nil
+}
+
 func (s *StatScreen) GetSkillRows() []list.Row {
 	rows := []list.Row{}
 
 	for i := range s.agg.Skills {
 		skill := &s.agg.Skills[i]
-		row := list.NewStructRow(s.keymap, &SkillInfo{skill, &s.agg.Abilities, &s.agg.Character.ProficiencyBonus}, renderSkillInfoRow,
+		row := list.NewStructRow(s.keymap, &SkillInfo{skill, s.agg.Abilities, &s.agg.Character.ProficiencyBonus}, renderSkillInfoRow,
 			[]editor.ValueEditor{
 				editor.NewEnumEditor(s.keymap, ProficiencySymbols, "Proficiency", &skill.Proficiency),
 				editor.NewIntEditor(s.keymap, "Custom Modifier", &skill.CustomModifier),
@@ -446,16 +460,21 @@ func (s *StatScreen) GetSkillRows() []list.Row {
 }
 
 func (s *StatScreen) GetSavingThrowRows() []list.Row {
-	rows := []list.Row{}
-
-	for i := range s.agg.SavingThrows {
-		saving := &c.SavingThrows[i]
-		row := list.NewStructRow(k, &SavingThrowInfo{saving, &c.Abilities, &c.ProficiencyBonus}, renderSavingThrowInfoRow,
-			[]editor.ValueEditor{editor.NewEnumEditor(k, ProficiencySymbols, "Proficiency", &saving.Proficiency)})
-		rows = append(rows, row)
+	renderer := renderSavingThrowInfoRow(s.agg.Abilities, s.agg.Character.ProficiencyBonus)
+	return []list.Row{
+		list.NewStructRow(s.keymap, &SavingThrowInfo{&s.agg.SavingThrows.StrengthProficiency, "Strength"}, renderer,
+			[]editor.ValueEditor{editor.NewEnumEditor(s.keymap, ProficiencySymbols, "Proficiency", &s.agg.SavingThrows.StrengthProficiency)}),
+		list.NewStructRow(s.keymap, &SavingThrowInfo{&s.agg.SavingThrows.DexterityProficiency, "Dexterity"}, renderer,
+			[]editor.ValueEditor{editor.NewEnumEditor(s.keymap, ProficiencySymbols, "Proficiency", &s.agg.SavingThrows.DexterityProficiency)}),
+		list.NewStructRow(s.keymap, &SavingThrowInfo{&s.agg.SavingThrows.ConstitutionProficiency, "Constitution"}, renderer,
+			[]editor.ValueEditor{editor.NewEnumEditor(s.keymap, ProficiencySymbols, "Proficiency", &s.agg.SavingThrows.ConstitutionProficiency)}),
+		list.NewStructRow(s.keymap, &SavingThrowInfo{&s.agg.SavingThrows.IntelligenceProficiency, "Intelligence"}, renderer,
+			[]editor.ValueEditor{editor.NewEnumEditor(s.keymap, ProficiencySymbols, "Proficiency", &s.agg.SavingThrows.IntelligenceProficiency)}),
+		list.NewStructRow(s.keymap, &SavingThrowInfo{&s.agg.SavingThrows.WisdomProficiency, "Wisdom"}, renderer,
+			[]editor.ValueEditor{editor.NewEnumEditor(s.keymap, ProficiencySymbols, "Proficiency", &s.agg.SavingThrows.WisdomProficiency)}),
+		list.NewStructRow(s.keymap, &SavingThrowInfo{&s.agg.SavingThrows.CharismaProficiency, "Charisma"}, renderer,
+			[]editor.ValueEditor{editor.NewEnumEditor(s.keymap, ProficiencySymbols, "Proficiency", &s.agg.SavingThrows.CharismaProficiency)}),
 	}
-
-	return rows
 }
 
 // screen specific types + utility functions
@@ -479,15 +498,16 @@ func renderHitDiceInfoRow(hd *HitDiceInfo) string {
 }
 
 type SavingThrowInfo struct {
-	savingThrow *models.SavingThrowsTO
-	abilities   *models.AbilitiesTO
-	profBonus   *int
+	proficiency *int
+	ability     string
 }
 
-func renderSavingThrowInfoRow(st *SavingThrowInfo) string {
-	mod := st.savingThrow.ToModifier(, *st.profBonus)
-	bullet := ProficiencySymbol(st.savingThrow.Proficiency)
-	return util.RenderEdgeBound(ColWidth, TinyColWidth, bullet+" "+st.savingThrow.Ability, fmt.Sprintf("%+d", mod))
+func renderSavingThrowInfoRow(a *models.AbilitiesTO, profBonus int) func(*SavingThrowInfo) string {
+	return func(s *SavingThrowInfo) string {
+		mod := models.ToModifierWithBonus(a.ToScoreByName(strings.ToLower(s.ability)), models.Proficiency(*s.proficiency), profBonus)
+		bullet := ProficiencySymbol(models.Proficiency(*s.proficiency))
+		return util.RenderEdgeBound(LongColWidth, TinyColWidth, bullet+" "+s.ability, fmt.Sprintf("%+d", mod))
+	}
 }
 
 type SkillInfo struct {
@@ -497,7 +517,7 @@ type SkillInfo struct {
 }
 
 func renderSkillInfoRow(s *SkillInfo) string {
-	mod := s.skill.ToModifier(s.abilities.ToScoreByName(s.skill.SkillAbility), *s.profBonus)
+	mod := s.skill.ToModifier(s.abilities.ToScoreByName(strings.ToLower(s.skill.SkillAbility)), *s.profBonus)
 	bullet := ProficiencySymbol(models.Proficiency(s.skill.Proficiency))
 	return util.RenderEdgeBound(LongColWidth, TinyColWidth, bullet+" "+s.skill.SkillName, fmt.Sprintf("%+d", mod))
 }

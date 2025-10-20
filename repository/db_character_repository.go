@@ -129,7 +129,7 @@ func (r *DBCharacterRepository) CreateEmpty(ctx context.Context, name string) (u
 }
 
 func (r *DBCharacterRepository) GetByID(ctx context.Context, id uuid.UUID) (*CharacterAggregate, error) {
-	var c models.CharacterTO
+	c := models.CharacterTO{}
 	if err := r.db.GetContext(ctx, &c, `SELECT * FROM character WHERE id = ?`, id); err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (r *DBCharacterRepository) ListSummary(ctx context.Context) ([]models.Chara
 }
 
 func (r *DBCharacterRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.withTx(ctx, func(tx *sqlx.Tx) error {
+	err := r.withTx(ctx, func(tx *sqlx.Tx) error {
 		if _, err := tx.ExecContext(ctx, `DELETE FROM wallet WHERE character_id=?`, id); err != nil {
 			return err
 		}
@@ -203,6 +203,12 @@ func (r *DBCharacterRepository) Delete(ctx context.Context, id uuid.UUID) error 
 		if _, err := tx.ExecContext(ctx, `DELETE FROM character_skill WHERE character_id=?`, id); err != nil {
 			return err
 		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return r.withTx(ctx, func(tx *sqlx.Tx) error {
 		if _, err := tx.ExecContext(ctx, `DELETE FROM character WHERE id=?`, id); err != nil {
 			return err
 		}
@@ -218,8 +224,8 @@ func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggreg
 	id := agg.Character.ID
 	return r.withTx(ctx, func(tx *sqlx.Tx) error {
 		// Update character row
-		c := *agg.Character
-		ensureSpellSlots(&c)
+		c := agg.Character
+		ensureSpellSlots(c)
 		query := `
 			UPDATE character SET
 				name=?, class_levels=?, background=?, alignment=?,

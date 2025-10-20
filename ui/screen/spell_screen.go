@@ -218,7 +218,7 @@ func (s *SpellScreen) GetSpellListByLevel(l int) []list.Row {
 	for _, spell := range spells {
 		rows = append(rows, list.NewStructRow(s.keymap, spell,
 			RenderSpellInfoRow,
-			CreateSpellEditors(s.keymap, spell),
+			s.CreateSpellEditors(spell),
 		).WithDestructor(DeleteSpellCallback(s, spell)).
 			WithReader(RenderFullSpellInfo))
 	}
@@ -247,16 +247,16 @@ func DeleteSpellCallback(s *SpellScreen, sp *models.SpellTO) func() tea.Cmd {
 	}
 }
 
-func CreateSpellEditors(k util.KeyMap, spell *models.SpellTO) []editor.ValueEditor {
+func (s *SpellScreen) CreateSpellEditors(spell *models.SpellTO) []editor.ValueEditor {
 	return []editor.ValueEditor{
-		editor.NewStringEditor(k, "Name", &spell.Name),
-		editor.NewBooleanEditor(k, "Prepared", &spell.Prepared),
-		editor.NewStringEditor(k, "Damage", &spell.Damage),
-		editor.NewStringEditor(k, "Casting Time", &spell.CastingTime),
-		editor.NewStringEditor(k, "Range", &spell.Range),
-		editor.NewStringEditor(k, "Duration", &spell.Duration),
-		editor.NewStringEditor(k, "Components", &spell.Components),
-		editor.NewStringEditor(k, "Description", &spell.Description),
+		editor.NewStringEditor(s.keymap, "Name", &spell.Name),
+		editor.NewEnumEditor(s.keymap, PreparedSymbols, "Prepared", &spell.Prepared),
+		editor.NewStringEditor(s.keymap, "Damage", &spell.Damage),
+		editor.NewStringEditor(s.keymap, "Casting Time", &spell.CastingTime),
+		editor.NewStringEditor(s.keymap, "Range", &spell.Range),
+		editor.NewStringEditor(s.keymap, "Duration", &spell.Duration),
+		editor.NewStringEditor(s.keymap, "Components", &spell.Components),
+		editor.NewStringEditor(s.keymap, "Description", &spell.Description),
 	}
 }
 
@@ -311,6 +311,11 @@ func RenderFullSpellInfo(s *models.SpellTO) string {
 	return util.DefaultTextStyle.
 		AlignHorizontal(lipgloss.Left).
 		Render(content)
+}
+
+var PreparedSymbols []editor.EnumMapping = []editor.EnumMapping{
+	{Value: 0, Label: "□"},
+	{Value: 1, Label: "■"},
 }
 
 func RenderSpellSlots(used int, max int) string {

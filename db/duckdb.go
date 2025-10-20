@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
+	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/marcboeker/go-duckdb"
 )
 
 // Opens (creates if missing) duckdb at given path

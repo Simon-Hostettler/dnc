@@ -1,4 +1,7 @@
 -- +duckUp
+
+-- Never use foreign keys in duckDB, will make updates impossible,
+-- as they are implemented as insert + delete
 CREATE TABLE IF NOT EXISTS character (
     id UUID PRIMARY KEY DEFAULT uuid(),
     name TEXT NOT NULL,
@@ -41,7 +44,6 @@ CREATE TABLE IF NOT EXISTS item (
     description TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
     updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
-    FOREIGN KEY(character_id) REFERENCES character(id)
 );
 
 CREATE TABLE IF NOT EXISTS wallet (
@@ -53,7 +55,6 @@ CREATE TABLE IF NOT EXISTS wallet (
     platinum INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
     updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
-    FOREIGN KEY(character_id) REFERENCES character(id)
 );
 
 CREATE TABLE IF NOT EXISTS spell (
@@ -70,7 +71,6 @@ CREATE TABLE IF NOT EXISTS spell (
     description TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
     updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
-    FOREIGN KEY(character_id) REFERENCES character(id)
 );
 
 CREATE TABLE IF NOT EXISTS attacks (
@@ -82,7 +82,6 @@ CREATE TABLE IF NOT EXISTS attacks (
     damage_type TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
     updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
-    FOREIGN KEY(character_id) REFERENCES character(id)
 );
 
 CREATE TABLE IF NOT EXISTS abilities (
@@ -95,7 +94,6 @@ CREATE TABLE IF NOT EXISTS abilities (
     charisma INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
     updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
-    FOREIGN KEY(character_id) REFERENCES character(id)
 );
 
 CREATE TABLE IF NOT EXISTS saving_throws (
@@ -108,7 +106,6 @@ CREATE TABLE IF NOT EXISTS saving_throws (
     charisma_proficiency INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
     updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
-    FOREIGN KEY(character_id) REFERENCES character(id)
 );
 
 CREATE TABLE IF NOT EXISTS skill_definition (
@@ -137,8 +134,6 @@ CREATE TABLE IF NOT EXISTS character_skill (
     custom_modifier INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
     updated_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
-    FOREIGN KEY(character_id) REFERENCES character(id),
-    FOREIGN KEY(skill_id) REFERENCES skill_definition(id),
     UNIQUE(character_id, skill_id)
 );
 

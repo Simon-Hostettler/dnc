@@ -10,13 +10,12 @@ import (
 )
 
 type CharacterRow struct {
-	keymap         util.KeyMap
-	character      *models.CharacterSummary
-	deleteCallback tea.Cmd
+	keymap    util.KeyMap
+	character *models.CharacterSummary
 }
 
-func NewCharacterRow(character *models.CharacterSummary, deleteCallback tea.Cmd, keymap util.KeyMap) *CharacterRow {
-	return &CharacterRow{keymap, character, deleteCallback}
+func NewCharacterRow(keymap util.KeyMap, character *models.CharacterSummary) *CharacterRow {
+	return &CharacterRow{keymap, character}
 }
 
 func (c *CharacterRow) Init() tea.Cmd {
@@ -32,7 +31,7 @@ func (c *CharacterRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, c.keymap.Delete):
 			return c, command.LaunchConfirmationDialogueCmd(
 				func() tea.Cmd {
-					return c.deleteCallback
+					return command.DeleteCharacterRequest(c.character.ID)
 				},
 			)
 		}

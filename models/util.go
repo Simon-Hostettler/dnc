@@ -44,11 +44,15 @@ func (c CharacterSkillDetailTO) ToCharacterSkillTO() CharacterSkillTO {
 }
 
 func (c CharacterSkillDetailTO) ToModifier(score int, profMod int) int {
-	return (score-10)/2 + profMod*c.Proficiency
+	return (score-10)/2 + profMod*c.Proficiency + c.CustomModifier
 }
 
 func ToModifier(score int) int {
 	return (score - 10) / 2
+}
+
+func ToModifierWithBonus(score int, prof Proficiency, profBonus int) int {
+	return (score-10)/2 + profBonus*int(prof)
 }
 
 func (a AbilitiesTO) ToScoreByName(ability string) int {
