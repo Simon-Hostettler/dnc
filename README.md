@@ -6,8 +6,7 @@ ______ _   _ _____
 | |/ /| |\  | \__/\
 |___/ \_| \_/\____/
 ```
-
-# DNC
+[![Go](https://github.com/Simon-Hostettler/dnc/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/Simon-Hostettler/dnc/actions/workflows/go.yml)
 
 A small terminal-based TTRPG character manager built with Bubble Tea, Lip Gloss and DuckDB. It provides a TUI to create and edit various character data (stats, spells, items, etc.).
 
@@ -17,7 +16,7 @@ This repository is organized as a single Go module (`hostettler.dev/dnc`) with t
 ├── README.md     // <-- You are here
 ├── config.go     // Basic configurations - in code only for the moment
 ├── db            // Driver for DuckDB, migration logic + migrations
-├── dncapp.go     // Main command handler & coordinater, top-level bubble tea program
+├── dncapp.go     // Main command handler & coordinator, top-level bubble tea program
 ├── go.mod        // Deps
 ├── go.sum
 ├── main.go       // Application bootsrap
