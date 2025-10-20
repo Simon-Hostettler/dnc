@@ -1,13 +1,12 @@
 package command
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
+	"context"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/uuid"
 	"hostettler.dev/dnc/models"
+	"hostettler.dev/dnc/repository"
 )
 
 type ScreenIndex int
@@ -31,23 +30,42 @@ const (
 	RightDirection
 )
 
-type FileOperation int
+type DataOperation int
 
 const (
-	FileDelete = iota
-	FileUpdate
-	FileCreate
-	FileSave
+	DataDelete = iota
+	DataUpdate
+	DataCreate
+	DataSave
 )
 
-type FileOpMsg struct {
-	Op      FileOperation
+type DataOpMsg struct {
+	Op      DataOperation
 	Success bool
 }
 
+type WriteBackRequestMsg struct{}
+
+type LoadSummariesRequestMsg struct{}
+
+type LoadSummariesMsg struct {
+	Summaries []models.CharacterSummary
+}
+
+type LoadCharacterMsg struct {
+	Agg *repository.CharacterAggregate
+}
+
+type CreateCharacterRequestMsg struct {
+	Name string
+}
+
+type CreateCharacterMsg struct {
+	ID uuid.UUID
+}
+
 type SelectCharacterMsg struct {
-	Character *models.Character
-	Err       error
+	ID uuid.UUID
 }
 
 type SwitchScreenMsg struct {
@@ -74,36 +92,84 @@ type LaunchReaderScreenMsg struct {
 	Content string
 }
 
-func DeleteCharacterFileCmd(characterDir string, name string) tea.Cmd {
-	return func() tea.Msg {
-		filename := fmt.Sprintf("%s.json", strings.ToLower(name))
-		err := os.Remove(filepath.Join(characterDir, filename))
-		if err == nil {
-			return FileOpMsg{FileDelete, true}
-		} else {
-			return FileOpMsg{FileDelete, false}
-		}
-	}
+type DeleteCharacterRequestMsg struct {
+	ID uuid.UUID
 }
 
-func SaveToFileCmd(c *models.Character) func() tea.Msg {
-	return func() tea.Msg {
-		err := c.SaveToFile()
-		if err == nil {
-			return FileOpMsg{FileSave, true}
-		} else {
-			return FileOpMsg{FileSave, false}
-		}
-	}
+type DeleteCharacterMsg struct {
+	Success bool
 }
 
-func SelectCharacterCmd(name string) func() tea.Msg {
+func DeleteCharacterCmd(r repository.CharacterRepository, ctx context.Context, id uuid.UUID) tea.Cmd {
 	return func() tea.Msg {
-		c, err := models.LoadCharacterByName(name)
+		err := r.Delete(ctx, id)
 		if err != nil {
-			return SelectCharacterMsg{nil, err}
+			return DeleteCharacterMsg{false}
 		}
-		return SelectCharacterMsg{c, nil}
+		return DeleteCharacterMsg{true}
+	}
+}
+
+func WriteBackRequest() tea.Msg {
+	return WriteBackRequestMsg{}
+}
+
+func LoadSummariesRequest() tea.Msg {
+	return LoadSummariesRequestMsg{}
+}
+
+func LoadSummariesCommand(r repository.CharacterRepository, ctx context.Context) func() tea.Msg {
+	return func() tea.Msg {
+		if sum, err := r.ListSummary(ctx); err != nil {
+			return LoadSummariesMsg{[]models.CharacterSummary{}}
+		} else {
+			return LoadSummariesMsg{sum}
+		}
+	}
+}
+
+func DeleteCharacterRequest(id uuid.UUID) func() tea.Msg {
+	return func() tea.Msg {
+		return DeleteCharacterRequestMsg{id}
+	}
+}
+
+func CreateCharacterRequest(name string) func() tea.Msg {
+	return func() tea.Msg {
+		return CreateCharacterRequestMsg{name}
+	}
+}
+
+func CreateCharacterCmd(r repository.CharacterRepository, ctx context.Context, name string) func() tea.Msg {
+	return func() tea.Msg {
+		if id, err := r.CreateEmpty(ctx, name); err != nil {
+			return CreateCharacterMsg{}
+		} else {
+			return CreateCharacterMsg{id}
+		}
+	}
+}
+
+func WriteBackCmd(r repository.CharacterRepository, ctx context.Context, c *repository.CharacterAggregate) func() tea.Msg {
+	return func() tea.Msg {
+		err := r.Update(ctx, c)
+		return DataOpMsg{DataSave, err == nil}
+	}
+}
+
+func LoadCharacterCmd(r repository.CharacterRepository, ctx context.Context, id uuid.UUID) func() tea.Msg {
+	return func() tea.Msg {
+		c, err := r.GetByID(ctx, id)
+		if err != nil {
+			return LoadCharacterMsg{nil}
+		}
+		return LoadCharacterMsg{c}
+	}
+}
+
+func SelectCharacterCmd(id uuid.UUID) func() tea.Msg {
+	return func() tea.Msg {
+		return SelectCharacterMsg{id}
 	}
 }
 

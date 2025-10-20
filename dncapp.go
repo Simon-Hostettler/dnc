@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
+
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"hostettler.dev/dnc/models"
+	"github.com/jmoiron/sqlx"
+	"hostettler.dev/dnc/db"
+	"hostettler.dev/dnc/repository"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/screen"
@@ -18,11 +22,13 @@ var (
 )
 
 type DnCApp struct {
-	config    Config
-	keymap    util.KeyMap
-	width     int
-	height    int
-	character *models.Character
+	config     Config
+	keymap     util.KeyMap
+	width      int
+	height     int
+	db         *sqlx.DB
+	ctx        context.Context
+	repository repository.CharacterRepository
 
 	selectedTab     *ScreenTab
 	isScreenFocused bool
@@ -30,6 +36,7 @@ type DnCApp struct {
 	spellTab        *ScreenTab
 	inventoryTab    *ScreenTab
 
+	character          *repository.CharacterAggregate
 	curScreenIdx       command.ScreenIndex
 	prevScreenIdx      command.ScreenIndex
 	screenInView       screen.FocusableModel
@@ -55,17 +62,33 @@ func NewApp() (*DnCApp, error) {
 		return nil, err
 	}
 	km := util.DefaultKeyMap()
-	return &DnCApp{
+
+	handle, err := db.Open(config.DatabasePath)
+	if err != nil {
+		return nil, err
+	}
+	if err := db.MigrateUp(handle); err != nil {
+		return nil, err
+	}
+	ctx := context.Background()
+	repository := repository.NewDBCharacterRepository(handle)
+
+	app := &DnCApp{
 		config:             config,
 		keymap:             km,
+		db:                 handle,
+		ctx:                ctx,
+		repository:         repository,
 		statTab:            NewScreenTab(km, "Stats", command.StatScreenIndex, false),
 		spellTab:           NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
 		inventoryTab:       NewScreenTab(km, "Inventory", command.InventoryScreenIndex, false),
-		titleScreen:        screen.NewTitleScreen(config.CharacterDir),
+		titleScreen:        screen.NewTitleScreen(),
 		editorScreen:       screen.NewEditorScreen(km, []editor.ValueEditor{}),
 		confirmationScreen: screen.NewConfirmationScreen(km),
 		readerScreen:       screen.NewReaderScreen(km),
-	}, nil
+	}
+
+	return app, nil
 }
 
 func (a *DnCApp) Init() tea.Cmd {
@@ -101,6 +124,10 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if key.Matches(msg, a.keymap.ForceQuit) {
+			// Close DB before quitting
+			if a.db != nil {
+				_ = a.db.Close()
+			}
 			return a, tea.Quit
 		}
 		if a.isScreenFocused {
@@ -128,14 +155,27 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.selectedTab.Focus()
 	case command.SwitchScreenMsg:
 		a.switchScreen(msg.Screen)
+	case command.LoadSummariesRequestMsg:
+		cmd = command.LoadSummariesCommand(a.repository, a.ctx)
+	case command.LoadSummariesMsg:
+		a.titleScreen.SetSummaries(msg.Summaries)
+	case command.WriteBackRequestMsg:
+		cmd = command.WriteBackCmd(a.repository, a.ctx, a.character)
+	case command.CreateCharacterRequestMsg:
+		cmd = command.CreateCharacterCmd(a.repository, a.ctx, msg.Name)
+	case command.CreateCharacterMsg:
+		cmd = command.LoadSummariesCommand(a.repository, a.ctx)
+	case command.DeleteCharacterRequestMsg:
+		cmd = command.DeleteCharacterCmd(a.repository, a.ctx, msg.ID)
+	case command.DeleteCharacterMsg:
+		cmd = command.LoadSummariesCommand(a.repository, a.ctx)
+	case command.LoadCharacterMsg:
+		cmds := a.populateCharacterScreens(msg.Agg)
+		cmd = tea.Sequence(cmds, command.SwitchScreenCmd(command.StatScreenIndex))
 	case command.SelectCharacterMsg:
-		if msg.Err == nil {
-			a.character = msg.Character
-			cmds := a.populateCharacterScreens()
-			cmd = tea.Batch(cmds, command.SwitchScreenCmd(command.StatScreenIndex))
-		}
+		cmd = command.LoadCharacterCmd(a.repository, a.ctx, msg.ID)
 	case editor.SwitchToEditorMsg:
-		a.editorScreen.StartEdit(msg.Character, msg.Editors)
+		a.editorScreen.StartEdit(msg.Editors)
 		cmd = command.SwitchScreenCmd(command.EditScreenIndex)
 	case command.LaunchConfirmationDialogueMsg:
 		a.confirmationScreen.LaunchConfirmation(msg.Callback)
@@ -182,13 +222,14 @@ func (a *DnCApp) View() string {
 	return s
 }
 
-func (a *DnCApp) populateCharacterScreens() tea.Cmd {
+func (a *DnCApp) populateCharacterScreens(agg *repository.CharacterAggregate) tea.Cmd {
 	cmds := []tea.Cmd{}
-	a.statScreen = screen.NewStatScreen(a.keymap, a.character)
+	a.character = agg
+	a.statScreen = screen.NewStatScreen(a.keymap, agg)
 	cmds = append(cmds, a.statScreen.Init())
-	a.spellScreen = screen.NewSpellScreen(a.keymap, a.character)
+	a.spellScreen = screen.NewSpellScreen(a.keymap, agg)
 	cmds = append(cmds, a.spellScreen.Init())
-	a.inventoryScreen = screen.NewInventoryScreen(a.keymap, a.character)
+	a.inventoryScreen = screen.NewInventoryScreen(a.keymap, agg)
 	cmds = append(cmds, a.inventoryScreen.Init())
 
 	cmds = util.DropNil(cmds)

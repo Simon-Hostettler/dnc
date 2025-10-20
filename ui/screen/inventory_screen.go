@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/models"
+	"hostettler.dev/dnc/repository"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/component"
 	"hostettler.dev/dnc/ui/editor"
@@ -23,7 +24,7 @@ var (
 
 type InventoryScreen struct {
 	keymap    util.KeyMap
-	character *models.Character
+	character *repository.CharacterAggregate
 
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
@@ -36,7 +37,7 @@ type InventoryScreen struct {
 	itemList *list.List
 }
 
-func NewInventoryScreen(k util.KeyMap, c *models.Character) *InventoryScreen {
+func NewInventoryScreen(k util.KeyMap, c *repository.CharacterAggregate) *InventoryScreen {
 	return &InventoryScreen{
 		keymap:    k,
 		character: c,
@@ -76,14 +77,13 @@ func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			item_id := s.character.AddEmptyItem()
 			s.populateItems()
 			cmd = editor.SwitchToEditorCmd(
-				s.character,
 				s.getItemRow(item_id).Editors(),
 			)
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
 	case editor.EditValueMsg:
-		cmd = editor.SwitchToEditorCmd(s.character, msg.Editors)
+		cmd = editor.SwitchToEditorCmd(msg.Editors)
 	case tea.KeyMsg:
 		switch s.focusedElement.(type) {
 		case *list.List:
@@ -215,8 +215,8 @@ func (s *InventoryScreen) Blur() {
 
 func (s *InventoryScreen) GetItemRows() []list.Row {
 	rows := []list.Row{}
-	for i := range s.character.Equipment {
-		item := &s.character.Equipment[i]
+	for i := range s.character.Items {
+		item := &s.character.Items[i]
 		rows = append(rows, list.NewStructRow(s.keymap, item,
 			RenderItemInfoRow,
 			CreateItemEditors(s.keymap, item),
@@ -230,8 +230,8 @@ func (s *InventoryScreen) GetItemRows() []list.Row {
 func (s *InventoryScreen) getItemRow(id uuid.UUID) list.Row {
 	for _, r := range s.itemList.Content() {
 		switch r := r.(type) {
-		case *list.StructRow[models.Item]:
-			if r.Value().Id == id {
+		case *list.StructRow[models.ItemTO]:
+			if r.Value().ID == id {
 				return r
 			}
 		}
@@ -239,15 +239,15 @@ func (s *InventoryScreen) getItemRow(id uuid.UUID) list.Row {
 	return nil
 }
 
-func DeleteItemCallback(s *InventoryScreen, i *models.Item) func() tea.Cmd {
+func DeleteItemCallback(s *InventoryScreen, i *models.ItemTO) func() tea.Cmd {
 	return func() tea.Cmd {
-		s.character.DeleteItem(i.Id)
+		s.character.DeleteItem(i.ID)
 		s.populateItems()
-		return command.SaveToFileCmd(s.character)
+		return command.WriteBackRequest
 	}
 }
 
-func CreateItemEditors(k util.KeyMap, item *models.Item) []editor.ValueEditor {
+func CreateItemEditors(k util.KeyMap, item *models.ItemTO) []editor.ValueEditor {
 	return []editor.ValueEditor{
 		editor.NewStringEditor(k, "Name", &item.Name),
 		editor.NewEnumEditor(k, EquippedSymbols, "Equipped", &item.Equipped),
@@ -276,16 +276,17 @@ func (s *InventoryScreen) RenderInventoryScreenTopBar() string {
 		))
 }
 
-func RenderItemInfoRow(i *models.Item) string {
+func RenderItemInfoRow(i *models.ItemTO) string {
 	values := []string{DrawItemPrefix(i), i.Name, DrawAttunementSlots(i.AttunementSlots)}
 	values = util.Filter(values, func(s string) bool { return s != "" })
 	return strings.Join(values, " ∙ ")
 }
 
-func RenderFullItemInfo(i *models.Item) string {
+func RenderFullItemInfo(i *models.ItemTO) string {
 	separator := util.MakeHorizontalSeparator(util.SmallScreenWidth-4, 1)
 	content := strings.Join(
-		[]string{i.Name,
+		[]string{
+			i.Name,
 			separator,
 			"Equipped: " + DrawItemPrefix(i),
 			separator,
@@ -301,7 +302,7 @@ func RenderFullItemInfo(i *models.Item) string {
 		Render(content)
 }
 
-func DrawItemPrefix(i *models.Item) string {
+func DrawItemPrefix(i *models.ItemTO) string {
 	s := ""
 	switch i.Equipped {
 	case models.Equipped:

@@ -2,7 +2,6 @@ package editor
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"hostettler.dev/dnc/models"
 )
 
 type EditValueMsg struct {
@@ -10,8 +9,7 @@ type EditValueMsg struct {
 }
 
 type SwitchToEditorMsg struct {
-	Character *models.Character
-	Editors   []ValueEditor
+	Editors []ValueEditor
 }
 
 func EditValueCmd(editors []ValueEditor) func() tea.Msg {
@@ -20,8 +18,8 @@ func EditValueCmd(editors []ValueEditor) func() tea.Msg {
 	}
 }
 
-func SwitchToEditorCmd(character *models.Character, editors []ValueEditor) func() tea.Msg {
+func SwitchToEditorCmd(editors []ValueEditor) func() tea.Msg {
 	return func() tea.Msg {
-		return SwitchToEditorMsg{character, editors}
+		return SwitchToEditorMsg{editors}
 	}
 }
