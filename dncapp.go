@@ -15,11 +15,7 @@ import (
 	"hostettler.dev/dnc/ui/util"
 )
 
-var (
-	defaultPadding = 2
-	tabWidth       = 11
-	tabHeight      = 3
-)
+var defaultPadding = 2
 
 type DnCApp struct {
 	config     Config
@@ -30,11 +26,11 @@ type DnCApp struct {
 	ctx        context.Context
 	repository repository.CharacterRepository
 
-	selectedTab     *ScreenTab
+	selectedTab     *screen.ScreenTab
 	isScreenFocused bool
-	statTab         *ScreenTab
-	spellTab        *ScreenTab
-	inventoryTab    *ScreenTab
+	statTab         *screen.ScreenTab
+	spellTab        *screen.ScreenTab
+	inventoryTab    *screen.ScreenTab
 
 	character          *repository.CharacterAggregate
 	curScreenIdx       command.ScreenIndex
@@ -47,13 +43,6 @@ type DnCApp struct {
 	confirmationScreen *screen.ConfirmationScreen
 	inventoryScreen    *screen.InventoryScreen
 	readerScreen       *screen.ReaderScreen
-}
-
-type ScreenTab struct {
-	keymap      util.KeyMap
-	name        string
-	screenIndex command.ScreenIndex
-	focus       bool
 }
 
 func NewApp() (*DnCApp, error) {
@@ -79,9 +68,9 @@ func NewApp() (*DnCApp, error) {
 		db:                 handle,
 		ctx:                ctx,
 		repository:         repository,
-		statTab:            NewScreenTab(km, "Stats", command.StatScreenIndex, false),
-		spellTab:           NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
-		inventoryTab:       NewScreenTab(km, "Inventory", command.InventoryScreenIndex, false),
+		statTab:            screen.NewScreenTab(km, "Stats", command.StatScreenIndex, false),
+		spellTab:           screen.NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
+		inventoryTab:       screen.NewScreenTab(km, "Inventory", command.InventoryScreenIndex, false),
 		titleScreen:        screen.NewTitleScreen(),
 		editorScreen:       screen.NewEditorScreen(km, []editor.ValueEditor{}),
 		confirmationScreen: screen.NewConfirmationScreen(km),
@@ -174,6 +163,8 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd = tea.Sequence(cmds, command.SwitchScreenCmd(command.StatScreenIndex))
 	case command.SelectCharacterMsg:
 		cmd = command.LoadCharacterCmd(a.repository, a.ctx, msg.ID)
+	case editor.EditValueMsg:
+		cmd = editor.SwitchToEditorCmd(msg.Editors)
 	case editor.SwitchToEditorMsg:
 		a.editorScreen.StartEdit(msg.Editors)
 		cmd = command.SwitchScreenCmd(command.EditScreenIndex)
@@ -301,45 +292,4 @@ func (a *DnCApp) Blur() {
 	a.statTab.Blur()
 	a.spellTab.Blur()
 	a.inventoryTab.Blur()
-}
-
-func NewScreenTab(keymap util.KeyMap, name string, idx command.ScreenIndex, focus bool) *ScreenTab {
-	return &ScreenTab{keymap, name, idx, focus}
-}
-
-func (s *ScreenTab) Init() tea.Cmd {
-	return nil
-}
-
-func (s *ScreenTab) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		if key.Matches(msg, s.keymap.Enter) {
-			cmd = command.SwitchScreenCmd(s.screenIndex)
-		}
-	}
-	return s, cmd
-}
-
-func (s *ScreenTab) View() string {
-	name := s.name
-	if s.focus {
-		name = util.ItemStyleSelected.Render(name)
-	} else {
-		name = util.ItemStyleDefault.Render(name)
-	}
-	return util.DefaultBorderStyle.UnsetPadding().
-		AlignVertical(lipgloss.Center).
-		Width(tabWidth).
-		Height(tabHeight).
-		Render(name)
-}
-
-func (s *ScreenTab) Focus() {
-	s.focus = true
-}
-
-func (s *ScreenTab) Blur() {
-	s.focus = false
 }

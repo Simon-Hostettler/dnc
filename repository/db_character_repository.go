@@ -278,35 +278,6 @@ func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggreg
 	})
 }
 
-func (r *DBCharacterRepository) updateCharacter(ctx context.Context, c models.CharacterTO) error {
-	return r.withTx(ctx, func(tx *sqlx.Tx) error {
-		ensureSpellSlots(&c)
-		query := `
-            UPDATE character SET
-                name=?, class_levels=?, background=?, alignment=?,
-                proficiency_bonus=?, armor_class=?, initiative=?, speed=?,
-                max_hit_points=?, curr_hit_points=?, temp_hit_points=?,
-                hit_dice=?, used_hit_dice=?, death_save_successes=?, death_save_failures=?,
-				actions=?, bonus_actions=?, spell_slots=?, spell_slots_used=?,
-                spellcasting_ability=?, spell_save_dc=?, spell_attack_bonus=?,
-                updated_at = current_timestamp
-            WHERE id=?
-		`
-		if _, err := tx.ExecContext(ctx, query,
-			c.Name, c.ClassLevels, c.Background, c.Alignment,
-			c.ProficiencyBonus, c.ArmorClass, c.Initiative, c.Speed,
-			c.MaxHitPoints, c.CurrHitPoints, c.TempHitPoints,
-			c.HitDice, c.UsedHitDice, c.DeathSaveSuccesses, c.DeathSaveFailures,
-			c.Actions, c.BonusActions, c.SpellSlots, c.SpellSlotsUsed,
-			c.SpellcastingAbility, c.SpellSaveDC, c.SpellAttackBonus,
-			c.ID,
-		); err != nil {
-			return err
-		}
-		return nil
-	})
-}
-
 // Helpers
 
 func (r *DBCharacterRepository) withTx(ctx context.Context, fn func(*sqlx.Tx) error) error {

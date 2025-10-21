@@ -19,7 +19,7 @@ This repository is organized as a single Go module (`hostettler.dev/dnc`) with t
 ├── dncapp.go     // Main command handler & coordinator, top-level bubble tea program
 ├── go.mod        // Deps
 ├── go.sum
-├── main.go       // Application bootsrap
+├── main.go       // Application bootstrap
 ├── models        // Types reflecting stored data objects & helper types
 ├── repository    // Interfaces + implementations for data repositories
 └── ui            // Screens, editors, other tea models

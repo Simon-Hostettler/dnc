@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -103,6 +104,31 @@ func MakeVerticalSeparator(height int) string {
 
 func MakeHorizontalSeparator(width int, padding int) string {
 	return GrayTextStyle.Padding(padding, 0).Render(strings.Repeat("─", width))
+}
+
+func PrettySpellSlots(used int, max int) string {
+	if max <= 0 {
+		return "∅"
+	}
+	s := strings.Repeat("■", used)
+	s += strings.Repeat("□", max-used)
+	return DefaultTextStyle.Render(s)
+}
+
+func PrettyAttunementSlots(used int) string {
+	if used == 0 {
+		return ""
+	} else {
+		s := strings.Repeat("■", used)
+		s += strings.Repeat("□", 3-used)
+		return s
+	}
+}
+
+func WithSign(i int) string { return fmt.Sprintf("%+d", i) }
+
+func PrettyDeathSaves(amount int) string {
+	return strings.Repeat("●", amount) + strings.Repeat("○", 3-amount)
 }
 
 func PrettyBool(b bool) string {

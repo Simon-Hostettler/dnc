@@ -65,7 +65,7 @@ func (s *InventoryScreen) populateItems() {
 			WithFixedWidth(itemColWidth).
 			WithViewport(itemColHeight - 2)
 	}
-	s.itemList.WithRows(s.GetItemRows())
+	s.CreateItemRows()
 }
 
 func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -82,8 +82,6 @@ func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
-	case editor.EditValueMsg:
-		cmd = editor.SwitchToEditorCmd(msg.Editors)
 	case tea.KeyMsg:
 		switch s.focusedElement.(type) {
 		case *list.List:
@@ -213,18 +211,18 @@ func (s *InventoryScreen) Blur() {
 	s.focusedElement = nil
 }
 
-func (s *InventoryScreen) GetItemRows() []list.Row {
+func (s *InventoryScreen) CreateItemRows() {
 	rows := []list.Row{}
 	for i := range s.character.Items {
 		item := &s.character.Items[i]
 		rows = append(rows, list.NewStructRow(s.keymap, item,
-			RenderItemInfoRow,
-			CreateItemEditors(s.keymap, item),
-		).WithDestructor(DeleteItemCallback(s, item)).
-			WithReader(RenderFullItemInfo))
+			renderItemInfoRow,
+			createItemEditors(s.keymap, item),
+		).WithDestructor(deleteItemCallback(s, item)).
+			WithReader(renderFullItemInfo))
 	}
 	rows = append(rows, list.NewAppenderRow(s.keymap, "item"))
-	return rows
+	s.itemList.WithRows(rows)
 }
 
 func (s *InventoryScreen) getItemRow(id uuid.UUID) list.Row {
@@ -239,7 +237,7 @@ func (s *InventoryScreen) getItemRow(id uuid.UUID) list.Row {
 	return nil
 }
 
-func DeleteItemCallback(s *InventoryScreen, i *models.ItemTO) func() tea.Cmd {
+func deleteItemCallback(s *InventoryScreen, i *models.ItemTO) func() tea.Cmd {
 	return func() tea.Cmd {
 		s.character.DeleteItem(i.ID)
 		s.populateItems()
@@ -247,11 +245,11 @@ func DeleteItemCallback(s *InventoryScreen, i *models.ItemTO) func() tea.Cmd {
 	}
 }
 
-func CreateItemEditors(k util.KeyMap, item *models.ItemTO) []editor.ValueEditor {
+func createItemEditors(k util.KeyMap, item *models.ItemTO) []editor.ValueEditor {
 	return []editor.ValueEditor{
 		editor.NewStringEditor(k, "Name", &item.Name),
-		editor.NewEnumEditor(k, EquippedSymbols, "Equipped", &item.Equipped),
-		editor.NewEnumEditor(k, AttunementSymbols, "Attunement Slots", &item.AttunementSlots),
+		editor.NewEnumEditor(k, models.EquippedSymbols, "Equipped", &item.Equipped),
+		editor.NewEnumEditor(k, models.AttunementSymbols, "Attunement Slots", &item.AttunementSlots),
 		editor.NewIntEditor(k, "Quantity", &item.Quantity),
 		editor.NewStringEditor(k, "Description", &item.Description),
 	}
@@ -276,21 +274,21 @@ func (s *InventoryScreen) RenderInventoryScreenTopBar() string {
 		))
 }
 
-func RenderItemInfoRow(i *models.ItemTO) string {
-	values := []string{DrawItemPrefix(i), i.Name, DrawAttunementSlots(i.AttunementSlots)}
+func renderItemInfoRow(i *models.ItemTO) string {
+	values := []string{drawItemPrefix(i), i.Name, util.PrettyAttunementSlots(i.AttunementSlots)}
 	values = util.Filter(values, func(s string) bool { return s != "" })
 	return strings.Join(values, " ∙ ")
 }
 
-func RenderFullItemInfo(i *models.ItemTO) string {
+func renderFullItemInfo(i *models.ItemTO) string {
 	separator := util.MakeHorizontalSeparator(util.SmallScreenWidth-4, 1)
 	content := strings.Join(
 		[]string{
 			i.Name,
 			separator,
-			"Equipped: " + DrawItemPrefix(i),
+			"Equipped: " + drawItemPrefix(i),
 			separator,
-			"Attunement slots required: " + DrawAttunementSlots(i.AttunementSlots),
+			"Attunement slots required: " + util.PrettyAttunementSlots(i.AttunementSlots),
 			separator,
 			"Quantity: " + strconv.Itoa(i.Quantity),
 			separator,
@@ -302,7 +300,7 @@ func RenderFullItemInfo(i *models.ItemTO) string {
 		Render(content)
 }
 
-func DrawItemPrefix(i *models.ItemTO) string {
+func drawItemPrefix(i *models.ItemTO) string {
 	s := ""
 	switch i.Equipped {
 	case models.Equipped:
@@ -314,27 +312,4 @@ func DrawItemPrefix(i *models.ItemTO) string {
 
 	}
 	return s
-}
-
-var EquippedSymbols []editor.EnumMapping = []editor.EnumMapping{
-	{Value: int(models.NonEquippable), Label: "Not Equippable"},
-	{Value: int(models.NotEquipped), Label: "Not Equipped"},
-	{Value: int(models.Equipped), Label: "Equipped"},
-}
-
-var AttunementSymbols []editor.EnumMapping = []editor.EnumMapping{
-	{Value: 0, Label: "□□□"},
-	{Value: 1, Label: "■□□"},
-	{Value: 2, Label: "■■□"},
-	{Value: 3, Label: "■■■"},
-}
-
-func DrawAttunementSlots(used int) string {
-	if used == 0 {
-		return ""
-	} else {
-		s := strings.Repeat("■", used)
-		s += strings.Repeat("□", 3-used)
-		return s
-	}
 }

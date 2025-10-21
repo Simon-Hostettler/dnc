@@ -1,13 +1,10 @@
 package models
 
 import (
-	"database/sql/driver"
-	"errors"
-	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
+	"hostettler.dev/dnc/ui/editor"
 )
 
 type CharacterSummary struct {
@@ -31,6 +28,39 @@ const (
 	Expertise
 )
 
+var ProficiencySymbols []editor.EnumMapping = []editor.EnumMapping{
+	{Value: int(NoProficiency), Label: "○"},
+	{Value: int(Proficient), Label: "◐"},
+	{Value: int(Expertise), Label: "●"},
+}
+
+func (p Proficiency) ToSymbol() string {
+	for _, m := range ProficiencySymbols {
+		if int(p) == m.Value {
+			return m.Label
+		}
+	}
+	return ""
+}
+
+var PreparedSymbols []editor.EnumMapping = []editor.EnumMapping{
+	{Value: 0, Label: "□"},
+	{Value: 1, Label: "■"},
+}
+
+var EquippedSymbols []editor.EnumMapping = []editor.EnumMapping{
+	{Value: int(NonEquippable), Label: "Not Equippable"},
+	{Value: int(NotEquipped), Label: "Not Equipped"},
+	{Value: int(Equipped), Label: "Equipped"},
+}
+
+var AttunementSymbols []editor.EnumMapping = []editor.EnumMapping{
+	{Value: 0, Label: "□□□"},
+	{Value: 1, Label: "■□□"},
+	{Value: 2, Label: "■■□"},
+	{Value: 3, Label: "■■■"},
+}
+
 func (c CharacterSkillDetailTO) ToCharacterSkillTO() CharacterSkillTO {
 	return CharacterSkillTO{
 		ID:             c.ID,
@@ -43,20 +73,12 @@ func (c CharacterSkillDetailTO) ToCharacterSkillTO() CharacterSkillTO {
 	}
 }
 
-func (c CharacterSkillDetailTO) ToModifier(score int, profMod int) int {
-	return (score-10)/2 + profMod*c.Proficiency + c.CustomModifier
-}
-
-func ToModifier(score int) int {
-	return (score - 10) / 2
-}
-
-func ToModifierWithBonus(score int, prof Proficiency, profBonus int) int {
+func ToModifier(score int, prof Proficiency, profBonus int) int {
 	return (score-10)/2 + profBonus*int(prof)
 }
 
 func (a AbilitiesTO) ToScoreByName(ability string) int {
-	switch ability {
+	switch strings.ToLower(ability) {
 	case "strength":
 		return a.Strength
 	case "dexterity":
@@ -71,104 +93,4 @@ func (a AbilitiesTO) ToScoreByName(ability string) int {
 		return a.Charisma
 	}
 	return 0
-}
-
-// IntList is a []int that implements sql.Scanner (and optionally driver.Valuer) to handle DuckDB LIST columns.
-type IntList []int
-
-// Scan implements sql.Scanner for DuckDB LIST to Go []int.
-func (il *IntList) Scan(src any) error {
-	if src == nil {
-		*il = nil
-		return nil
-	}
-	switch v := src.(type) {
-	case []interface{}:
-		out := make([]int, 0, len(v))
-		for _, e := range v {
-			switch t := e.(type) {
-			case int64:
-				out = append(out, int(t))
-			case int32:
-				out = append(out, int(t))
-			case float64:
-				out = append(out, int(t))
-			case []byte:
-				// fallback: parse numeric string
-				n, err := strconv.Atoi(string(t))
-				if err != nil {
-					return err
-				}
-				out = append(out, n)
-			case string:
-				n, err := strconv.Atoi(t)
-				if err != nil {
-					return err
-				}
-				out = append(out, n)
-			default:
-				return fmt.Errorf("IntList.Scan: unsupported element type %T", e)
-			}
-		}
-		*il = out
-		return nil
-	case string:
-		parsed, err := parseBracketedIntList(v)
-		if err != nil {
-			return err
-		}
-		*il = parsed
-		return nil
-	case []byte:
-		parsed, err := parseBracketedIntList(string(v))
-		if err != nil {
-			return err
-		}
-		*il = parsed
-		return nil
-	default:
-		return fmt.Errorf("IntList.Scan: unsupported source type %T", src)
-	}
-}
-
-// Value implements driver.Valuer; we return a string literal which we don't currently use for inserts (we build literals ourselves), but keep for completeness.
-func (il IntList) Value() (driver.Value, error) {
-	var b strings.Builder
-	b.WriteByte('[')
-	for i, n := range il {
-		if i > 0 {
-			b.WriteByte(',')
-		}
-		b.WriteString(strconv.Itoa(n))
-	}
-	b.WriteByte(']')
-	return b.String(), nil
-}
-
-func parseBracketedIntList(s string) ([]int, error) {
-	ss := strings.TrimSpace(s)
-	if ss == "" || ss == "[]" {
-		return []int{}, nil
-	}
-	if !strings.HasPrefix(ss, "[") || !strings.HasSuffix(ss, "]") {
-		return nil, errors.New("invalid list literal")
-	}
-	inner := strings.TrimSpace(ss[1 : len(ss)-1])
-	if inner == "" {
-		return []int{}, nil
-	}
-	parts := strings.Split(inner, ",")
-	out := make([]int, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p == "" {
-			continue
-		}
-		n, err := strconv.Atoi(p)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, n)
-	}
-	return out, nil
 }

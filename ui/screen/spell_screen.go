@@ -19,8 +19,9 @@ import (
 )
 
 var (
-	spellColHeight = 30
-	spellColWidth  = util.ScreenWidth - 8
+	spellColHeight       = 30
+	spellColWidth        = util.ScreenWidth - 8
+	spellTopBarElemWidth = 28
 )
 
 type SpellScreen struct {
@@ -63,23 +64,6 @@ func (s *SpellScreen) Init() tea.Cmd {
 	return nil
 }
 
-func (s *SpellScreen) populateSpells() {
-	if s.spellList == nil {
-		s.spellList = list.NewList(s.keymap,
-			list.ListStyles{
-				Row:      util.ItemStyleDefault.Align(lipgloss.Left),
-				Selected: util.ItemStyleSelected.Align(lipgloss.Left),
-			}).
-			WithFixedWidth(spellColWidth).
-			WithViewport(spellColHeight - 2)
-	}
-	rows := []list.Row{}
-	for i := range 10 {
-		rows = append(rows, s.GetSpellListByLevel(i)...)
-	}
-	s.spellList.WithRows(rows[:len(rows)-1])
-}
-
 func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -95,8 +79,6 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
-	case editor.EditValueMsg:
-		cmd = editor.SwitchToEditorCmd(msg.Editors)
 	case tea.KeyMsg:
 		switch s.focusedElement.(type) {
 		case *list.List:
@@ -204,12 +186,29 @@ func (s *SpellScreen) Blur() {
 	s.focusedElement = nil
 }
 
-func (s *SpellScreen) GetSpellListByLevel(l int) []list.Row {
+func (s *SpellScreen) populateSpells() {
+	if s.spellList == nil {
+		s.spellList = list.NewList(s.keymap,
+			list.ListStyles{
+				Row:      util.ItemStyleDefault.Align(lipgloss.Left),
+				Selected: util.ItemStyleSelected.Align(lipgloss.Left),
+			}).
+			WithFixedWidth(spellColWidth).
+			WithViewport(spellColHeight - 2)
+	}
+	rows := []list.Row{}
+	for i := range 10 {
+		rows = append(rows, s.getSpellListByLevel(i)...)
+	}
+	s.spellList.WithRows(rows[:len(rows)-1]) // drop last separator row
+}
+
+func (s *SpellScreen) getSpellListByLevel(l int) []list.Row {
 	rows := []list.Row{}
 	spells := s.character.GetSpellsByLevel(l)
 	rows = append(rows, list.NewStructRow(s.keymap,
 		&SpellListHeader{l, &s.character.Character.SpellSlots[l], &s.character.Character.SpellSlotsUsed[l]},
-		RenderSpellHeaderRow,
+		renderSpellHeaderRow,
 		[]editor.ValueEditor{
 			editor.NewIntEditor(s.keymap, "Used Spell Slots", &s.character.Character.SpellSlotsUsed[l]),
 			editor.NewIntEditor(s.keymap, "Max Spell Slots", &s.character.Character.SpellSlots[l]),
@@ -217,10 +216,10 @@ func (s *SpellScreen) GetSpellListByLevel(l int) []list.Row {
 	rows = append(rows, list.NewSeparatorRow("─", spellColWidth-6))
 	for _, spell := range spells {
 		rows = append(rows, list.NewStructRow(s.keymap, spell,
-			RenderSpellInfoRow,
-			s.CreateSpellEditors(spell),
-		).WithDestructor(DeleteSpellCallback(s, spell)).
-			WithReader(RenderFullSpellInfo))
+			renderSpellInfoRow,
+			s.createSpellEditors(spell),
+		).WithDestructor(deleteSpellCallback(s, spell)).
+			WithReader(renderFullSpellInfo))
 	}
 	rows = append(rows, list.NewAppenderRow(s.keymap, fmt.Sprintf("spell:%d", l)))
 	rows = append(rows, list.NewSeparatorRow(" ", spellColWidth-6))
@@ -239,7 +238,7 @@ func (s *SpellScreen) getSpellRow(id uuid.UUID) list.Row {
 	return nil
 }
 
-func DeleteSpellCallback(s *SpellScreen, sp *models.SpellTO) func() tea.Cmd {
+func deleteSpellCallback(s *SpellScreen, sp *models.SpellTO) func() tea.Cmd {
 	return func() tea.Cmd {
 		s.character.DeleteSpell(sp.ID)
 		s.populateSpells()
@@ -247,10 +246,10 @@ func DeleteSpellCallback(s *SpellScreen, sp *models.SpellTO) func() tea.Cmd {
 	}
 }
 
-func (s *SpellScreen) CreateSpellEditors(spell *models.SpellTO) []editor.ValueEditor {
+func (s *SpellScreen) createSpellEditors(spell *models.SpellTO) []editor.ValueEditor {
 	return []editor.ValueEditor{
 		editor.NewStringEditor(s.keymap, "Name", &spell.Name),
-		editor.NewEnumEditor(s.keymap, PreparedSymbols, "Prepared", &spell.Prepared),
+		editor.NewEnumEditor(s.keymap, models.PreparedSymbols, "Prepared", &spell.Prepared),
 		editor.NewStringEditor(s.keymap, "Damage", &spell.Damage),
 		editor.NewStringEditor(s.keymap, "Casting Time", &spell.CastingTime),
 		editor.NewStringEditor(s.keymap, "Range", &spell.Range),
@@ -265,11 +264,11 @@ func (s *SpellScreen) RenderSpellScreenTopBar() string {
 	return util.DefaultBorderStyle.
 		Width(util.ScreenWidth).
 		Render(lipgloss.JoinHorizontal(lipgloss.Center,
-			util.ForceWidth(s.spellAbility.View(), 28),
+			util.ForceWidth(s.spellAbility.View(), spellTopBarElemWidth),
 			separator,
-			util.ForceWidth(s.spellSaveDC.View(), 28),
+			util.ForceWidth(s.spellSaveDC.View(), spellTopBarElemWidth),
 			separator,
-			util.ForceWidth(s.spellAtkBonus.View(), 28)))
+			util.ForceWidth(s.spellAtkBonus.View(), spellTopBarElemWidth)))
 }
 
 type SpellListHeader struct {
@@ -278,18 +277,18 @@ type SpellListHeader struct {
 	used  *int
 }
 
-func RenderSpellHeaderRow(h *SpellListHeader) string {
+func renderSpellHeaderRow(h *SpellListHeader) string {
 	return fmt.Sprintf("Level %d ∙ %s", h.level,
-		RenderSpellSlots(*h.used, *h.slots))
+		util.PrettySpellSlots(*h.used, *h.slots))
 }
 
-func RenderSpellInfoRow(s *models.SpellTO) string {
+func renderSpellInfoRow(s *models.SpellTO) string {
 	values := []string{s.Name, s.Damage, s.Components, s.Range, s.CastingTime, s.Duration}
 	values = util.Filter(values, func(s string) bool { return s != "" })
 	return util.PrettyBoolCircle(util.I2b(s.Prepared)) + " " + strings.Join(values, " ∙ ")
 }
 
-func RenderFullSpellInfo(s *models.SpellTO) string {
+func renderFullSpellInfo(s *models.SpellTO) string {
 	separator := util.MakeHorizontalSeparator(util.SmallScreenWidth-4, 1)
 	content := strings.Join(
 		[]string{
@@ -311,18 +310,4 @@ func RenderFullSpellInfo(s *models.SpellTO) string {
 	return util.DefaultTextStyle.
 		AlignHorizontal(lipgloss.Left).
 		Render(content)
-}
-
-var PreparedSymbols []editor.EnumMapping = []editor.EnumMapping{
-	{Value: 0, Label: "□"},
-	{Value: 1, Label: "■"},
-}
-
-func RenderSpellSlots(used int, max int) string {
-	if max <= 0 {
-		return "∅"
-	}
-	s := strings.Repeat("■", used)
-	s += strings.Repeat("□", max-used)
-	return util.DefaultTextStyle.Render(s)
 }
