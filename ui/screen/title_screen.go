@@ -78,9 +78,11 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch {
 			case key.Matches(msg, m.KeyMap.Escape):
 				m.nameInput.Reset()
+				m.nameInput.Blur()
 			case key.Matches(msg, m.KeyMap.Enter):
 				name := m.nameInput.Value()
 				m.nameInput.Reset()
+				m.nameInput.Blur()
 				cmd = command.CreateCharacterRequest(name)
 			default:
 				m.nameInput, cmd = m.nameInput.Update(msg)
@@ -105,7 +107,11 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch {
+			case key.Matches(msg, m.KeyMap.Up):
+				m.characters.SetCursor(m.characters.Size() - 1)
+				m.characters.Focus()
 			case key.Matches(msg, m.KeyMap.Down):
+				m.characters.SetCursor(0)
 				m.characters.Focus()
 			case key.Matches(msg, m.KeyMap.Select):
 				m.nameInput.Focus()
