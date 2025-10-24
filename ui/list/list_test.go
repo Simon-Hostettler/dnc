@@ -33,7 +33,7 @@ func TestSeparatorSkips(t *testing.T) {
 	}
 }
 
-func TestViewPortConsistenHeight(t *testing.T) {
+func TestViewPortConsistentHeight(t *testing.T) {
 	list := NewListWithDefaults().WithViewport(10)
 	rows := []Row{}
 	for range 20 {
