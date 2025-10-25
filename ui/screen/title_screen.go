@@ -4,7 +4,8 @@ import (
 	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/list"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -20,7 +21,7 @@ type FocusableModel interface {
 	Blur()
 }
 
-var logo = util.DefaultTextStyle.Padding(1).Render(
+var logo = styles.DefaultTextStyle.Padding(1).Render(
 	"______ _   _ _____\n" +
 		"|  _  \\ \\ | /  __ \\\n" +
 		"| | | |  \\| | /  \\/\n" +
@@ -43,16 +44,16 @@ type TitleScreen struct {
 	nameInput  textinput.Model
 }
 
-func NewTitleScreen() *TitleScreen {
+func NewTitleScreen(km util.KeyMap) *TitleScreen {
 	ti := textinput.New()
 	ti.Width = inputWidth
 	ti.CharLimit = inputLimit
 	ti.Placeholder = "Character Name"
 
 	t := TitleScreen{
-		KeyMap:     util.DefaultKeyMap(),
+		KeyMap:     km,
 		nameInput:  ti,
-		characters: list.NewListWithDefaults(),
+		characters: list.NewListWithDefaults(km),
 	}
 	return &t
 }
@@ -123,9 +124,9 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *TitleScreen) View() string {
-	createField := util.RenderItem(!m.characters.InFocus(), "Create new Character")
+	createField := styles.RenderItem(!m.characters.InFocus(), "Create new Character")
 
-	separator := util.MakeHorizontalSeparator(titleScreenWidth/2, 1)
+	separator := styles.MakeHorizontalSeparator(titleScreenWidth/2, 1)
 
 	chars := "\n" + m.characters.View()
 
@@ -136,7 +137,7 @@ func (m *TitleScreen) View() string {
 
 	return lipgloss.JoinVertical(lipgloss.Center,
 		logo,
-		util.DefaultBorderStyle.
+		styles.DefaultBorderStyle.
 			Width(titleScreenWidth).
 			Height(titleScreenHeight).
 			Render(lipgloss.PlaceVertical(titleScreenHeight, lipgloss.Center,

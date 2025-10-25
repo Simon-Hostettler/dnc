@@ -14,7 +14,8 @@ import (
 	"hostettler.dev/dnc/ui/component"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/list"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 var (
@@ -52,21 +53,21 @@ type StatScreen struct {
 	bonusActions  *component.SimpleStringComponent
 }
 
-func NewStatScreen(keymap util.KeyMap, c *repository.CharacterAggregate) *StatScreen {
+func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen {
 	s := &StatScreen{
-		keymap:        keymap,
+		keymap:        km,
 		agg:           c,
-		actions:       component.NewSimpleStringComponent(keymap, "Actions", &c.Character.Actions, false, false),
-		bonusActions:  component.NewSimpleStringComponent(keymap, "Bonus Actions", &c.Character.BonusActions, false, false),
-		characterInfo: list.NewListWithDefaults(),
-		abilities:     list.NewListWithDefaults(),
-		skills: list.NewListWithDefaults().
+		actions:       component.NewSimpleStringComponent(km, "Actions", &c.Character.Actions, false, false),
+		bonusActions:  component.NewSimpleStringComponent(km, "Bonus Actions", &c.Character.BonusActions, false, false),
+		characterInfo: list.NewListWithDefaults(km),
+		abilities:     list.NewListWithDefaults(km),
+		skills: list.NewListWithDefaults(km).
 			WithTitle("Skills"),
-		savingThrows: list.NewListWithDefaults().
+		savingThrows: list.NewListWithDefaults(km).
 			WithTitle("Saving Throws"),
-		combatInfo: list.NewListWithDefaults().
+		combatInfo: list.NewListWithDefaults(km).
 			WithTitle("Combat"),
-		attacks: list.NewListWithDefaults().
+		attacks: list.NewListWithDefaults(km).
 			WithTitle("Attacks"),
 	}
 	return s
@@ -270,17 +271,17 @@ func (s *StatScreen) View() string {
 
 	abilities := s.abilities.View()
 
-	topBarSeparator := util.MakeVerticalSeparator(TopBarHeight)
+	topBarSeparator := styles.MakeVerticalSeparator(TopBarHeight)
 
-	topBar := util.DefaultBorderStyle.
+	topBar := styles.DefaultBorderStyle.
 		Height(TopBarHeight).
-		Width(util.ScreenWidth).
+		Width(styles.ScreenWidth).
 		Render(lipgloss.JoinHorizontal(lipgloss.Center,
 			characterInfo,
 			lipgloss.PlaceHorizontal(20, lipgloss.Center, topBarSeparator),
 			abilities))
 
-	leftColumn := util.DefaultBorderStyle.
+	leftColumn := styles.DefaultBorderStyle.
 		Height(ColHeight).
 		Width(LeftColWidth).
 		Render(s.skills.View())
@@ -289,9 +290,9 @@ func (s *StatScreen) View() string {
 
 	combatInfo := s.combatInfo.View()
 
-	midBoxInnerSeparator := util.MakeHorizontalSeparator(MidColWidth-4, 1)
+	midBoxInnerSeparator := styles.MakeHorizontalSeparator(MidColWidth-4, 1)
 
-	midColumn := util.DefaultBorderStyle.
+	midColumn := styles.DefaultBorderStyle.
 		Width(MidColWidth).
 		Height(ColHeight).
 		Render(lipgloss.JoinVertical(lipgloss.Center, combatInfo, midBoxInnerSeparator, savingThrows))
@@ -300,9 +301,9 @@ func (s *StatScreen) View() string {
 
 	attacks := s.attacks.View()
 
-	rightBoxInnerSeparator := util.MakeHorizontalSeparator(RightContentWidth, 1)
+	rightBoxInnerSeparator := styles.MakeHorizontalSeparator(RightContentWidth, 1)
 
-	rightColumn := util.DefaultBorderStyle.
+	rightColumn := styles.DefaultBorderStyle.
 		Width(RightColWidth).
 		Height(ColHeight).
 		Render(lipgloss.JoinVertical(lipgloss.Center, actions, rightBoxInnerSeparator, attacks))
@@ -313,13 +314,13 @@ func (s *StatScreen) View() string {
 }
 
 func (s *StatScreen) RenderActions() string {
-	actionTitle := util.RenderItem(s.actions.InFocus(), "Actions") + "\n"
-	actionBody := util.DefaultTextStyle.Width(RightContentWidth).Render(s.actions.View())
+	actionTitle := styles.RenderItem(s.actions.InFocus(), "Actions") + "\n"
+	actionBody := styles.DefaultTextStyle.Width(RightContentWidth).Render(s.actions.View())
 
-	separator := util.MakeHorizontalSeparator(RightContentWidth, 1)
+	separator := styles.MakeHorizontalSeparator(RightContentWidth, 1)
 
-	bonusActionTitle := util.RenderItem(s.bonusActions.InFocus(), "Bonus Actions") + "\n"
-	bonusActionBody := util.DefaultTextStyle.Width(RightContentWidth).Render(s.bonusActions.View())
+	bonusActionTitle := styles.RenderItem(s.bonusActions.InFocus(), "Bonus Actions") + "\n"
+	bonusActionBody := styles.DefaultTextStyle.Width(RightContentWidth).Render(s.bonusActions.View())
 
 	return lipgloss.JoinVertical(lipgloss.Center, actionTitle, actionBody, separator, bonusActionTitle, bonusActionBody)
 }
@@ -338,7 +339,7 @@ func (s *StatScreen) CreateCharacterInfoRows() {
 		list.NewLabeledIntRow(s.keymap, "Proficiency Bonus:", &s.agg.Character.ProficiencyBonus,
 			editor.NewIntEditor(s.keymap, "Proficiency Bonus", &s.agg.Character.ProficiencyBonus)).
 			WithConfig(list.LabeledIntRowConfig{
-				ValuePrinter: util.WithSign,
+				ValuePrinter: styles.WithSign,
 				JustifyValue: false, LabelWidth: LongColWidth, ValueWidth: 0,
 			}),
 	}
@@ -371,7 +372,7 @@ func (s *StatScreen) CreateCombatInfoRows() {
 		LabelWidth: ColWidth, ValueWidth: TinyColWidth,
 	}
 	dsConfig := list.LabeledIntRowConfig{
-		ValuePrinter: util.PrettyDeathSaves, JustifyValue: true,
+		ValuePrinter: styles.PrettyDeathSaves, JustifyValue: true,
 		LabelWidth: ColWidth, ValueWidth: TinyColWidth,
 	}
 	rows := []list.Row{
@@ -471,7 +472,7 @@ type HPInfo struct {
 }
 
 func renderHPInfoRow(hp *HPInfo) string {
-	return util.RenderEdgeBound(ColWidth-4, 7, "HP", strconv.Itoa(*hp.current)+"/"+strconv.Itoa(*hp.max))
+	return styles.RenderEdgeBound(ColWidth-4, 7, "HP", strconv.Itoa(*hp.current)+"/"+strconv.Itoa(*hp.max))
 }
 
 type HitDiceInfo struct {
@@ -480,7 +481,7 @@ type HitDiceInfo struct {
 }
 
 func renderHitDiceInfoRow(hd *HitDiceInfo) string {
-	return util.RenderEdgeBound(ShortColWidth, MediumColWidth, "Hit Dice", *hd.current+"/"+*hd.max)
+	return styles.RenderEdgeBound(ShortColWidth, MediumColWidth, "Hit Dice", *hd.current+"/"+*hd.max)
 }
 
 type SavingThrowInfo struct {
@@ -497,7 +498,7 @@ func renderSavingThrowInfoRow(a *models.AbilitiesTO, profBonus int) func(*Saving
 			profBonus)
 
 		bullet := proficiency.ToSymbol()
-		return util.RenderEdgeBound(LongColWidth, TinyColWidth, bullet+" "+s.ability, fmt.Sprintf("%+d", mod))
+		return styles.RenderEdgeBound(LongColWidth, TinyColWidth, bullet+" "+s.ability, fmt.Sprintf("%+d", mod))
 	}
 }
 
@@ -514,7 +515,7 @@ func renderSkillInfoRow(s *SkillInfo) string {
 		proficiency,
 		*s.profBonus)
 	bullet := proficiency.ToSymbol()
-	return util.RenderEdgeBound(LongColWidth, TinyColWidth, bullet+" "+s.skill.SkillName, fmt.Sprintf("%+d", mod))
+	return styles.RenderEdgeBound(LongColWidth, TinyColWidth, bullet+" "+s.skill.SkillName, fmt.Sprintf("%+d", mod))
 }
 
 func RenderAttack(a *models.AttackTO) string {

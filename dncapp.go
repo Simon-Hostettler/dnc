@@ -12,13 +12,14 @@ import (
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/screen"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 var defaultPadding = 2
 
 type DnCApp struct {
-	config     Config
+	config     util.Config
 	keymap     util.KeyMap
 	width      int
 	height     int
@@ -46,7 +47,7 @@ type DnCApp struct {
 }
 
 func NewApp() (*DnCApp, error) {
-	config, err := LoadConfig()
+	config, err := util.LoadConfig(util.DefaultConfigDir())
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +72,7 @@ func NewApp() (*DnCApp, error) {
 		statTab:            screen.NewScreenTab(km, "Stats", command.StatScreenIndex, false),
 		spellTab:           screen.NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
 		inventoryTab:       screen.NewScreenTab(km, "Inventory", command.InventoryScreenIndex, false),
-		titleScreen:        screen.NewTitleScreen(),
+		titleScreen:        screen.NewTitleScreen(km),
 		editorScreen:       screen.NewEditorScreen(km, []editor.ValueEditor{}),
 		confirmationScreen: screen.NewConfirmationScreen(km),
 		readerScreen:       screen.NewReaderScreen(km),
@@ -202,7 +203,7 @@ func (a *DnCApp) View() string {
 	topPad := (pageHeight - lipgloss.Height(pageContent)) / 2
 	leftPad := (pageWidth - lipgloss.Width(pageContent)) / 2
 
-	s := util.NoBorderStyle.
+	s := styles.NoBorderStyle.
 		UnsetAlign().
 		Width(pageWidth).
 		Height(pageHeight).

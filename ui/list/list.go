@@ -8,7 +8,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/editor"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 var DefaultColWidth = 16
@@ -27,8 +28,8 @@ type ListStyles struct {
 
 func DefaultListStyles() ListStyles {
 	return ListStyles{
-		Row:      util.ItemStyleDefault,
-		Selected: util.ItemStyleSelected,
+		Row:      styles.ItemStyleDefault,
+		Selected: styles.ItemStyleSelected,
 	}
 }
 
@@ -152,9 +153,9 @@ func NewList(k util.KeyMap, s ListStyles) *List {
 	}
 }
 
-func NewListWithDefaults() *List {
+func NewListWithDefaults(km util.KeyMap) *List {
 	return &List{
-		KeyMap: util.DefaultKeyMap(),
+		KeyMap: km,
 		Styles: DefaultListStyles(),
 	}
 }

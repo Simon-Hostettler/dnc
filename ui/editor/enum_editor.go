@@ -6,7 +6,8 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 type EnumMapping struct {
@@ -84,7 +85,7 @@ func (e *EnumEditor) View() string {
 	}
 	current := e.options[e.cursor]
 	box := fmt.Sprintf("[ %s ]", current.Label)
-	return util.RenderItem(e.focus, e.label+":") + " " + util.ItemStyleDefault.Render(box)
+	return styles.RenderItem(e.focus, e.label+":") + " " + styles.ItemStyleDefault.Render(box)
 }
 
 func (e *EnumEditor) Save() tea.Cmd {

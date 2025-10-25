@@ -1,4 +1,4 @@
-package util
+package styles
 
 import (
 	"fmt"
@@ -104,6 +104,28 @@ func MakeVerticalSeparator(height int) string {
 
 func MakeHorizontalSeparator(width int, padding int) string {
 	return GrayTextStyle.Padding(padding, 0).Render(strings.Repeat("─", width))
+}
+
+func RenderEdgeBound(w1 int, w2 int, str1 string, str2 string) string {
+	format := fmt.Sprintf("%%-%ds%%%ds", w1, w2)
+	return fmt.Sprintf(format, str1, str2)
+}
+
+func RenderLeftBound(w1 int, str1 string, str2 string) string {
+	format := fmt.Sprintf("%%-%ds %%s", w1)
+	return fmt.Sprintf(format, str1, str2)
+}
+
+func ForceLineBreaks(s string, w int) string {
+	var b strings.Builder
+	runes := []rune(s)
+	for i, r := range runes {
+		b.WriteRune(r)
+		if (i+1)%w == 0 && i != len(runes)-1 {
+			b.WriteRune('\n')
+		}
+	}
+	return b.String()
 }
 
 func PrettySpellSlots(used int, max int) string {

@@ -6,7 +6,8 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"hostettler.dev/dnc/ui/editor"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 type LabeledIntRow struct {
@@ -54,9 +55,9 @@ func (r *LabeledIntRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (r *LabeledIntRow) View() string {
 	if r.config.JustifyValue {
-		return util.RenderEdgeBound(r.config.LabelWidth, r.config.ValueWidth, r.label, r.config.ValuePrinter(*r.value))
+		return styles.RenderEdgeBound(r.config.LabelWidth, r.config.ValueWidth, r.label, r.config.ValuePrinter(*r.value))
 	} else {
-		return util.RenderLeftBound(r.config.LabelWidth, r.label, r.config.ValuePrinter(*r.value))
+		return styles.RenderLeftBound(r.config.LabelWidth, r.label, r.config.ValuePrinter(*r.value))
 	}
 }
 

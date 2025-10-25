@@ -14,12 +14,13 @@ import (
 	"hostettler.dev/dnc/ui/component"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/list"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 var (
 	itemColHeight = 30
-	itemColWidth  = util.ScreenWidth - 8
+	itemColWidth  = styles.ScreenWidth - 8
 )
 
 type InventoryScreen struct {
@@ -115,8 +116,8 @@ func (s *InventoryScreen) View() string {
 	topbar := s.RenderInventoryScreenTopBar()
 	renderedItems := s.itemList.View()
 
-	content := util.DefaultBorderStyle.
-		Width(util.ScreenWidth).
+	content := styles.DefaultBorderStyle.
+		Width(styles.ScreenWidth).
 		Height(spellColHeight).
 		Render(renderedItems)
 	return lipgloss.JoinVertical(lipgloss.Left, topbar, content)
@@ -256,46 +257,46 @@ func createItemEditors(k util.KeyMap, item *models.ItemTO) []editor.ValueEditor 
 }
 
 func (s *InventoryScreen) RenderInventoryScreenTopBar() string {
-	separator := util.GrayTextStyle.Width(6).Render(util.MakeVerticalSeparator(1))
-	return util.DefaultBorderStyle.
-		Width(util.ScreenWidth).
+	separator := styles.GrayTextStyle.Width(6).Render(styles.MakeVerticalSeparator(1))
+	return styles.DefaultBorderStyle.
+		Width(styles.ScreenWidth).
 		AlignHorizontal(lipgloss.Left).
 		Render(lipgloss.JoinHorizontal(
 			lipgloss.Center,
-			util.ForceWidth(s.copper.View(), 15),
+			styles.ForceWidth(s.copper.View(), 15),
 			separator,
-			util.ForceWidth(s.silver.View(), 15),
+			styles.ForceWidth(s.silver.View(), 15),
 			separator,
-			util.ForceWidth(s.electrum.View(), 15),
+			styles.ForceWidth(s.electrum.View(), 15),
 			separator,
-			util.ForceWidth(s.gold.View(), 15),
+			styles.ForceWidth(s.gold.View(), 15),
 			separator,
-			util.ForceWidth(s.platinum.View(), 15),
+			styles.ForceWidth(s.platinum.View(), 15),
 		))
 }
 
 func renderItemInfoRow(i *models.ItemTO) string {
-	values := []string{drawItemPrefix(i), i.Name, util.PrettyAttunementSlots(i.AttunementSlots)}
+	values := []string{drawItemPrefix(i), i.Name, styles.PrettyAttunementSlots(i.AttunementSlots)}
 	values = util.Filter(values, func(s string) bool { return s != "" })
 	return strings.Join(values, " ∙ ")
 }
 
 func renderFullItemInfo(i *models.ItemTO) string {
-	separator := util.MakeHorizontalSeparator(util.SmallScreenWidth-4, 1)
+	separator := styles.MakeHorizontalSeparator(styles.SmallScreenWidth-4, 1)
 	content := strings.Join(
 		[]string{
 			i.Name,
 			separator,
 			"Equipped: " + drawItemPrefix(i),
 			separator,
-			"Attunement slots required: " + util.PrettyAttunementSlots(i.AttunementSlots),
+			"Attunement slots required: " + styles.PrettyAttunementSlots(i.AttunementSlots),
 			separator,
 			"Quantity: " + strconv.Itoa(i.Quantity),
 			separator,
 			i.Description,
 		},
 		"\n")
-	return util.DefaultTextStyle.
+	return styles.DefaultTextStyle.
 		AlignHorizontal(lipgloss.Left).
 		Render(content)
 }

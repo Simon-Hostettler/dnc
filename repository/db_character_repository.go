@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"hostettler.dev/dnc/models"
-	"hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 // DBCharacterRepository is a CharacterRepository backed by sqlx and DuckDB.

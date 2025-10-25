@@ -5,7 +5,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"hostettler.dev/dnc/ui/command"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 const (
@@ -56,14 +57,14 @@ func (s *ConfirmationScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (s *ConfirmationScreen) View() string {
-	dialogue := util.DefaultTextStyle.
+	dialogue := styles.DefaultTextStyle.
 		Height(confirmationScreenHeight/2 - 1).
 		AlignHorizontal(lipgloss.Center).
 		AlignVertical(lipgloss.Center).
 		Render("Are you sure?")
 
-	confirmButton := util.RenderItem(s.confirmation, "[ Yes ]")
-	declineButton := util.RenderItem(!s.confirmation, "[ No ]")
+	confirmButton := styles.RenderItem(s.confirmation, "[ Yes ]")
+	declineButton := styles.RenderItem(!s.confirmation, "[ No ]")
 
 	buttons := lipgloss.PlaceVertical(
 		confirmationScreenHeight/2-1,
@@ -76,7 +77,7 @@ func (s *ConfirmationScreen) View() string {
 
 	content := lipgloss.JoinVertical(lipgloss.Center, dialogue, buttons)
 
-	return util.DefaultBorderStyle.
+	return styles.DefaultBorderStyle.
 		Render(content)
 }
 

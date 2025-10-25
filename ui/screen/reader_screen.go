@@ -7,7 +7,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"hostettler.dev/dnc/ui/command"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 var readerHeight = 30
@@ -29,7 +30,7 @@ func (s *ReaderScreen) Init() tea.Cmd {
 func (s *ReaderScreen) StartRead(content string) {
 	s.cursor = 0
 	s.content = lipgloss.NewStyle().
-		Width(util.SmallScreenWidth - 2).
+		Width(styles.SmallScreenWidth - 2).
 		Render(content)
 }
 
@@ -61,8 +62,8 @@ func (s *ReaderScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *ReaderScreen) View() string {
 	viewableContent := strings.Join(s.contentToLines()[s.cursor:s.cursorEnd()], "\n")
 
-	return util.DefaultBorderStyle.
-		Width(util.SmallScreenWidth + 2).
+	return styles.DefaultBorderStyle.
+		Width(styles.SmallScreenWidth + 2).
 		Height(readerHeight).
 		Render(lipgloss.PlaceVertical(readerHeight, lipgloss.Left, viewableContent))
 }

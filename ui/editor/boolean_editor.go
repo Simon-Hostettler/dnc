@@ -3,7 +3,8 @@ package editor
 import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 type BooleanEditor struct {
@@ -56,9 +57,9 @@ func (e *BooleanEditor) View() string {
 	if !e.initialized {
 		return ""
 	}
-	return util.RenderItem(e.focus, e.label+":") +
+	return styles.RenderItem(e.focus, e.label+":") +
 		" " +
-		util.ItemStyleDefault.Render(util.PrettyBool(e.input))
+		styles.ItemStyleDefault.Render(styles.PrettyBool(e.input))
 }
 
 func (e *BooleanEditor) Save() tea.Cmd {

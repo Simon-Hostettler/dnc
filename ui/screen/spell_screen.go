@@ -15,12 +15,13 @@ import (
 	"hostettler.dev/dnc/ui/component"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/list"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 var (
 	spellColHeight       = 30
-	spellColWidth        = util.ScreenWidth - 8
+	spellColWidth        = styles.ScreenWidth - 8
 	spellTopBarElemWidth = 28
 )
 
@@ -112,8 +113,8 @@ func (s *SpellScreen) View() string {
 	topbar := s.RenderSpellScreenTopBar()
 	renderedSpells := s.spellList.View()
 
-	content := util.DefaultBorderStyle.
-		Width(util.ScreenWidth).
+	content := styles.DefaultBorderStyle.
+		Width(styles.ScreenWidth).
 		Height(spellColHeight).
 		Render(renderedSpells)
 	return lipgloss.JoinVertical(lipgloss.Left, topbar, content)
@@ -190,8 +191,8 @@ func (s *SpellScreen) populateSpells() {
 	if s.spellList == nil {
 		s.spellList = list.NewList(s.keymap,
 			list.ListStyles{
-				Row:      util.ItemStyleDefault.Align(lipgloss.Left),
-				Selected: util.ItemStyleSelected.Align(lipgloss.Left),
+				Row:      styles.ItemStyleDefault.Align(lipgloss.Left),
+				Selected: styles.ItemStyleSelected.Align(lipgloss.Left),
 			}).
 			WithFixedWidth(spellColWidth).
 			WithViewport(spellColHeight - 2)
@@ -260,15 +261,15 @@ func (s *SpellScreen) createSpellEditors(spell *models.SpellTO) []editor.ValueEd
 }
 
 func (s *SpellScreen) RenderSpellScreenTopBar() string {
-	separator := util.GrayTextStyle.Width(8).Render(util.MakeVerticalSeparator(1))
-	return util.DefaultBorderStyle.
-		Width(util.ScreenWidth).
+	separator := styles.GrayTextStyle.Width(8).Render(styles.MakeVerticalSeparator(1))
+	return styles.DefaultBorderStyle.
+		Width(styles.ScreenWidth).
 		Render(lipgloss.JoinHorizontal(lipgloss.Center,
-			util.ForceWidth(s.spellAbility.View(), spellTopBarElemWidth),
+			styles.ForceWidth(s.spellAbility.View(), spellTopBarElemWidth),
 			separator,
-			util.ForceWidth(s.spellSaveDC.View(), spellTopBarElemWidth),
+			styles.ForceWidth(s.spellSaveDC.View(), spellTopBarElemWidth),
 			separator,
-			util.ForceWidth(s.spellAtkBonus.View(), spellTopBarElemWidth)))
+			styles.ForceWidth(s.spellAtkBonus.View(), spellTopBarElemWidth)))
 }
 
 type SpellListHeader struct {
@@ -279,17 +280,17 @@ type SpellListHeader struct {
 
 func renderSpellHeaderRow(h *SpellListHeader) string {
 	return fmt.Sprintf("Level %d ∙ %s", h.level,
-		util.PrettySpellSlots(*h.used, *h.slots))
+		styles.PrettySpellSlots(*h.used, *h.slots))
 }
 
 func renderSpellInfoRow(s *models.SpellTO) string {
 	values := []string{s.Name, s.Damage, s.Components, s.Range, s.CastingTime, s.Duration}
 	values = util.Filter(values, func(s string) bool { return s != "" })
-	return util.PrettyBoolCircle(util.I2b(s.Prepared)) + " " + strings.Join(values, " ∙ ")
+	return styles.PrettyBoolCircle(util.I2b(s.Prepared)) + " " + strings.Join(values, " ∙ ")
 }
 
 func renderFullSpellInfo(s *models.SpellTO) string {
-	separator := util.MakeHorizontalSeparator(util.SmallScreenWidth-4, 1)
+	separator := styles.MakeHorizontalSeparator(styles.SmallScreenWidth-4, 1)
 	content := strings.Join(
 		[]string{
 			s.Name + " ∙  Level: " + strconv.Itoa(s.Level),
@@ -307,7 +308,7 @@ func renderFullSpellInfo(s *models.SpellTO) string {
 			s.Description,
 		},
 		"\n")
-	return util.DefaultTextStyle.
+	return styles.DefaultTextStyle.
 		AlignHorizontal(lipgloss.Left).
 		Render(content)
 }

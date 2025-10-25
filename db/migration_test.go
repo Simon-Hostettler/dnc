@@ -37,7 +37,7 @@ func destroyTestDB(db *sqlx.DB) error {
 func TestEmptyMigrations(t *testing.T) {
 	handle, err := testDBInstance()
 	if err != nil {
-		t.Errorf("Could not create test DB: %s", err.Error())
+		t.Fatalf("Could not create test DB: %s", err.Error())
 	}
 	if err := MigrateUp(handle); err != nil {
 		t.Errorf("Migration to current version failed: %s", err.Error())
@@ -46,7 +46,7 @@ func TestEmptyMigrations(t *testing.T) {
 		t.Errorf("Migrating down to initial DB failed: %s", err.Error())
 	}
 	if err := destroyTestDB(handle); err != nil {
-		t.Errorf("Could not destroy test DB: %s", err.Error())
+		t.Fatalf("Could not destroy test DB: %s", err.Error())
 	}
 }
 

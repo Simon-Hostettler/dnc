@@ -4,7 +4,8 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"hostettler.dev/dnc/ui/editor"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 type SimpleStringComponent struct {
@@ -41,7 +42,7 @@ func (s *SimpleStringComponent) View() string {
 	if s.renderName {
 		prefix = s.name + ": "
 	}
-	return util.RenderItem(s.focus && s.highlightOnFocus, prefix+*s.content)
+	return styles.RenderItem(s.focus && s.highlightOnFocus, prefix+*s.content)
 }
 
 func (s *SimpleStringComponent) Focus() {

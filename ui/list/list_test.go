@@ -7,16 +7,18 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/editor"
-	"hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
+
+var testKM = util.DefaultKeyMap()
 
 func createDummyRow() Row {
 	val := 0
-	return NewLabeledIntRow(util.DefaultKeyMap(), "test", &val, editor.NewIntEditor(util.DefaultKeyMap(), "test", &val))
+	return NewLabeledIntRow(testKM, "test", &val, editor.NewIntEditor(testKM, "test", &val))
 }
 
 func TestSeparatorSkips(t *testing.T) {
-	list := NewListWithDefaults().WithRows([]Row{
+	list := NewListWithDefaults(testKM).WithRows([]Row{
 		createDummyRow(),
 		NewSeparatorRow("-", 10),
 		createDummyRow(),
@@ -34,7 +36,7 @@ func TestSeparatorSkips(t *testing.T) {
 }
 
 func TestViewPortConsistentHeight(t *testing.T) {
-	list := NewListWithDefaults().WithViewport(10)
+	list := NewListWithDefaults(testKM).WithViewport(10)
 	rows := []Row{}
 	for range 20 {
 		rows = append(rows, createDummyRow())
@@ -56,7 +58,7 @@ func TestViewPortConsistentHeight(t *testing.T) {
 }
 
 func TestListExits(t *testing.T) {
-	list := NewListWithDefaults().WithRows([]Row{
+	list := NewListWithDefaults(testKM).WithRows([]Row{
 		createDummyRow(),
 		createDummyRow(),
 	})

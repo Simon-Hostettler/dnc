@@ -2,7 +2,7 @@ package editor
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 /*

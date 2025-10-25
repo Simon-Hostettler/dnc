@@ -5,7 +5,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/editor"
-	"hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 /*

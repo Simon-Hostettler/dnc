@@ -6,7 +6,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/editor"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 type EditorScreen struct {
@@ -83,12 +84,12 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *EditorScreen) View() string {
 	rows := []string{}
 	for _, e := range s.editors {
-		rows = append(rows, util.ForceWidth(e.View(), util.SmallScreenWidth-8))
+		rows = append(rows, styles.ForceWidth(e.View(), styles.SmallScreenWidth-8))
 	}
-	saveButton := util.RenderItem(s.cursor == len(s.editors), "[ Save ]")
+	saveButton := styles.RenderItem(s.cursor == len(s.editors), "[ Save ]")
 	rows = append(rows, saveButton)
 
-	horizontalSeparator := util.MakeHorizontalSeparator(util.SmallScreenWidth-8, 1)
+	horizontalSeparator := styles.MakeHorizontalSeparator(styles.SmallScreenWidth-8, 1)
 
 	separated := []string{rows[0]}
 
@@ -96,8 +97,8 @@ func (s *EditorScreen) View() string {
 		separated = append(separated, horizontalSeparator, row)
 	}
 
-	return util.DefaultBorderStyle.
-		Width(util.SmallScreenWidth).
+	return styles.DefaultBorderStyle.
+		Width(styles.SmallScreenWidth).
 		Render(lipgloss.JoinVertical(lipgloss.Center, separated...))
 }
 

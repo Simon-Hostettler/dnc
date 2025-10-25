@@ -3,7 +3,8 @@ package editor
 import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 type StringEditor struct {
@@ -54,7 +55,7 @@ func (s *StringEditor) View() string {
 	if !s.initialized {
 		return ""
 	}
-	return util.RenderItem(s.focus, s.label+":") + " " + util.ItemStyleDefault.Render(s.textInput.View())
+	return styles.RenderItem(s.focus, s.label+":") + " " + styles.ItemStyleDefault.Render(s.textInput.View())
 }
 
 func (s *StringEditor) Save() tea.Cmd {

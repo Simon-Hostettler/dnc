@@ -6,7 +6,7 @@ import (
 	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/editor"
-	"hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 type CharacterRow struct {

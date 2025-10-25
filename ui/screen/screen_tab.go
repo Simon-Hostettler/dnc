@@ -5,7 +5,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"hostettler.dev/dnc/ui/command"
-	"hostettler.dev/dnc/ui/util"
+	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/util"
 )
 
 var (
@@ -42,11 +43,11 @@ func (s *ScreenTab) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *ScreenTab) View() string {
 	name := s.name
 	if s.focus {
-		name = util.ItemStyleSelected.Render(name)
+		name = styles.ItemStyleSelected.Render(name)
 	} else {
-		name = util.ItemStyleDefault.Render(name)
+		name = styles.ItemStyleDefault.Render(name)
 	}
-	return util.DefaultBorderStyle.UnsetPadding().
+	return styles.DefaultBorderStyle.UnsetPadding().
 		AlignVertical(lipgloss.Center).
 		Width(tabWidth).
 		Height(tabHeight).
