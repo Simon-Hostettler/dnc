@@ -357,11 +357,11 @@ func (s *StatScreen) CreateAbilityRows() {
 	}
 	rows := []list.Row{
 		newAbilityRow(&s.agg.Abilities.Strength, "Strength"),
-		newAbilityRow(&s.agg.Abilities.Strength, "Constitution"),
-		newAbilityRow(&s.agg.Abilities.Strength, "Dexterity"),
-		newAbilityRow(&s.agg.Abilities.Strength, "Intelligence"),
-		newAbilityRow(&s.agg.Abilities.Strength, "Wisdom"),
-		newAbilityRow(&s.agg.Abilities.Strength, "Charisma"),
+		newAbilityRow(&s.agg.Abilities.Constitution, "Constitution"),
+		newAbilityRow(&s.agg.Abilities.Dexterity, "Dexterity"),
+		newAbilityRow(&s.agg.Abilities.Intelligence, "Intelligence"),
+		newAbilityRow(&s.agg.Abilities.Wisdom, "Wisdom"),
+		newAbilityRow(&s.agg.Abilities.Charisma, "Charisma"),
 	}
 	s.abilities.WithRows(rows)
 }
@@ -513,7 +513,7 @@ func renderSkillInfoRow(s *SkillInfo) string {
 	mod := models.ToModifier(
 		s.abilities.ToScoreByName(s.skill.SkillAbility),
 		proficiency,
-		*s.profBonus)
+		*s.profBonus) + s.skill.CustomModifier
 	bullet := proficiency.ToSymbol()
 	return styles.RenderEdgeBound(LongColWidth, TinyColWidth, bullet+" "+s.skill.SkillName, fmt.Sprintf("%+d", mod))
 }

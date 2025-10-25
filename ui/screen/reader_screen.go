@@ -52,7 +52,7 @@ func (s *ReaderScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			s.MoveCursor(-1)
 		case key.Matches(msg, s.keymap.Down, s.keymap.Enter):
 			s.MoveCursor(1)
-		case key.Matches(msg, s.keymap.Escape):
+		case key.Matches(msg, s.keymap.Escape) || key.Matches(msg, s.keymap.Show):
 			cmd = command.SwitchToPrevScreenCmd
 		}
 	}

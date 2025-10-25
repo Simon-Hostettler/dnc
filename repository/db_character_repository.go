@@ -27,14 +27,14 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
 		ensureSpellSlots(c)
 		query := `
             INSERT INTO character (
-                name, class_levels, background, alignment,
+                name, class_levels, race, background, alignment,
                 proficiency_bonus, armor_class, initiative, speed,
                 max_hit_points, curr_hit_points, temp_hit_points,
                 hit_dice, used_hit_dice, death_save_successes, death_save_failures,
 				actions, bonus_actions, spell_slots, spell_slots_used,
                 spellcasting_ability, spell_save_dc, spell_attack_bonus
             ) VALUES (
-                ?,?,?,?,?,?,?,?,?,?,?,
+                ?,?,?,?,?,?,?,?,?,?,?,?,
                 ?,?,?,?,?,?,?,?,?,?,?
 			) RETURNING id`
 		row := tx.QueryRowxContext(ctx, query,
@@ -228,7 +228,7 @@ func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggreg
 		ensureSpellSlots(c)
 		query := `
 			UPDATE character SET
-				name=?, class_levels=?, background=?, alignment=?,
+				name=?, class_levels=?, race=?, background=?, alignment=?,
 				proficiency_bonus=?, armor_class=?, initiative=?, speed=?,
 				max_hit_points=?, curr_hit_points=?, temp_hit_points=?,
 				hit_dice=?, used_hit_dice=?, death_save_successes=?, death_save_failures=?,
@@ -238,7 +238,7 @@ func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggreg
 			WHERE id=?
 		`
 		if _, err := tx.ExecContext(ctx, query,
-			c.Name, c.ClassLevels, c.Background, c.Alignment,
+			c.Name, c.ClassLevels, c.Race, c.Background, c.Alignment,
 			c.ProficiencyBonus, c.ArmorClass, c.Initiative, c.Speed,
 			c.MaxHitPoints, c.CurrHitPoints, c.TempHitPoints,
 			c.HitDice, c.UsedHitDice, c.DeathSaveSuccesses, c.DeathSaveFailures,
