@@ -45,7 +45,7 @@ go build -o dnc .
 ./dnc
 ```
 
-You can modify the keymap stored at ``os.UserConfigDir()/dnc/config.json`. Defaults can be found in `util.DefaultKeyMap()`, but `ctrl+c` should get you out :)
+You can modify the keymap stored at `os.UserConfigDir()/dnc/config.json`. Defaults can be found in `util.DefaultKeyMap()`, but `ctrl+c` should get you out :)
 
 ## Data
 
