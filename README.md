@@ -11,6 +11,10 @@ ______ _   _ _____
 
 A small terminal-based TTRPG character manager built with Bubble Tea, Lip Gloss and DuckDB. It provides a TUI to create and edit various character data (stats, spells, items, etc.).
 
+![demo](examples/demo.gif)
+
+## Code layout
+
 This repository is organized as a single Go module (`hostettler.dev/dnc`) with the following rough layout:
 
 ```

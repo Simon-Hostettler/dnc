@@ -38,7 +38,7 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
                 ?,?,?,?,?,?,?,?,?,?,?
 			) RETURNING id`
 		row := tx.QueryRowxContext(ctx, query,
-			c.Name, c.ClassLevels, c.Background, c.Alignment,
+			c.Name, c.ClassLevels, c.Race, c.Background, c.Alignment,
 			c.ProficiencyBonus, c.ArmorClass, c.Initiative, c.Speed,
 			c.MaxHitPoints, c.CurrHitPoints, c.TempHitPoints,
 			c.HitDice, c.UsedHitDice, c.DeathSaveSuccesses, c.DeathSaveFailures,

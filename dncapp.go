@@ -25,6 +25,8 @@ type DnCApp struct {
 	height     int
 	db         *sqlx.DB
 	ctx        context.Context
+	cancel     context.CancelFunc
+	cleanup    func()
 	repository repository.CharacterRepository
 
 	selectedTab     *screen.ScreenTab
@@ -46,28 +48,26 @@ type DnCApp struct {
 	readerScreen       *screen.ReaderScreen
 }
 
-func NewApp() (*DnCApp, error) {
-	config, err := util.LoadConfig(util.DefaultConfigDir())
-	if err != nil {
-		return nil, err
-	}
+func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
 	km := util.DefaultKeyMap()
 
-	handle, err := db.Open(config.DatabasePath)
+	handle, err := db.Open(cfg.DatabasePath)
 	if err != nil {
 		return nil, err
 	}
 	if err := db.MigrateUp(handle); err != nil {
 		return nil, err
 	}
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 	repository := repository.NewDBCharacterRepository(handle)
 
 	app := &DnCApp{
-		config:             config,
+		config:             cfg,
 		keymap:             km,
 		db:                 handle,
 		ctx:                ctx,
+		cancel:             cancel,
+		cleanup:            cleanup,
 		repository:         repository,
 		statTab:            screen.NewScreenTab(km, "Stats", command.StatScreenIndex, false),
 		spellTab:           screen.NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
@@ -79,6 +79,18 @@ func NewApp() (*DnCApp, error) {
 	}
 
 	return app, nil
+}
+
+func (a *DnCApp) Close() {
+	if a.cancel != nil {
+		a.cancel()
+	}
+	if a.db != nil {
+		_ = a.db.Close()
+	}
+	if a.cleanup != nil {
+		a.cleanup()
+	}
 }
 
 func (a *DnCApp) Init() tea.Cmd {
@@ -114,10 +126,6 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if key.Matches(msg, a.keymap.ForceQuit) {
-			// Close DB before quitting
-			if a.db != nil {
-				_ = a.db.Close()
-			}
 			return a, tea.Quit
 		}
 		if a.isScreenFocused {

@@ -89,6 +89,32 @@ func LoadConfig(cfgDir string) (Config, error) {
 	return cfg, nil
 }
 
+func LoadDemoConfig(cfgDir string) (Config, func(), error) {
+	cfg, err := LoadConfig(cfgDir)
+	if err != nil {
+		return Config{}, func() {}, err
+	}
+	tmp, err := os.MkdirTemp("", "dnc_demo_*")
+	if err != nil {
+		return Config{}, func() {}, err
+	}
+	cfg.DatabasePath = filepath.Join(tmp, "demo.db")
+	filepath.Join(tmp, "demo.db")
+	cleanup := func() {
+		_ = os.RemoveAll(tmp)
+	}
+	return cfg, cleanup, nil
+}
+
+func GetConfig(cfgDir string, demo bool) (Config, func(), error) {
+	if demo {
+		return LoadDemoConfig(cfgDir)
+	} else {
+		cfg, err := LoadConfig(cfgDir)
+		return cfg, func() {}, err
+	}
+}
+
 type KeyMap struct {
 	Up        key.Binding `json:"up"`
 	Down      key.Binding `json:"down"`
