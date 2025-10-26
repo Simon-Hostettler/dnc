@@ -21,6 +21,7 @@ This repository is organized as a single Go module (`hostettler.dev/dnc`) with t
 ├── LICENSE
 ├── README.md     // <-- You are here
 ├── db            // Driver for DuckDB, migration logic + migrations
+├── demo.tape     // vhs tape to produce demo gif
 ├── dncapp.go     // Main command handler & coordinator, top-level bubble tea program
 ├── go.mod
 ├── go.sum
@@ -77,6 +78,7 @@ Migrations will be applied automatically at startup
 Currently mostly smaller unit tests. Looking to implement larger integration tests using `teatest`.
 
 ## License
+
 This software is distributed under the [GNU GPL v3](./LICENSE).
 
 This software makes use of certain game mechanics and terminology that also appear in the System Reference Document (SRD) published by Wizards of the Coast, such as concepts including “ability scores,” “proficiency bonus,” and similar rule terms. These elements are functional game mechanics and generic terminology, which are [not subject to copyright protection](https://web.archive.org/web/20160411131325/http://www.copyright.gov/fls/fl108.html).

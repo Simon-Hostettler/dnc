@@ -52,8 +52,8 @@ func (v *Viewport) View() string {
 	viewableContent := strings.Join(v.contentToLines()[v.cursor:v.cursorEnd()], "\n")
 
 	return lipgloss.NewStyle().
-		Width(v.width).
-		Height(v.height).
+		MaxWidth(v.width).
+		MaxHeight(v.height).
 		Render(lipgloss.Place(v.width, v.height, lipgloss.Left, lipgloss.Left, viewableContent))
 }
 
