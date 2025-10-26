@@ -36,7 +36,7 @@ func TestCursorStaysInBounds(t *testing.T) {
 	viewport := NewViewport(km, 3, 5)
 	content := ""
 	for range 5 {
-		content += "ABCDEFG\n"
+		content += "ABCDE\n"
 	}
 
 	cmd := viewport.Init()
@@ -54,8 +54,8 @@ func TestCursorStaysInBounds(t *testing.T) {
 		viewport.Update(msg)
 	}
 
-	if !(viewport.cursor == 2) {
-		t.Errorf("Viewport scrolled too far down. Cursor expected at %d, is %d", 2, viewport.cursor)
+	if !(viewport.cursor == 3) {
+		t.Errorf("Viewport scrolled too far down. Cursor expected at %d, is %d", 3, viewport.cursor)
 	}
 
 	msg = tea.KeyMsg{Type: tea.KeyUp}

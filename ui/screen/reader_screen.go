@@ -3,7 +3,6 @@ package screen
 import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"hostettler.dev/dnc/ui/command"
 	styles "hostettler.dev/dnc/ui/util"
 	"hostettler.dev/dnc/ui/viewport"
@@ -20,7 +19,7 @@ type ReaderScreen struct {
 func NewReaderScreen(keymap util.KeyMap) *ReaderScreen {
 	return &ReaderScreen{
 		keymap,
-		viewport.NewViewport(keymap, readerHeight, styles.SmallScreenWidth+2),
+		viewport.NewViewport(keymap, readerHeight, styles.SmallScreenWidth-2),
 	}
 }
 
@@ -30,10 +29,7 @@ func (s *ReaderScreen) Init() tea.Cmd {
 
 func (s *ReaderScreen) StartRead(content string) {
 	s.viewport.Reset()
-	s.viewport.UpdateContent(
-		lipgloss.NewStyle().
-			Width(styles.SmallScreenWidth - 2).
-			Render(content))
+	s.viewport.UpdateContent(content)
 }
 
 func (s *ReaderScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
