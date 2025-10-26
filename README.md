@@ -70,8 +70,15 @@ Migrations will be applied automatically at startup
 
 ## Testing
 
-- Currently mostly smaller unit tests. Looking to implement larger integration tests using `teatest`.
+Currently mostly smaller unit tests. Looking to implement larger integration tests using `teatest`.
+
+## License
+This software is distributed under the [GNU GPL v3](./LICENSE).
+
+This software makes use of certain game mechanics and terminology that also appear in the System Reference Document (SRD) published by Wizards of the Coast, such as concepts including “ability scores,” “proficiency bonus,” and similar rule terms. These elements are functional game mechanics and generic terminology, which are [not subject to copyright protection](https://web.archive.org/web/20160411131325/http://www.copyright.gov/fls/fl108.html).
+
+This software does not reproduce, distribute, or include any text, tables, or other expressive content from the SRD or any other copyrighted work. Accordingly, this software is not a derivative work of the SRD and is not distributed under the Open Gaming License (OGL).
 
 ## Contributing
 
-- Please open a feature request or a PR if you would like (to contribute) a feature
+Feature requests (through issues) or PRs are very welcome :) Please make sure your contribution is compatible with the above-described licensing.
