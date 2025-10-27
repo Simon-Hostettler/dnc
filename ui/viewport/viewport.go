@@ -6,7 +6,6 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/x/ansi"
 	"hostettler.dev/dnc/util"
 )
 
@@ -50,22 +49,15 @@ func (v *Viewport) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (v *Viewport) View() string {
-	viewableContent := strings.Join(
-		util.Map(
-			v.content[v.cursor:v.cursorEnd()],
-			func(s string) string {
-				return ansi.Cut(s, 0, v.width)
-			}),
-		"\n")
+	viewableContent := strings.Join(v.content[v.cursor:v.cursorEnd()], "\n")
 
 	return lipgloss.NewStyle().
-		MaxWidth(v.width).
-		MaxHeight(v.height).
 		Render(viewableContent)
 }
 
 func (v *Viewport) UpdateContent(content string) {
-	v.content = toLines(lipgloss.NewStyle().Width(v.width).Render(content))
+	bounded := lipgloss.NewStyle().Width(v.width).Render(content)
+	v.content = toLines(bounded)
 }
 
 func (v *Viewport) Reset() {
