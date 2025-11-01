@@ -3,8 +3,10 @@ package editor
 import (
 	"strconv"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"hostettler.dev/dnc/ui/command"
 	styles "hostettler.dev/dnc/ui/util"
 	"hostettler.dev/dnc/util"
 )
@@ -29,6 +31,7 @@ func (s *IntEditor) Init(keymap util.KeyMap, label string, delegatorPointer inte
 	if !ok {
 		panic("Value passed is not a pointer to int")
 	}
+	s.keymap = keymap
 	s.value = ptr
 
 	ti := textinput.New()
@@ -46,6 +49,16 @@ func (s *IntEditor) Init(keymap util.KeyMap, label string, delegatorPointer inte
 func (s *IntEditor) Update(msg tea.Msg) tea.Cmd {
 	if !s.initialized {
 		return nil
+	}
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, s.keymap.Up):
+			return command.FocusNextElementCmd(command.UpDirection)
+		case key.Matches(msg, s.keymap.Down):
+			return command.FocusNextElementCmd(command.DownDirection)
+		}
 	}
 
 	var cmd tea.Cmd

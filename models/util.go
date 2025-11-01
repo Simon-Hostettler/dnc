@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"hostettler.dev/dnc/ui/editor"
 )
 
 type CharacterSummary struct {
@@ -28,7 +27,7 @@ const (
 	Expertise
 )
 
-var ProficiencySymbols []editor.EnumMapping = []editor.EnumMapping{
+var ProficiencySymbols []EnumMapping = []EnumMapping{
 	{Value: int(NoProficiency), Label: "○"},
 	{Value: int(Proficient), Label: "◐"},
 	{Value: int(Expertise), Label: "●"},
@@ -43,18 +42,23 @@ func (p Proficiency) ToSymbol() string {
 	return ""
 }
 
-var PreparedSymbols []editor.EnumMapping = []editor.EnumMapping{
+type EnumMapping struct {
+	Value int
+	Label string
+}
+
+var PreparedSymbols []EnumMapping = []EnumMapping{
 	{Value: 0, Label: "□"},
 	{Value: 1, Label: "■"},
 }
 
-var EquippedSymbols []editor.EnumMapping = []editor.EnumMapping{
+var EquippedSymbols []EnumMapping = []EnumMapping{
 	{Value: int(NonEquippable), Label: "Not Equippable"},
 	{Value: int(NotEquipped), Label: "Not Equipped"},
 	{Value: int(Equipped), Label: "Equipped"},
 }
 
-var AttunementSymbols []editor.EnumMapping = []editor.EnumMapping{
+var AttunementSymbols []EnumMapping = []EnumMapping{
 	{Value: 0, Label: "□□□"},
 	{Value: 1, Label: "■□□"},
 	{Value: 2, Label: "■■□"},

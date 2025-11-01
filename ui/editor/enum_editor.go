@@ -6,18 +6,15 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"hostettler.dev/dnc/models"
+	"hostettler.dev/dnc/ui/command"
 	styles "hostettler.dev/dnc/ui/util"
 	"hostettler.dev/dnc/util"
 )
 
-type EnumMapping struct {
-	Value int
-	Label string
-}
-
 type EnumEditor struct {
 	keymap      util.KeyMap
-	options     []EnumMapping
+	options     []models.EnumMapping
 	label       string
 	value       reflect.Value
 	cursor      int
@@ -25,7 +22,7 @@ type EnumEditor struct {
 	focus       bool
 }
 
-func NewEnumEditor(keymap util.KeyMap, options []EnumMapping, label string, delegatorPointer interface{}) *EnumEditor {
+func NewEnumEditor(keymap util.KeyMap, options []models.EnumMapping, label string, delegatorPointer interface{}) *EnumEditor {
 	e := EnumEditor{
 		options: options,
 	}
@@ -66,17 +63,23 @@ func (e *EnumEditor) Update(msg tea.Msg) tea.Cmd {
 		return nil
 	}
 
-	switch m := msg.(type) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(m, e.keymap.Left):
+		case key.Matches(msg, e.keymap.Left):
 			e.cursor = (e.cursor - 1 + len(e.options)) % len(e.options)
-		case key.Matches(m, e.keymap.Right, e.keymap.Select):
+		case key.Matches(msg, e.keymap.Right, e.keymap.Select):
 			e.cursor = (e.cursor + 1) % len(e.options)
+		case key.Matches(msg, e.keymap.Up):
+			cmd = command.FocusNextElementCmd(command.UpDirection)
+		case key.Matches(msg, e.keymap.Down):
+			cmd = command.FocusNextElementCmd(command.DownDirection)
+
 		}
 	}
 
-	return nil
+	return cmd
 }
 
 func (e *EnumEditor) View() string {

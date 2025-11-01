@@ -252,7 +252,7 @@ func createItemEditors(k util.KeyMap, item *models.ItemTO) []editor.ValueEditor 
 		editor.NewEnumEditor(k, models.EquippedSymbols, "Equipped", &item.Equipped),
 		editor.NewEnumEditor(k, models.AttunementSymbols, "Attunement Slots", &item.AttunementSlots),
 		editor.NewIntEditor(k, "Quantity", &item.Quantity),
-		editor.NewStringEditor(k, "Description", &item.Description),
+		editor.NewTextEditor(k, "Description", &item.Description),
 	}
 }
 

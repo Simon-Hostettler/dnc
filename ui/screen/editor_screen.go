@@ -37,9 +37,9 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// editor in focus
 	if s.cursor >= 0 && s.cursor < len(s.editors) {
 		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch {
-			case key.Matches(msg, s.keymap.Up):
+		case command.FocusNextElementMsg:
+			switch msg.Direction {
+			case command.UpDirection:
 				if s.cursor > 0 {
 					s.editors[s.cursor].Blur()
 					s.cursor--
@@ -48,15 +48,15 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					s.editors[s.cursor].Blur()
 					s.cursor = len(s.editors)
 				}
-			case key.Matches(msg, s.keymap.Down, s.keymap.Enter):
+			case command.DownDirection:
 				s.editors[s.cursor].Blur()
 				s.cursor++
 				if s.cursor < len(s.editors) {
 					s.editors[s.cursor].Focus()
 				}
-			default:
-				cmd = s.editors[s.cursor].Update(msg)
 			}
+		default:
+			cmd = s.editors[s.cursor].Update(msg)
 		}
 	} else if s.cursor == len(s.editors) { // save button in focus
 		switch msg := msg.(type) {

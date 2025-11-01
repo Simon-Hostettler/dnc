@@ -256,7 +256,7 @@ func (s *SpellScreen) createSpellEditors(spell *models.SpellTO) []editor.ValueEd
 		editor.NewStringEditor(s.keymap, "Range", &spell.Range),
 		editor.NewStringEditor(s.keymap, "Duration", &spell.Duration),
 		editor.NewStringEditor(s.keymap, "Components", &spell.Components),
-		editor.NewStringEditor(s.keymap, "Description", &spell.Description),
+		editor.NewTextEditor(s.keymap, "Description", &spell.Description),
 	}
 }
 

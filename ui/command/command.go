@@ -1,12 +1,8 @@
 package command
 
 import (
-	"context"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/uuid"
-	"hostettler.dev/dnc/models"
-	"hostettler.dev/dnc/repository"
 )
 
 type ScreenIndex int
@@ -40,20 +36,6 @@ func DeleteCharacterRequest(id uuid.UUID) func() tea.Msg {
 	}
 }
 
-type DeleteCharacterMsg struct {
-	Success bool
-}
-
-func DeleteCharacterCmd(r repository.CharacterRepository, ctx context.Context, id uuid.UUID) tea.Cmd {
-	return func() tea.Msg {
-		err := r.Delete(ctx, id)
-		if err != nil {
-			return DeleteCharacterMsg{false}
-		}
-		return DeleteCharacterMsg{true}
-	}
-}
-
 type CreateCharacterRequestMsg struct {
 	Name string
 }
@@ -64,69 +46,16 @@ func CreateCharacterRequest(name string) func() tea.Msg {
 	}
 }
 
-type CreateCharacterMsg struct {
-	ID uuid.UUID
-}
-
-func CreateCharacterCmd(r repository.CharacterRepository, ctx context.Context, name string) func() tea.Msg {
-	return func() tea.Msg {
-		if id, err := r.CreateEmpty(ctx, name); err != nil {
-			return CreateCharacterMsg{}
-		} else {
-			return CreateCharacterMsg{id}
-		}
-	}
-}
-
 type WriteBackRequestMsg struct{}
 
 func WriteBackRequest() tea.Msg {
 	return WriteBackRequestMsg{}
 }
 
-type WriteBackMsg struct {
-	Success bool
-}
-
-func WriteBackCmd(r repository.CharacterRepository, ctx context.Context, c *repository.CharacterAggregate) func() tea.Msg {
-	return func() tea.Msg {
-		err := r.Update(ctx, c)
-		return WriteBackMsg{err == nil}
-	}
-}
-
 type LoadSummariesRequestMsg struct{}
 
 func LoadSummariesRequest() tea.Msg {
 	return LoadSummariesRequestMsg{}
-}
-
-type LoadSummariesMsg struct {
-	Summaries []models.CharacterSummary
-}
-
-func LoadSummariesCommand(r repository.CharacterRepository, ctx context.Context) func() tea.Msg {
-	return func() tea.Msg {
-		if sum, err := r.ListSummary(ctx); err != nil {
-			return LoadSummariesMsg{[]models.CharacterSummary{}}
-		} else {
-			return LoadSummariesMsg{sum}
-		}
-	}
-}
-
-type LoadCharacterMsg struct {
-	Agg *repository.CharacterAggregate
-}
-
-func LoadCharacterCmd(r repository.CharacterRepository, ctx context.Context, id uuid.UUID) func() tea.Msg {
-	return func() tea.Msg {
-		c, err := r.GetByID(ctx, id)
-		if err != nil {
-			return LoadCharacterMsg{nil}
-		}
-		return LoadCharacterMsg{c}
-	}
 }
 
 type SelectCharacterMsg struct {

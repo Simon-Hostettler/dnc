@@ -154,24 +154,24 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case command.SwitchScreenMsg:
 		a.switchScreen(msg.Screen)
 	case command.LoadSummariesRequestMsg:
-		cmd = command.LoadSummariesCommand(a.repository, a.ctx)
-	case command.LoadSummariesMsg:
+		cmd = repository.LoadSummariesCommand(a.repository, a.ctx)
+	case repository.LoadSummariesMsg:
 		a.titleScreen.SetSummaries(msg.Summaries)
 	case command.WriteBackRequestMsg:
-		cmd = command.WriteBackCmd(a.repository, a.ctx, a.character)
+		cmd = repository.WriteBackCmd(a.repository, a.ctx, a.character)
 	case command.CreateCharacterRequestMsg:
-		cmd = command.CreateCharacterCmd(a.repository, a.ctx, msg.Name)
-	case command.CreateCharacterMsg:
-		cmd = command.LoadSummariesCommand(a.repository, a.ctx)
+		cmd = repository.CreateCharacterCmd(a.repository, a.ctx, msg.Name)
+	case repository.CreateCharacterMsg:
+		cmd = repository.LoadSummariesCommand(a.repository, a.ctx)
 	case command.DeleteCharacterRequestMsg:
-		cmd = command.DeleteCharacterCmd(a.repository, a.ctx, msg.ID)
-	case command.DeleteCharacterMsg:
-		cmd = command.LoadSummariesCommand(a.repository, a.ctx)
-	case command.LoadCharacterMsg:
+		cmd = repository.DeleteCharacterCmd(a.repository, a.ctx, msg.ID)
+	case repository.DeleteCharacterMsg:
+		cmd = repository.LoadSummariesCommand(a.repository, a.ctx)
+	case repository.LoadCharacterMsg:
 		cmds := a.populateCharacterScreens(msg.Agg)
 		cmd = tea.Sequence(cmds, command.SwitchScreenCmd(command.StatScreenIndex))
 	case command.SelectCharacterMsg:
-		cmd = command.LoadCharacterCmd(a.repository, a.ctx, msg.ID)
+		cmd = repository.LoadCharacterCmd(a.repository, a.ctx, msg.ID)
 	case editor.EditValueMsg:
 		cmd = editor.SwitchToEditorCmd(msg.Editors)
 	case editor.SwitchToEditorMsg:
