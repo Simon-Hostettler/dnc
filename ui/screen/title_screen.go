@@ -1,10 +1,10 @@
 package screen
 
 import (
+	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/models"
-	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/list"
-	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/util"
 
 	"github.com/charmbracelet/bubbles/key"

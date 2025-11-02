@@ -7,12 +7,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/jmoiron/sqlx"
+	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/db"
 	"hostettler.dev/dnc/repository"
-	"hostettler.dev/dnc/ui/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/screen"
-	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/util"
 )
 

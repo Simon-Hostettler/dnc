@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"hostettler.dev/dnc/ui/command"
+	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/util"
 )

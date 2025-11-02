@@ -9,7 +9,7 @@ ______ _   _ _____
 
 [![Go](https://github.com/Simon-Hostettler/dnc/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/Simon-Hostettler/dnc/actions/workflows/go.yml)
 
-A small terminal-based TTRPG character manager built with Bubble Tea, Lip Gloss and DuckDB. It provides a TUI to create and edit various character data (stats, spells, items, etc.).
+A terminal-based TTRPG character manager built with Bubble Tea, Lip Gloss and DuckDB. It provides a TUI to create and edit various character data (stats, spells, items, etc.).
 
 ![demo](examples/demo.gif)
 
@@ -20,6 +20,7 @@ This repository is organized as a single Go module (`hostettler.dev/dnc`) with t
 ```
 ├── LICENSE
 ├── README.md     // <-- You are here
+├── command       // generic cross-package tea commands
 ├── db            // Driver for DuckDB, migration logic + migrations
 ├── demo.tape     // vhs tape to produce demo gif
 ├── dncapp.go     // Main command handler & coordinator, top-level bubble tea program
@@ -31,6 +32,8 @@ This repository is organized as a single Go module (`hostettler.dev/dnc`) with t
 ├── ui            // Screens, editors, other tea models
 └── util          // Configs & small utilities
 ```
+
+To avoid convoluted dependencies, `command`, `util` and `db` are not allowed to have internal dependencies. `repository` can only depend on `models` and `util`. Only `dncapp.go` and packages in `ui` are allowed to import the others. Packages in `ui` should avoid depending on each other, except for `screen`, which brings them together.
 
 ## Quick start
 

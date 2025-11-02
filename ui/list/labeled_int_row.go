@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"hostettler.dev/dnc/ui/editor"
-	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/util"
 )
 

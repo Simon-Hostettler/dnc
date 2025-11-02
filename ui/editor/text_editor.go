@@ -5,8 +5,8 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"hostettler.dev/dnc/ui/command"
-	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/command"
+	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/util"
 )
 

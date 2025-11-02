@@ -2,7 +2,7 @@ package list
 
 import (
 	"github.com/charmbracelet/lipgloss"
-	styles "hostettler.dev/dnc/ui/util"
+	"hostettler.dev/dnc/ui/styles"
 )
 
 var LeftAlignedListStyle = ListStyles{
