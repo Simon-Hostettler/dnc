@@ -32,10 +32,13 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
                 max_hit_points, curr_hit_points, temp_hit_points,
                 hit_dice, used_hit_dice, death_save_successes, death_save_failures,
 				actions, bonus_actions, spell_slots, spell_slots_used,
-                spellcasting_ability, spell_save_dc, spell_attack_bonus
+                spellcasting_ability, spell_save_dc, spell_attack_bonus,
+				age, height, weight, eyes, skin, hair, appearance, backstory,
+				allies, personality, ideals, bonds, flaws
             ) VALUES (
                 ?,?,?,?,?,?,?,?,?,?,?,?,
-                ?,?,?,?,?,?,?,?,?,?,?
+                ?,?,?,?,?,?,?,?,?,?,?,?,
+				?,?,?,?,?,?,?,?,?,?,?,?
 			) RETURNING id`
 		row := tx.QueryRowxContext(ctx, query,
 			c.Name, c.ClassLevels, c.Race, c.Background, c.Alignment,
@@ -44,6 +47,8 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
 			c.HitDice, c.UsedHitDice, c.DeathSaveSuccesses, c.DeathSaveFailures,
 			c.Actions, c.BonusActions, c.SpellSlots, c.SpellSlotsUsed,
 			c.SpellcastingAbility, c.SpellSaveDC, c.SpellAttackBonus,
+			c.Age, c.Height, c.Weight, c.Eyes, c.Skin, c.Hair, c.Appearance, c.Backstory,
+			c.Allies, c.Personality, c.Ideals, c.Bonds, c.Flaws,
 		)
 		if err := row.Scan(&newID); err != nil {
 			return err
@@ -80,6 +85,11 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
 				return err
 			}
 		}
+		if len(agg.Features) > 0 {
+			if err := replaceFeatures(ctx, tx, newID, agg.Features); err != nil {
+				return err
+			}
+		}
 		skills := util.Map(agg.Skills, func(s models.CharacterSkillDetailTO) models.CharacterSkillTO { return s.ToCharacterSkillTO() })
 		if len(skills) > 0 {
 			if err := replaceSkills(ctx, tx, newID, skills); err != nil {
@@ -103,6 +113,7 @@ func (r *DBCharacterRepository) CreateEmpty(ctx context.Context, name string) (u
 		Spells:       []models.SpellTO{},
 		Attacks:      []models.AttackTO{},
 		Skills:       []models.CharacterSkillDetailTO{},
+		Features:     []models.FeatureTO{},
 	}
 	newID, err := r.Create(ctx, &agg)
 	if err != nil {
@@ -234,6 +245,8 @@ func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggreg
 				hit_dice=?, used_hit_dice=?, death_save_successes=?, death_save_failures=?,
 				actions=?, bonus_actions=?, spell_slots=?, spell_slots_used=?,
 				spellcasting_ability=?, spell_save_dc=?, spell_attack_bonus=?,
+				age=?, height=?, weight=?, eyes=?, skin=?, hair=?, appearance=?,
+				backstory=?, allies=?, personality=?, ideals=?, bonds=?, flaws=?,
 				updated_at = current_timestamp
 			WHERE id=?
 		`
@@ -244,6 +257,8 @@ func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggreg
 			c.HitDice, c.UsedHitDice, c.DeathSaveSuccesses, c.DeathSaveFailures,
 			c.Actions, c.BonusActions, c.SpellSlots, c.SpellSlotsUsed,
 			c.SpellcastingAbility, c.SpellSaveDC, c.SpellAttackBonus,
+			c.Age, c.Height, c.Weight, c.Eyes, c.Skin, c.Hair, c.Appearance, c.Backstory,
+			c.Allies, c.Personality, c.Ideals, c.Bonds, c.Flaws,
 			c.ID,
 		); err != nil {
 			return err
@@ -268,6 +283,9 @@ func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggreg
 			return err
 		}
 		if err := replaceAttacks(ctx, tx, id, agg.Attacks); err != nil {
+			return err
+		}
+		if err := replaceFeatures(ctx, tx, id, agg.Features); err != nil {
 			return err
 		}
 		skills := util.Map(agg.Skills, func(s models.CharacterSkillDetailTO) models.CharacterSkillTO { return s.ToCharacterSkillTO() })
@@ -400,6 +418,24 @@ func replaceAttacks(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, atk
 	return nil
 }
 
+func replaceFeatures(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, features []models.FeatureTO) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM features WHERE character_id=?`, characterID); err != nil {
+		return err
+	}
+	for _, f := range features {
+		if f.ID == uuid.Nil {
+			f.ID = uuid.New()
+		}
+		if _, err := tx.ExecContext(ctx, `
+            INSERT INTO features (id, character_id, name, description)
+            VALUES (?,?,?,?)
+        `, f.ID, characterID, f.Name, f.Description); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func replaceSkills(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, skills []models.CharacterSkillTO) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM character_skill WHERE character_id=?`, characterID); err != nil {
 		return err
@@ -473,6 +509,14 @@ func listAttacks(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]m
 		return nil, err
 	}
 	return atks, nil
+}
+
+func listFeatures(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]models.FeatureTO, error) {
+	var features []models.FeatureTO
+	if err := sqlx.SelectContext(ctx, db, &features, `SELECT * FROM features WHERE character_id=? ORDER BY name ASC`, id); err != nil {
+		return nil, err
+	}
+	return features, nil
 }
 
 func (r *DBCharacterRepository) ListSkillDefinitions(ctx context.Context) ([]models.SkillDefinitionTO, error) {

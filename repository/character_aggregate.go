@@ -15,6 +15,7 @@ type CharacterAggregate struct {
 	Spells       []models.SpellTO
 	Attacks      []models.AttackTO
 	Skills       []models.CharacterSkillDetailTO
+	Features     []models.FeatureTO
 }
 
 // Helper methods - Modify TOs not database, changes have to be written back (See command.WriteBackRequest)
