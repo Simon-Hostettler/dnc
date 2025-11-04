@@ -175,6 +175,11 @@ func (r *DBCharacterRepository) GetByID(ctx context.Context, id uuid.UUID) (*Cha
 	} else {
 		agg.Attacks = atks
 	}
+	if feats, err := listFeatures(ctx, r.db, id); err != nil {
+		return nil, err
+	} else {
+		agg.Features = feats
+	}
 	if skills, err := r.ListSkillDetailsByCharacter(ctx, id); err != nil {
 		return nil, err
 	} else {
@@ -373,9 +378,9 @@ func replaceItems(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, items
 			it.ID = uuid.New()
 		}
 		if _, err := tx.ExecContext(ctx, `
-            INSERT INTO item (id, character_id, name, equipped, attunement_slots, quantity)
-            VALUES (?,?,?,?,?,?)
-        `, it.ID, characterID, it.Name, it.Equipped, it.AttunementSlots, it.Quantity); err != nil {
+            INSERT INTO item (id, character_id, name, equipped, attunement_slots, quantity, description)
+            VALUES (?,?,?,?,?,?,?)
+        `, it.ID, characterID, it.Name, it.Equipped, it.AttunementSlots, it.Quantity, it.Description); err != nil {
 			return err
 		}
 	}
