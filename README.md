@@ -8,10 +8,32 @@ ______ _   _ _____
 ```
 
 [![Go](https://github.com/Simon-Hostettler/dnc/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/Simon-Hostettler/dnc/actions/workflows/go.yml)
+![Latest Semver](https://img.shields.io/github/v/tag/Simon-Hostettler/dnc?label=version&sort=semver)
 
 A terminal-based TTRPG character manager built with Bubble Tea, Lip Gloss and DuckDB. It provides a TUI to create and edit various character data (stats, spells, items, etc.).
 
 ![demo](examples/demo.gif)
+
+## Quick start
+
+Requirements
+
+- Go (recommended 1.25+)
+- A terminal that supports alternate screen and UTF-8
+
+Install and build the binary:
+
+```bash
+go install hostettler.dev/dnc@v0.1.0
+```
+
+If you can't run the bin, add the output of the following command to your `$PATH`:
+
+```bash
+go env GOBIN GOPATH
+```
+
+You can modify the key bindings stored at `os.UserConfigDir()/dnc/config.json`. Defaults can be found in `util.DefaultKeyMap()` or by pressing `ctrl+h`.
 
 ## Code layout
 
@@ -34,26 +56,6 @@ This repository is organized as a single Go module (`hostettler.dev/dnc`) with t
 ```
 
 To avoid convoluted dependencies, `command`, `util` and `db` are not allowed to have internal dependencies. `repository` can only depend on `models`, `db` and `util`. Only `dncapp.go` and packages in `ui` are allowed to import the others. Packages in `ui` should avoid depending on each other, except for `screen`, which brings them together.
-
-## Quick start
-
-Requirements
-
-- Go (recommended 1.25+)
-- A terminal that supports alternate screen and UTF-8
-
-Run from the project root:
-
-```bash
-# run directly
-go run .
-
-# or build and execute
-go build -o dnc .
-./dnc
-```
-
-You can modify the keymap stored at `os.UserConfigDir()/dnc/config.json`. Defaults can be found in `util.DefaultKeyMap()`, but `ctrl+c` should get you out :)
 
 ## Data
 
