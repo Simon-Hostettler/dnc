@@ -40,6 +40,7 @@ Enter
 Sleep 2
 Left
 Down
+Down
 Sleep 1
 Enter
 Sleep 1
