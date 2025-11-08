@@ -135,13 +135,18 @@ func (m *TitleScreen) View() string {
 		inputField = "\n" + m.nameInput.View()
 	}
 
+	helperNotice := styles.GrayTextStyle.Render(
+		"Press '" + m.KeyMap.ShowKeymap.Keys()[0] + "' to show key bindings",
+	)
+
 	return lipgloss.JoinVertical(lipgloss.Center,
 		logo,
 		styles.DefaultBorderStyle.
 			Width(titleScreenWidth).
 			Height(titleScreenHeight).
 			Render(lipgloss.PlaceVertical(titleScreenHeight, lipgloss.Center,
-				lipgloss.JoinVertical(lipgloss.Center, createField, inputField, separator, chars))))
+				lipgloss.JoinVertical(lipgloss.Center, createField, inputField, separator, chars))),
+		helperNotice)
 }
 
 // to fulfill FocusableModel interface

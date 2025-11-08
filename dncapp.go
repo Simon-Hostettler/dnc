@@ -29,12 +29,13 @@ type DnCApp struct {
 	cleanup    func()
 	repository repository.CharacterRepository
 
-	selectedTab     *screen.ScreenTab
-	isScreenFocused bool
-	statTab         *screen.ScreenTab
-	profileTab      *screen.ScreenTab
-	spellTab        *screen.ScreenTab
-	inventoryTab    *screen.ScreenTab
+	selectedTab            *screen.ScreenTab
+	isScreenFocused        bool
+	isCharacterInitialized bool
+	statTab                *screen.ScreenTab
+	profileTab             *screen.ScreenTab
+	spellTab               *screen.ScreenTab
+	inventoryTab           *screen.ScreenTab
 
 	character          *repository.CharacterAggregate
 	curScreenIdx       command.ScreenIndex
@@ -100,6 +101,8 @@ func (a *DnCApp) Init() tea.Cmd {
 	cmds := []tea.Cmd{}
 
 	a.selectedTab = a.statTab
+	a.curScreenIdx = command.TitleScreenIndex
+	a.prevScreenIdx = command.TitleScreenIndex
 
 	if a.titleScreen != nil {
 		cmds = append(cmds, a.titleScreen.Init())
@@ -128,23 +131,35 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if key.Matches(msg, a.keymap.ForceQuit) {
+		switch {
+		case key.Matches(msg, a.keymap.ForceQuit):
 			return a, tea.Quit
-		}
-		if a.isScreenFocused {
-			_, cmd = a.screenInView.Update(msg)
-		} else {
-			switch {
-			case key.Matches(msg, a.keymap.Down):
-				a.moveTab(command.DownDirection)
-			case key.Matches(msg, a.keymap.Up):
-				a.moveTab(command.UpDirection)
-			case key.Matches(msg, a.keymap.Right):
-				a.isScreenFocused = true
-				a.screenInView.Focus()
-				a.selectedTab.Blur()
-			default:
-				_, cmd = a.selectedTab.Update(msg)
+		case key.Matches(msg, a.keymap.Screen1):
+			cmd = command.SwitchScreenCmd(command.StatScreenIndex)
+		case key.Matches(msg, a.keymap.Screen2):
+			cmd = command.SwitchScreenCmd(command.ProfileScreenIndex)
+		case key.Matches(msg, a.keymap.Screen3):
+			cmd = command.SwitchScreenCmd(command.SpellScreenIndex)
+		case key.Matches(msg, a.keymap.Screen4):
+			cmd = command.SwitchScreenCmd(command.InventoryScreenIndex)
+		case key.Matches(msg, a.keymap.ShowKeymap):
+			cmd = command.LaunchReaderScreenCmd(a.renderKeymap())
+		default:
+			if a.isScreenFocused {
+				_, cmd = a.screenInView.Update(msg)
+			} else {
+				switch {
+				case key.Matches(msg, a.keymap.Down):
+					a.moveTab(command.DownDirection)
+				case key.Matches(msg, a.keymap.Up):
+					a.moveTab(command.UpDirection)
+				case key.Matches(msg, a.keymap.Right):
+					a.isScreenFocused = true
+					a.screenInView.Focus()
+					a.selectedTab.Blur()
+				default:
+					_, cmd = a.selectedTab.Update(msg)
+				}
 			}
 		}
 	case tea.WindowSizeMsg:
@@ -238,6 +253,8 @@ func (a *DnCApp) populateCharacterScreens(agg *repository.CharacterAggregate) te
 	a.inventoryScreen = screen.NewInventoryScreen(a.keymap, agg)
 	cmds = append(cmds, a.inventoryScreen.Init())
 
+	a.isCharacterInitialized = true
+
 	cmds = util.DropNil(cmds)
 	if len(cmds) > 0 {
 		return tea.Batch(cmds...)
@@ -253,23 +270,30 @@ func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 	}
 	a.prevScreenIdx = a.curScreenIdx
 	switch idx {
-	case command.StatScreenIndex:
-		a.screenInView = a.statScreen
 	case command.EditScreenIndex:
 		a.screenInView = a.editorScreen
 	case command.TitleScreenIndex:
 		a.screenInView = a.titleScreen
-	case command.SpellScreenIndex:
-		a.screenInView = a.spellScreen
-	case command.ConfirmationScreenIndex:
-		a.screenInView = a.confirmationScreen
-	case command.InventoryScreenIndex:
-		a.screenInView = a.inventoryScreen
 	case command.ReaderScreenIndex:
 		a.screenInView = a.readerScreen
-	case command.ProfileScreenIndex:
-		a.screenInView = a.profileScreen
 	}
+	if a.isCharacterInitialized {
+		switch idx {
+		case command.StatScreenIndex:
+			a.screenInView = a.statScreen
+		case command.SpellScreenIndex:
+			a.screenInView = a.spellScreen
+		case command.ConfirmationScreenIndex:
+			a.screenInView = a.confirmationScreen
+		case command.InventoryScreenIndex:
+			a.screenInView = a.inventoryScreen
+		case command.ProfileScreenIndex:
+			a.screenInView = a.profileScreen
+		}
+	} else {
+		idx = a.curScreenIdx
+	}
+
 	a.curScreenIdx = idx
 	a.screenInView.Focus()
 }
@@ -316,4 +340,15 @@ func (a *DnCApp) Blur() {
 	a.profileTab.Blur()
 	a.spellTab.Blur()
 	a.inventoryTab.Blur()
+}
+
+func (a *DnCApp) renderKeymap() string {
+	return lipgloss.Place(
+		styles.SmallScreenWidth,
+		screen.ReaderHeight,
+		lipgloss.Center,
+		lipgloss.Center,
+		styles.DefaultTextStyle.
+			Render(util.PrettyPrintKeymap(a.keymap)),
+	)
 }

@@ -9,7 +9,7 @@ import (
 	"hostettler.dev/dnc/util"
 )
 
-var readerHeight = 30
+var ReaderHeight = 30
 
 type ReaderScreen struct {
 	keymap   util.KeyMap
@@ -19,7 +19,7 @@ type ReaderScreen struct {
 func NewReaderScreen(keymap util.KeyMap) *ReaderScreen {
 	return &ReaderScreen{
 		keymap,
-		viewport.NewViewport(keymap, readerHeight, styles.SmallScreenWidth-2),
+		viewport.NewViewport(keymap, ReaderHeight, styles.SmallScreenWidth-2),
 	}
 }
 
@@ -50,7 +50,7 @@ func (s *ReaderScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *ReaderScreen) View() string {
 	return styles.DefaultBorderStyle.
 		Width(styles.SmallScreenWidth + 2).
-		Height(readerHeight).
+		Height(ReaderHeight).
 		Render(s.viewport.View())
 }
 

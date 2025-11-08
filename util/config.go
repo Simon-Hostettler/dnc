@@ -3,6 +3,7 @@ package util
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -116,32 +117,42 @@ func GetConfig(cfgDir string, demo bool) (Config, func(), error) {
 }
 
 type KeyMap struct {
-	Up        key.Binding `json:"up"`
-	Down      key.Binding `json:"down"`
-	Left      key.Binding `json:"left"`
-	Right     key.Binding `json:"right"`
-	Select    key.Binding `json:"select"`
-	Edit      key.Binding `json:"edit"`
-	Enter     key.Binding `json:"enter"`
-	Escape    key.Binding `json:"escape"`
-	Delete    key.Binding `json:"delete"`
-	ForceQuit key.Binding `json:"force_quit"`
-	Show      key.Binding `json:"show"`
+	Up         key.Binding `json:"up"`
+	Down       key.Binding `json:"down"`
+	Left       key.Binding `json:"left"`
+	Right      key.Binding `json:"right"`
+	Select     key.Binding `json:"select"`
+	Edit       key.Binding `json:"edit"`
+	Enter      key.Binding `json:"enter"`
+	Escape     key.Binding `json:"escape"`
+	Delete     key.Binding `json:"delete"`
+	ForceQuit  key.Binding `json:"force_quit"`
+	Show       key.Binding `json:"show"`
+	Screen1    key.Binding `json:"screen1"`
+	Screen2    key.Binding `json:"screen2"`
+	Screen3    key.Binding `json:"screen3"`
+	Screen4    key.Binding `json:"screen4"`
+	ShowKeymap key.Binding `json:"show_keymap"`
 }
 
 func DefaultKeyMap() KeyMap {
 	return KeyMap{
-		Up:        key.NewBinding(key.WithKeys("up")),
-		Down:      key.NewBinding(key.WithKeys("down")),
-		Left:      key.NewBinding(key.WithKeys("left")),
-		Right:     key.NewBinding(key.WithKeys("right")),
-		Select:    key.NewBinding(key.WithKeys(" ", "enter")),
-		Edit:      key.NewBinding(key.WithKeys("e")),
-		Enter:     key.NewBinding(key.WithKeys("enter")),
-		Escape:    key.NewBinding(key.WithKeys("esc", "q")),
-		Delete:    key.NewBinding(key.WithKeys("x", "del")),
-		ForceQuit: key.NewBinding(key.WithKeys("ctrl+c")),
-		Show:      key.NewBinding(key.WithKeys(" ")),
+		Up:         key.NewBinding(key.WithKeys("up")),
+		Down:       key.NewBinding(key.WithKeys("down")),
+		Left:       key.NewBinding(key.WithKeys("left")),
+		Right:      key.NewBinding(key.WithKeys("right")),
+		Select:     key.NewBinding(key.WithKeys(" ", "enter")),
+		Edit:       key.NewBinding(key.WithKeys("e")),
+		Enter:      key.NewBinding(key.WithKeys("enter")),
+		Escape:     key.NewBinding(key.WithKeys("esc", "q")),
+		Delete:     key.NewBinding(key.WithKeys("x", "del")),
+		ForceQuit:  key.NewBinding(key.WithKeys("ctrl+c")),
+		Show:       key.NewBinding(key.WithKeys(" ")),
+		Screen1:    key.NewBinding(key.WithKeys("ctrl+a")),
+		Screen2:    key.NewBinding(key.WithKeys("ctrl+s")),
+		Screen3:    key.NewBinding(key.WithKeys("ctrl+d")),
+		Screen4:    key.NewBinding(key.WithKeys("ctrl+f")),
+		ShowKeymap: key.NewBinding(key.WithKeys("ctrl+h")),
 	}
 }
 
@@ -207,4 +218,28 @@ func (km *KeyMap) UnmarshalJSON(data []byte) error {
 		}
 	}
 	return nil
+}
+
+func PrettyPrintKeymap(k KeyMap) string {
+	var lines []string
+	val := reflect.ValueOf(k)
+	typ := val.Type()
+	keyBindingType := reflect.TypeOf(key.Binding{})
+
+	for i := 0; i < typ.NumField(); i++ {
+		sf := typ.Field(i)
+		if sf.Type != keyBindingType {
+			continue
+		}
+		name := sf.Name
+		b := val.Field(i).Interface().(key.Binding)
+		keys := b.Keys()
+		if len(keys) == 0 {
+			lines = append(lines, fmt.Sprintf("%-13s", name+":")+"(none)")
+		} else {
+			lines = append(lines, fmt.Sprintf("%-13s", name+":")+"'"+strings.Join(keys, "' '")+"'")
+		}
+	}
+
+	return strings.Join(lines, "\n")
 }
