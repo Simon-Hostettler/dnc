@@ -19,22 +19,20 @@ import (
 )
 
 var (
-	TopBarHeight = 6
+	statTopBarHeight = 6
 
-	TopSeparatorWidth = 20
+	statColHeight    = 25
+	statLeftColWidth = 30
+	statMidColWidth  = 28
 
-	ColHeight    = 25
-	LeftColWidth = 30
-	MidColWidth  = 28
+	statRightColWidth     = 38
+	statRightContentWidth = statRightColWidth - 6
 
-	RightColWidth     = 38
-	RightContentWidth = RightColWidth - 6
-
-	LongColWidth   = 20
-	ColWidth       = 16
-	MediumColWidth = 12
-	ShortColWidth  = 8
-	TinyColWidth   = 3
+	statLongColWidth   = 20
+	statColWidth       = 16
+	statMediumColWidth = 12
+	statShortColWidth  = 8
+	statTinyColWidth   = 3
 )
 
 type StatScreen struct {
@@ -271,10 +269,10 @@ func (s *StatScreen) View() string {
 
 	abilities := s.abilities.View()
 
-	topBarSeparator := styles.MakeVerticalSeparator(TopBarHeight)
+	topBarSeparator := styles.MakeVerticalSeparator(statTopBarHeight)
 
 	topBar := styles.DefaultBorderStyle.
-		Height(TopBarHeight).
+		Height(statTopBarHeight).
 		Width(styles.ScreenWidth).
 		Render(lipgloss.JoinHorizontal(lipgloss.Center,
 			characterInfo,
@@ -282,30 +280,30 @@ func (s *StatScreen) View() string {
 			abilities))
 
 	leftColumn := styles.DefaultBorderStyle.
-		Height(ColHeight).
-		Width(LeftColWidth).
+		Height(statColHeight).
+		Width(statLeftColWidth).
 		Render(s.skills.View())
 
 	savingThrows := s.savingThrows.View()
 
 	combatInfo := s.combatInfo.View()
 
-	midBoxInnerSeparator := styles.MakeHorizontalSeparator(MidColWidth-4, 1)
+	midBoxInnerSeparator := styles.MakeHorizontalSeparator(statMidColWidth-4, 1)
 
 	midColumn := styles.DefaultBorderStyle.
-		Width(MidColWidth).
-		Height(ColHeight).
+		Width(statMidColWidth).
+		Height(statColHeight).
 		Render(lipgloss.JoinVertical(lipgloss.Center, combatInfo, midBoxInnerSeparator, savingThrows))
 
 	actions := s.RenderActions()
 
 	attacks := s.attacks.View()
 
-	rightBoxInnerSeparator := styles.MakeHorizontalSeparator(RightContentWidth, 1)
+	rightBoxInnerSeparator := styles.MakeHorizontalSeparator(statRightContentWidth, 1)
 
 	rightColumn := styles.DefaultBorderStyle.
-		Width(RightColWidth).
-		Height(ColHeight).
+		Width(statRightColWidth).
+		Height(statColHeight).
 		Render(lipgloss.JoinVertical(lipgloss.Center, actions, rightBoxInnerSeparator, attacks))
 
 	body := lipgloss.JoinHorizontal(lipgloss.Left, leftColumn, midColumn, rightColumn)
@@ -315,18 +313,18 @@ func (s *StatScreen) View() string {
 
 func (s *StatScreen) RenderActions() string {
 	actionTitle := styles.RenderItem(s.actions.InFocus(), "Actions") + "\n"
-	actionBody := styles.DefaultTextStyle.Width(RightContentWidth).Render(s.actions.View())
+	actionBody := styles.DefaultTextStyle.Width(statRightContentWidth).Render(s.actions.View())
 
-	separator := styles.MakeHorizontalSeparator(RightContentWidth, 1)
+	separator := styles.MakeHorizontalSeparator(statRightContentWidth, 1)
 
 	bonusActionTitle := styles.RenderItem(s.bonusActions.InFocus(), "Bonus Actions") + "\n"
-	bonusActionBody := styles.DefaultTextStyle.Width(RightContentWidth).Render(s.bonusActions.View())
+	bonusActionBody := styles.DefaultTextStyle.Width(statRightContentWidth).Render(s.bonusActions.View())
 
 	return lipgloss.JoinVertical(lipgloss.Center, actionTitle, actionBody, separator, bonusActionTitle, bonusActionBody)
 }
 
 func (s *StatScreen) CreateCharacterInfoRows() {
-	rowCfg := list.LabeledStringRowConfig{JustifyValue: false, LabelWidth: LongColWidth, ValueWidth: 0}
+	rowCfg := list.LabeledStringRowConfig{JustifyValue: false, LabelWidth: statLongColWidth, ValueWidth: 0}
 	rows := []list.Row{
 		list.NewLabeledStringRow(s.keymap, "Name:", &s.agg.Character.Name,
 			editor.NewStringEditor(s.keymap, "Name", &s.agg.Character.Name)).WithConfig(rowCfg),
@@ -340,7 +338,7 @@ func (s *StatScreen) CreateCharacterInfoRows() {
 			editor.NewIntEditor(s.keymap, "Proficiency Bonus", &s.agg.Character.ProficiencyBonus)).
 			WithConfig(list.LabeledIntRowConfig{
 				ValuePrinter: styles.WithSign,
-				JustifyValue: false, LabelWidth: LongColWidth, ValueWidth: 0,
+				JustifyValue: false, LabelWidth: statLongColWidth, ValueWidth: 0,
 			}),
 	}
 	s.characterInfo.WithRows(rows)
@@ -350,7 +348,7 @@ func (s *StatScreen) CreateAbilityRows() {
 	scorePrinter := func(score int) string {
 		return fmt.Sprintf("%3s  ( %+d )", strconv.Itoa(score), models.ToModifier(score, 0, 0))
 	}
-	rowCfg := list.LabeledIntRowConfig{ValuePrinter: scorePrinter, JustifyValue: true, LabelWidth: ColWidth, ValueWidth: ShortColWidth}
+	rowCfg := list.LabeledIntRowConfig{ValuePrinter: scorePrinter, JustifyValue: true, LabelWidth: statColWidth, ValueWidth: statShortColWidth}
 	newAbilityRow := func(field *int, name string) list.Row {
 		return list.NewLabeledIntRow(s.keymap, name+":", field,
 			editor.NewIntEditor(s.keymap, name, field)).WithConfig(rowCfg)
@@ -369,11 +367,11 @@ func (s *StatScreen) CreateAbilityRows() {
 func (s *StatScreen) CreateCombatInfoRows() {
 	standardCfg := list.LabeledIntRowConfig{
 		ValuePrinter: strconv.Itoa, JustifyValue: true,
-		LabelWidth: ColWidth, ValueWidth: TinyColWidth,
+		LabelWidth: statColWidth, ValueWidth: statTinyColWidth,
 	}
 	dsConfig := list.LabeledIntRowConfig{
 		ValuePrinter: styles.PrettyDeathSaves, JustifyValue: true,
-		LabelWidth: ColWidth, ValueWidth: TinyColWidth,
+		LabelWidth: statColWidth, ValueWidth: statTinyColWidth,
 	}
 	rows := []list.Row{
 		list.NewLabeledIntRow(s.keymap, "AC", &s.agg.Character.ArmorClass,
@@ -382,7 +380,7 @@ func (s *StatScreen) CreateCombatInfoRows() {
 			editor.NewIntEditor(s.keymap, "Initiative", &s.agg.Character.Initiative)).
 			WithConfig(list.LabeledIntRowConfig{
 				ValuePrinter: func(i int) string { return fmt.Sprintf("%+d", i) },
-				JustifyValue: true, LabelWidth: ColWidth, ValueWidth: TinyColWidth,
+				JustifyValue: true, LabelWidth: statColWidth, ValueWidth: statTinyColWidth,
 			}),
 		list.NewLabeledIntRow(s.keymap, "Speed", &s.agg.Character.Speed,
 			editor.NewIntEditor(s.keymap, "Speed", &s.agg.Character.Speed)).WithConfig(standardCfg),
@@ -413,11 +411,19 @@ func (s *StatScreen) CreateAttackRows() {
 			editor.NewIntEditor(s.keymap, "Bonus", &a.Bonus),
 			editor.NewStringEditor(s.keymap, "Damage", &a.Damage),
 			editor.NewStringEditor(s.keymap, "Damage Type", &a.DamageType),
-		})
+		}).WithDestructor(s.deleteAttackCallback(a))
 		rows = append(rows, row)
 	}
 	rows = append(rows, list.NewAppenderRow(s.keymap, "attack"))
 	s.attacks.WithRows(rows)
+}
+
+func (s *StatScreen) deleteAttackCallback(a *models.AttackTO) func() tea.Cmd {
+	return func() tea.Cmd {
+		s.agg.DeleteAttack(a.ID)
+		s.CreateAttackRows()
+		return command.WriteBackRequest
+	}
 }
 
 func (s *StatScreen) getAttackRow(id uuid.UUID) list.Row {
@@ -472,7 +478,7 @@ type HPInfo struct {
 }
 
 func renderHPInfoRow(hp *HPInfo) string {
-	return styles.RenderEdgeBound(ColWidth-4, 7, "HP", strconv.Itoa(*hp.current)+"/"+strconv.Itoa(*hp.max))
+	return styles.RenderEdgeBound(statColWidth-4, 7, "HP", strconv.Itoa(*hp.current)+"/"+strconv.Itoa(*hp.max))
 }
 
 type HitDiceInfo struct {
@@ -481,7 +487,7 @@ type HitDiceInfo struct {
 }
 
 func renderHitDiceInfoRow(hd *HitDiceInfo) string {
-	return styles.RenderEdgeBound(ShortColWidth, MediumColWidth, "Hit Dice", *hd.current+"/"+*hd.max)
+	return styles.RenderEdgeBound(statShortColWidth, statMediumColWidth, "Hit Dice", *hd.current+"/"+*hd.max)
 }
 
 type SavingThrowInfo struct {
@@ -498,7 +504,7 @@ func renderSavingThrowInfoRow(a *models.AbilitiesTO, profBonus int) func(*Saving
 			profBonus)
 
 		bullet := proficiency.ToSymbol()
-		return styles.RenderEdgeBound(LongColWidth, TinyColWidth, bullet+" "+s.ability, fmt.Sprintf("%+d", mod))
+		return styles.RenderEdgeBound(statLongColWidth, statTinyColWidth, bullet+" "+s.ability, fmt.Sprintf("%+d", mod))
 	}
 }
 
@@ -515,7 +521,7 @@ func renderSkillInfoRow(s *SkillInfo) string {
 		proficiency,
 		*s.profBonus) + s.skill.CustomModifier
 	bullet := proficiency.ToSymbol()
-	return styles.RenderEdgeBound(LongColWidth, TinyColWidth, bullet+" "+s.skill.SkillName, fmt.Sprintf("%+d", mod))
+	return styles.RenderEdgeBound(statLongColWidth, statTinyColWidth, bullet+" "+s.skill.SkillName, fmt.Sprintf("%+d", mod))
 }
 
 func RenderAttack(a *models.AttackTO) string {

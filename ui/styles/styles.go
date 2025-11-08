@@ -94,6 +94,27 @@ func RenderItem(selected bool, item string) string {
 	}
 }
 
+func RenderTextBox(text string, width int, height int) string {
+	widthAdjusted := DefaultTextStyle.Width(width).Render(text)
+	lines := strings.Split(widthAdjusted, "\n")
+
+	if len(lines) > height {
+		visible := lines[:height]
+
+		last := visible[len(visible)-1]
+		runes := []rune(last)
+		if len(runes) > 3 {
+			last = string(runes[:len(runes)-3]) + "..."
+		} else {
+			last = "..."
+		}
+		visible[len(visible)-1] = last
+		lines = visible
+	}
+	textBox := strings.Join(lines, "\n")
+	return textBox
+}
+
 func MakeVerticalSeparator(height int) string {
 	bars := make([]string, height)
 	for i := range bars {

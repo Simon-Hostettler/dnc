@@ -12,7 +12,6 @@ type CharacterTO struct {
 	Name                string    `db:"name"`
 	ClassLevels         string    `db:"class_levels"`
 	Race                string    `db:"race"`
-	Background          string    `db:"background"`
 	Alignment           string    `db:"alignment"`
 	ProficiencyBonus    int       `db:"proficiency_bonus"`
 	ArmorClass          int       `db:"armor_class"`
@@ -32,6 +31,15 @@ type CharacterTO struct {
 	SpellcastingAbility string    `db:"spellcasting_ability"`
 	SpellSaveDC         int       `db:"spell_save_dc"`
 	SpellAttackBonus    int       `db:"spell_attack_bonus"`
+	Age                 int       `db:"age"`
+	Height              string    `db:"height"`
+	Weight              string    `db:"weight"`
+	Eyes                string    `db:"eyes"`
+	Skin                string    `db:"skin"`
+	Hair                string    `db:"hair"`
+	Appearance          string    `db:"appearance"`
+	Backstory           string    `db:"backstory"`
+	Personality         string    `db:"personality"`
 	CreatedAt           time.Time `db:"created_at"`
 	UpdatedAt           time.Time `db:"updated_at"`
 }
@@ -146,4 +154,14 @@ type CharacterSkillDetailTO struct {
 	SkillAbility   string    `db:"skill_ability"`
 	CreatedAt      time.Time `db:"created_at"`
 	UpdatedAt      time.Time `db:"updated_at"`
+}
+
+// CharacterSkillTO maps to the `features` table.
+type FeatureTO struct {
+	ID          uuid.UUID `db:"id"`
+	CharacterID uuid.UUID `db:"character_id"`
+	Name        string    `db:"name"`
+	Description string    `db:"description"`
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
 }

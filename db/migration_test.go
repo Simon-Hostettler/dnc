@@ -1,41 +1,13 @@
 package db
 
 import (
-	"fmt"
-	"os"
 	"strings"
 	"testing"
-
-	"github.com/jmoiron/sqlx"
 )
 
-var testDBPath = fmt.Sprintf("%s/dnc_test.db", os.TempDir())
-
-func testDBInstance() (*sqlx.DB, error) {
-	if _, err := os.Stat(testDBPath); err == nil {
-		if err = os.Remove(testDBPath); err != nil {
-			return nil, err
-		}
-	}
-	if handle, err := Open(testDBPath); err != nil {
-		return nil, err
-	} else {
-		return handle, nil
-	}
-}
-
-func destroyTestDB(db *sqlx.DB) error {
-	if err := db.Close(); err != nil {
-		return err
-	}
-	if err := os.Remove(testDBPath); err != nil {
-		return err
-	}
-	return nil
-}
-
 func TestEmptyMigrations(t *testing.T) {
-	handle, err := testDBInstance()
+	dbPath := TestDBPath()
+	handle, err := TestDBInstance(dbPath)
 	if err != nil {
 		t.Fatalf("Could not create test DB: %s", err.Error())
 	}
@@ -45,7 +17,7 @@ func TestEmptyMigrations(t *testing.T) {
 	if err := MigrateDown(handle); err != nil {
 		t.Errorf("Migrating down to initial DB failed: %s", err.Error())
 	}
-	if err := destroyTestDB(handle); err != nil {
+	if err := DestroyTestDB(handle, dbPath); err != nil {
 		t.Fatalf("Could not destroy test DB: %s", err.Error())
 	}
 }
