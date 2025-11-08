@@ -5,6 +5,8 @@
 -- also does not allow more than one statement per alter
 
 ALTER TABLE character
+DROP COLUMN background;
+ALTER TABLE character
 ADD COLUMN age INTEGER DEFAULT 0;
 ALTER TABLE character
 ADD COLUMN height TEXT DEFAULT '';
@@ -21,15 +23,7 @@ ADD COLUMN appearance TEXT DEFAULT '';
 ALTER TABLE character
 ADD COLUMN backstory TEXT DEFAULT '';
 ALTER TABLE character
-ADD COLUMN allies TEXT DEFAULT '';
-ALTER TABLE character
 ADD COLUMN personality TEXT DEFAULT '';
-ALTER TABLE character
-ADD COLUMN ideals TEXT DEFAULT '';
-ALTER TABLE character
-ADD COLUMN bonds TEXT DEFAULT '';
-ALTER TABLE character
-ADD COLUMN flaws TEXT DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS features (
     id UUID PRIMARY KEY DEFAULT uuid(),
@@ -43,6 +37,9 @@ CREATE TABLE IF NOT EXISTS features (
 -- +duckDown
 DROP TABLE IF EXISTS features;
 
+
+ALTER TABLE character
+ADD COLUMN background TEXT DEFAULT '';
 ALTER TABLE character
 DROP age;
 ALTER TABLE character
@@ -60,12 +57,4 @@ DROP appearance;
 ALTER TABLE character
 DROP backstory;
 ALTER TABLE character
-DROP allies;
-ALTER TABLE character
 DROP personality;
-ALTER TABLE character
-DROP ideals;
-ALTER TABLE character
-DROP bonds;
-ALTER TABLE character
-DROP flaws;

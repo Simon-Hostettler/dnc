@@ -27,28 +27,28 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
 		ensureSpellSlots(c)
 		query := `
             INSERT INTO character (
-                name, class_levels, race, background, alignment,
+                name, class_levels, race, alignment,
                 proficiency_bonus, armor_class, initiative, speed,
                 max_hit_points, curr_hit_points, temp_hit_points,
                 hit_dice, used_hit_dice, death_save_successes, death_save_failures,
 				actions, bonus_actions, spell_slots, spell_slots_used,
                 spellcasting_ability, spell_save_dc, spell_attack_bonus,
 				age, height, weight, eyes, skin, hair, appearance, backstory,
-				allies, personality, ideals, bonds, flaws
+				personality
             ) VALUES (
+                ?,?,?,?,?,?,?,?,?,?,?,
                 ?,?,?,?,?,?,?,?,?,?,?,?,
-                ?,?,?,?,?,?,?,?,?,?,?,?,
-				?,?,?,?,?,?,?,?,?,?,?,?
+				?,?,?,?,?,?,?,?
 			) RETURNING id`
 		row := tx.QueryRowxContext(ctx, query,
-			c.Name, c.ClassLevels, c.Race, c.Background, c.Alignment,
+			c.Name, c.ClassLevels, c.Race, c.Alignment,
 			c.ProficiencyBonus, c.ArmorClass, c.Initiative, c.Speed,
 			c.MaxHitPoints, c.CurrHitPoints, c.TempHitPoints,
 			c.HitDice, c.UsedHitDice, c.DeathSaveSuccesses, c.DeathSaveFailures,
 			c.Actions, c.BonusActions, c.SpellSlots, c.SpellSlotsUsed,
 			c.SpellcastingAbility, c.SpellSaveDC, c.SpellAttackBonus,
 			c.Age, c.Height, c.Weight, c.Eyes, c.Skin, c.Hair, c.Appearance, c.Backstory,
-			c.Allies, c.Personality, c.Ideals, c.Bonds, c.Flaws,
+			c.Personality,
 		)
 		if err := row.Scan(&newID); err != nil {
 			return err
@@ -244,26 +244,25 @@ func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggreg
 		ensureSpellSlots(c)
 		query := `
 			UPDATE character SET
-				name=?, class_levels=?, race=?, background=?, alignment=?,
+				name=?, class_levels=?, race=?, alignment=?,
 				proficiency_bonus=?, armor_class=?, initiative=?, speed=?,
 				max_hit_points=?, curr_hit_points=?, temp_hit_points=?,
 				hit_dice=?, used_hit_dice=?, death_save_successes=?, death_save_failures=?,
 				actions=?, bonus_actions=?, spell_slots=?, spell_slots_used=?,
 				spellcasting_ability=?, spell_save_dc=?, spell_attack_bonus=?,
 				age=?, height=?, weight=?, eyes=?, skin=?, hair=?, appearance=?,
-				backstory=?, allies=?, personality=?, ideals=?, bonds=?, flaws=?,
-				updated_at = current_timestamp
+				backstory=?, personality=?, updated_at = current_timestamp
 			WHERE id=?
 		`
 		if _, err := tx.ExecContext(ctx, query,
-			c.Name, c.ClassLevels, c.Race, c.Background, c.Alignment,
+			c.Name, c.ClassLevels, c.Race, c.Alignment,
 			c.ProficiencyBonus, c.ArmorClass, c.Initiative, c.Speed,
 			c.MaxHitPoints, c.CurrHitPoints, c.TempHitPoints,
 			c.HitDice, c.UsedHitDice, c.DeathSaveSuccesses, c.DeathSaveFailures,
 			c.Actions, c.BonusActions, c.SpellSlots, c.SpellSlotsUsed,
 			c.SpellcastingAbility, c.SpellSaveDC, c.SpellAttackBonus,
 			c.Age, c.Height, c.Weight, c.Eyes, c.Skin, c.Hair, c.Appearance, c.Backstory,
-			c.Allies, c.Personality, c.Ideals, c.Bonds, c.Flaws,
+			c.Personality,
 			c.ID,
 		); err != nil {
 			return err

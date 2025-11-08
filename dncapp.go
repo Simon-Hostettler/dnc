@@ -32,6 +32,7 @@ type DnCApp struct {
 	selectedTab     *screen.ScreenTab
 	isScreenFocused bool
 	statTab         *screen.ScreenTab
+	profileTab      *screen.ScreenTab
 	spellTab        *screen.ScreenTab
 	inventoryTab    *screen.ScreenTab
 
@@ -42,6 +43,7 @@ type DnCApp struct {
 	titleScreen        *screen.TitleScreen
 	editorScreen       *screen.EditorScreen
 	statScreen         *screen.StatScreen
+	profileScreen      *screen.ProfileScreen
 	spellScreen        *screen.SpellScreen
 	confirmationScreen *screen.ConfirmationScreen
 	inventoryScreen    *screen.InventoryScreen
@@ -70,6 +72,7 @@ func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
 		cleanup:            cleanup,
 		repository:         repository,
 		statTab:            screen.NewScreenTab(km, "Stats", command.StatScreenIndex, false),
+		profileTab:         screen.NewScreenTab(km, "Profile", command.ProfileScreenIndex, false),
 		spellTab:           screen.NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
 		inventoryTab:       screen.NewScreenTab(km, "Inventory", command.InventoryScreenIndex, false),
 		titleScreen:        screen.NewTitleScreen(km),
@@ -199,6 +202,7 @@ func (a *DnCApp) View() string {
 	if a.displayTabs() {
 		tabs := lipgloss.JoinVertical(lipgloss.Center,
 			a.statTab.View(),
+			a.profileTab.View(),
 			a.spellTab.View(),
 			a.inventoryTab.View(),
 		)
@@ -227,6 +231,8 @@ func (a *DnCApp) populateCharacterScreens(agg *repository.CharacterAggregate) te
 	a.character = agg
 	a.statScreen = screen.NewStatScreen(a.keymap, agg)
 	cmds = append(cmds, a.statScreen.Init())
+	a.profileScreen = screen.NewProfileScreen(a.keymap, agg)
+	cmds = append(cmds, a.profileScreen.Init())
 	a.spellScreen = screen.NewSpellScreen(a.keymap, agg)
 	cmds = append(cmds, a.spellScreen.Init())
 	a.inventoryScreen = screen.NewInventoryScreen(a.keymap, agg)
@@ -261,6 +267,8 @@ func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 		a.screenInView = a.inventoryScreen
 	case command.ReaderScreenIndex:
 		a.screenInView = a.readerScreen
+	case command.ProfileScreenIndex:
+		a.screenInView = a.profileScreen
 	}
 	a.curScreenIdx = idx
 	a.screenInView.Focus()
@@ -278,15 +286,21 @@ func (a *DnCApp) moveTab(d command.Direction) {
 	switch a.selectedTab {
 	case a.statTab:
 		if d == command.DownDirection {
+			a.selectedTab = a.profileTab
+		}
+	case a.profileTab:
+		switch d {
+		case command.UpDirection:
+			a.selectedTab = a.statTab
+		case command.DownDirection:
 			a.selectedTab = a.spellTab
 		}
 	case a.spellTab:
 		switch d {
 		case command.UpDirection:
-			a.selectedTab = a.statTab
+			a.selectedTab = a.profileTab
 		case command.DownDirection:
 			a.selectedTab = a.inventoryTab
-
 		}
 	case a.inventoryTab:
 		if d == command.UpDirection {
@@ -299,6 +313,7 @@ func (a *DnCApp) moveTab(d command.Direction) {
 
 func (a *DnCApp) Blur() {
 	a.statTab.Blur()
+	a.profileTab.Blur()
 	a.spellTab.Blur()
 	a.inventoryTab.Blur()
 }

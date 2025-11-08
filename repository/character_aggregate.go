@@ -38,6 +38,22 @@ func (c *CharacterAggregate) AddEmptySpell(l int) uuid.UUID {
 	return spell.ID
 }
 
+func (c *CharacterAggregate) AddEmptyFeature() uuid.UUID {
+	feat := models.FeatureTO{ID: uuid.New()}
+	c.Features = append(c.Features, feat)
+	return feat.ID
+}
+
+func (c *CharacterAggregate) DeleteAttack(id uuid.UUID) {
+	newAttacks := []models.AttackTO{}
+	for i := range c.Attacks {
+		if c.Attacks[i].ID != id {
+			newAttacks = append(newAttacks, c.Attacks[i])
+		}
+	}
+	c.Attacks = newAttacks
+}
+
 func (c *CharacterAggregate) DeleteItem(id uuid.UUID) {
 	newItems := []models.ItemTO{}
 	for i := range c.Items {
@@ -56,6 +72,16 @@ func (c *CharacterAggregate) DeleteSpell(id uuid.UUID) {
 		}
 	}
 	c.Spells = newSpells
+}
+
+func (c *CharacterAggregate) DeleteFeature(id uuid.UUID) {
+	newFeatures := []models.FeatureTO{}
+	for i := range c.Features {
+		if c.Features[i].ID != id {
+			newFeatures = append(newFeatures, c.Features[i])
+		}
+	}
+	c.Features = newFeatures
 }
 
 func (c *CharacterAggregate) GetSpellsByLevel(l int) []*models.SpellTO {

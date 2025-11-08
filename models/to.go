@@ -12,7 +12,6 @@ type CharacterTO struct {
 	Name                string    `db:"name"`
 	ClassLevels         string    `db:"class_levels"`
 	Race                string    `db:"race"`
-	Background          string    `db:"background"`
 	Alignment           string    `db:"alignment"`
 	ProficiencyBonus    int       `db:"proficiency_bonus"`
 	ArmorClass          int       `db:"armor_class"`
@@ -40,11 +39,7 @@ type CharacterTO struct {
 	Hair                string    `db:"hair"`
 	Appearance          string    `db:"appearance"`
 	Backstory           string    `db:"backstory"`
-	Allies              string    `db:"allies"`
 	Personality         string    `db:"personality"`
-	Ideals              string    `db:"ideals"`
-	Bonds               string    `db:"bonds"`
-	Flaws               string    `db:"flaws"`
 	CreatedAt           time.Time `db:"created_at"`
 	UpdatedAt           time.Time `db:"updated_at"`
 }
