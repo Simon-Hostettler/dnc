@@ -149,12 +149,12 @@ func ForceLineBreaks(s string, w int) string {
 	return b.String()
 }
 
-func PrettySpellSlots(used int, max int) string {
-	if max <= 0 {
+func PrettySpellSlots(used int, cap int) string {
+	if cap <= 0 {
 		return "∅"
 	}
 	s := strings.Repeat("■", used)
-	s += strings.Repeat("□", max-used)
+	s += strings.Repeat("□", max(0, cap-used))
 	return DefaultTextStyle.Render(s)
 }
 

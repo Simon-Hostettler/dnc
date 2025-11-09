@@ -37,12 +37,14 @@ func encode(f *os.File, v any) error {
 type Config struct {
 	KeyMap       KeyMap `json:"keymap"`
 	DatabasePath string `json:"database_path"`
+	Demo         bool   `json:"-"`
 }
 
 func DefaultConfig(cfgDir string) Config {
 	return Config{
 		KeyMap:       DefaultKeyMap(),
 		DatabasePath: filepath.Join(cfgDir, "dnc", "dnc.db"),
+		Demo:         false,
 	}
 }
 
@@ -100,7 +102,7 @@ func LoadDemoConfig(cfgDir string) (Config, func(), error) {
 		return Config{}, func() {}, err
 	}
 	cfg.DatabasePath = filepath.Join(tmp, "demo.db")
-	filepath.Join(tmp, "demo.db")
+	cfg.Demo = true
 	cleanup := func() {
 		_ = os.RemoveAll(tmp)
 	}

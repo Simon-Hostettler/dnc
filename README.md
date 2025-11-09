@@ -24,7 +24,7 @@ Requirements
 Install and build the binary:
 
 ```bash
-go install hostettler.dev/dnc@v0.1.0
+go install hostettler.dev/dnc@latest
 ```
 
 If you can't run the bin, add the output of the following command to your `$PATH`:

@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/db"
@@ -62,7 +63,12 @@ func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	repository := repository.NewDBCharacterRepository(handle)
+	repo := repository.NewDBCharacterRepository(handle)
+
+	if cfg.Demo {
+		agg := repository.TestCharacter(uuid.New())
+		_, _ = repo.Create(ctx, &agg)
+	}
 
 	app := &DnCApp{
 		config:             cfg,
@@ -71,7 +77,7 @@ func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
 		ctx:                ctx,
 		cancel:             cancel,
 		cleanup:            cleanup,
-		repository:         repository,
+		repository:         repo,
 		statTab:            screen.NewScreenTab(km, "Stats", command.StatScreenIndex, false),
 		profileTab:         screen.NewScreenTab(km, "Profile", command.ProfileScreenIndex, false),
 		spellTab:           screen.NewScreenTab(km, "Spells", command.SpellScreenIndex, false),

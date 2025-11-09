@@ -16,22 +16,21 @@ Enter
 Sleep 2
 Show
 
-Sleep 1
-Enter 
-Type "Bobby"
-Sleep 1
-Enter
-Sleep 1
+Sleep 3
 Down
-Sleep 1
+Sleep 1 
 Enter
 
 Sleep 3
-Down
+Right
+Sleep 0.5
+Right
 Sleep 1
 Type "e"
 Sleep 1
-Type "Wizard 10"
+Backspace
+Backspace
+Type "18"
 Sleep 1
 Down
 Sleep 1
@@ -39,40 +38,42 @@ Enter
 
 Sleep 2
 Left
-Down
-Down
-Sleep 1
-Enter
-Sleep 1
-Down
+Sleep 0.5
+Left
+Sleep 0.5
 Down
 Sleep 1
 Enter
+Sleep 3
+Left
+Sleep 0.5
+Down
 Sleep 1
-Type "Abracadabra"
-Sleep 1
-Down 
+Enter
+
 Sleep 1
 Right
-Sleep 1 
+Sleep 0.5
 Down
-Type "10d6"
+Sleep 0.5
+Down
+Sleep 0.5
+Down
+Sleep 0.5
+Down
 Sleep 1
-Down 
-Sleep 0.2
-Down 
-Sleep 0.2
-Down 
-Sleep 0.2
-Down 
-Sleep 0.2
-Down 
-Sleep 0.2
-Down 
-Sleep 0.2
+Type " "
+Sleep 3
+Type " "
+Sleep 1
+Left
+Sleep 0.5
+Down
+
+Sleep 1
 Enter
 Sleep 4
-Ctrl+c
+
 
 Hide
 Type "rm demo"
