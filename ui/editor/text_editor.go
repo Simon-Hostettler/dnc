@@ -55,9 +55,13 @@ func (e *TextEditor) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, e.keymap.Up) && e.textArea.Line() == 0:
+		case key.Matches(msg, e.keymap.Up) &&
+			e.textArea.Line() == 0 &&
+			e.textArea.LineInfo().RowOffset == 0:
 			return command.FocusNextElementCmd(command.UpDirection)
-		case key.Matches(msg, e.keymap.Down) && e.textArea.Line() == e.textArea.LineCount()-1:
+		case key.Matches(msg, e.keymap.Down) &&
+			e.textArea.Line() == e.textArea.LineCount()-1 &&
+			e.textArea.LineInfo().RowOffset == e.textArea.LineInfo().Height-1:
 			return command.FocusNextElementCmd(command.DownDirection)
 		}
 	}
