@@ -37,6 +37,7 @@ type DnCApp struct {
 	profileTab             *screen.ScreenTab
 	spellTab               *screen.ScreenTab
 	inventoryTab           *screen.ScreenTab
+	noteTab                *screen.ScreenTab
 
 	character          *repository.CharacterAggregate
 	curScreenIdx       command.ScreenIndex
@@ -50,6 +51,7 @@ type DnCApp struct {
 	confirmationScreen *screen.ConfirmationScreen
 	inventoryScreen    *screen.InventoryScreen
 	readerScreen       *screen.ReaderScreen
+	noteScreen         *screen.NoteScreen
 }
 
 func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
@@ -82,6 +84,7 @@ func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
 		profileTab:         screen.NewScreenTab(km, "Profile", command.ProfileScreenIndex, false),
 		spellTab:           screen.NewScreenTab(km, "Spells", command.SpellScreenIndex, false),
 		inventoryTab:       screen.NewScreenTab(km, "Inventory", command.InventoryScreenIndex, false),
+		noteTab:            screen.NewScreenTab(km, "Notes", command.NoteScreenIndex, false),
 		titleScreen:        screen.NewTitleScreen(km),
 		editorScreen:       screen.NewEditorScreen(km, []editor.ValueEditor{}),
 		confirmationScreen: screen.NewConfirmationScreen(km),
@@ -226,6 +229,7 @@ func (a *DnCApp) View() string {
 			a.profileTab.View(),
 			a.spellTab.View(),
 			a.inventoryTab.View(),
+			a.noteTab.View(),
 		)
 		pageContent = lipgloss.JoinHorizontal(lipgloss.Left, tabs, pageContent)
 	}
@@ -258,6 +262,8 @@ func (a *DnCApp) populateCharacterScreens(agg *repository.CharacterAggregate) te
 	cmds = append(cmds, a.spellScreen.Init())
 	a.inventoryScreen = screen.NewInventoryScreen(a.keymap, agg)
 	cmds = append(cmds, a.inventoryScreen.Init())
+	a.noteScreen = screen.NewNoteScreen(a.keymap, agg)
+	cmds = append(cmds, a.noteScreen.Init())
 
 	a.isCharacterInitialized = true
 
@@ -295,6 +301,8 @@ func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 			a.screenInView = a.inventoryScreen
 		case command.ProfileScreenIndex:
 			a.screenInView = a.profileScreen
+		case command.NoteScreenIndex:
+			a.screenInView = a.noteScreen
 		}
 	} else {
 		idx = a.curScreenIdx
@@ -333,8 +341,15 @@ func (a *DnCApp) moveTab(d command.Direction) {
 			a.selectedTab = a.inventoryTab
 		}
 	case a.inventoryTab:
-		if d == command.UpDirection {
+		switch d {
+		case command.UpDirection:
 			a.selectedTab = a.spellTab
+		case command.DownDirection:
+			a.selectedTab = a.noteTab
+		}
+	case a.noteTab:
+		if d == command.UpDirection {
+			a.selectedTab = a.inventoryTab
 		}
 
 	}
@@ -346,6 +361,7 @@ func (a *DnCApp) Blur() {
 	a.profileTab.Blur()
 	a.spellTab.Blur()
 	a.inventoryTab.Blur()
+	a.noteTab.Blur()
 }
 
 func (a *DnCApp) renderKeymap() string {

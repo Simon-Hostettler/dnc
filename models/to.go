@@ -156,12 +156,22 @@ type CharacterSkillDetailTO struct {
 	UpdatedAt      time.Time `db:"updated_at"`
 }
 
-// CharacterSkillTO maps to the `features` table.
+// FeatureTO maps to the `features` table.
 type FeatureTO struct {
 	ID          uuid.UUID `db:"id"`
 	CharacterID uuid.UUID `db:"character_id"`
 	Name        string    `db:"name"`
 	Description string    `db:"description"`
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
+}
+
+// NoteTO maps to the `notes` table.
+type NoteTO struct {
+	ID          uuid.UUID `db:"id"`
+	CharacterID uuid.UUID `db:"character_id"`
+	Title       string    `db:"title"`
+	Note        string    `db:"note"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
 }
