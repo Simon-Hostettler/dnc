@@ -370,7 +370,7 @@ func (s *StatScreen) CreateCombatInfoRows() {
 		LabelWidth: statColWidth, ValueWidth: statTinyColWidth,
 	}
 	dsConfig := list.LabeledIntRowConfig{
-		ValuePrinter: styles.PrettyDeathSaves, JustifyValue: true,
+		ValuePrinter: RenderDeathSaves, JustifyValue: true,
 		LabelWidth: statColWidth, ValueWidth: statTinyColWidth,
 	}
 	rows := []list.Row{
@@ -395,9 +395,11 @@ func (s *StatScreen) CreateCombatInfoRows() {
 				editor.NewStringEditor(s.keymap, "Hit Dice", &s.agg.Character.HitDice),
 			}),
 		list.NewLabeledIntRow(s.keymap, "DS Successes", &s.agg.Character.DeathSaveSuccesses,
-			editor.NewIntEditor(s.keymap, "DS Successes", &s.agg.Character.DeathSaveSuccesses)).WithConfig(dsConfig),
+			editor.NewEnumEditor(s.keymap, models.DeathSaveSymbols, "DS Successes", &s.agg.Character.DeathSaveSuccesses)).
+			WithConfig(dsConfig),
 		list.NewLabeledIntRow(s.keymap, "DS Failures", &s.agg.Character.DeathSaveFailures,
-			editor.NewIntEditor(s.keymap, "DS Failures", &s.agg.Character.DeathSaveFailures)).WithConfig(dsConfig),
+			editor.NewEnumEditor(s.keymap, models.DeathSaveSymbols, "DS Failures", &s.agg.Character.DeathSaveFailures)).
+			WithConfig(dsConfig),
 	}
 	s.combatInfo.WithRows(rows)
 }
@@ -526,4 +528,9 @@ func renderSkillInfoRow(s *SkillInfo) string {
 
 func RenderAttack(a *models.AttackTO) string {
 	return fmt.Sprintf("%-11s %+3d %s (%s)", a.Name, a.Bonus, a.Damage, a.DamageType)
+}
+
+func RenderDeathSaves(amount int) string {
+	amount = util.Clamp(amount, 0, 3)
+	return models.DeathSaveSymbols[amount].Label
 }
