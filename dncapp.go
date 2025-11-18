@@ -282,6 +282,8 @@ func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 		a.screenInView = a.titleScreen
 	case command.ReaderScreenIndex:
 		a.screenInView = a.readerScreen
+	case command.ConfirmationScreenIndex:
+		a.screenInView = a.confirmationScreen
 	}
 	if a.isCharacterInitialized {
 		switch idx {
@@ -289,8 +291,6 @@ func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 			a.screenInView = a.statScreen
 		case command.SpellScreenIndex:
 			a.screenInView = a.spellScreen
-		case command.ConfirmationScreenIndex:
-			a.screenInView = a.confirmationScreen
 		case command.InventoryScreenIndex:
 			a.screenInView = a.inventoryScreen
 		case command.ProfileScreenIndex:
