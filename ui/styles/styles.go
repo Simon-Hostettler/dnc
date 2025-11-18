@@ -170,10 +170,6 @@ func PrettyAttunementSlots(used int) string {
 
 func WithSign(i int) string { return fmt.Sprintf("%+d", i) }
 
-func PrettyDeathSaves(amount int) string {
-	return strings.Repeat("●", amount) + strings.Repeat("○", 3-amount)
-}
-
 func PrettyBool(b bool) string {
 	if b {
 		return "■"

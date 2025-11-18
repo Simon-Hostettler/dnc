@@ -40,3 +40,7 @@ func B2i(b bool) int {
 func I2b(i int) bool {
 	return i != 0
 }
+
+func Clamp(i int, l int, h int) int {
+	return min(h, max(l, i))
+}

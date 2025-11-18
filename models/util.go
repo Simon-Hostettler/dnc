@@ -65,6 +65,13 @@ var AttunementSymbols []EnumMapping = []EnumMapping{
 	{Value: 3, Label: "■■■"},
 }
 
+var DeathSaveSymbols []EnumMapping = []EnumMapping{
+	{Value: 0, Label: "○○○"},
+	{Value: 1, Label: "●○○"},
+	{Value: 2, Label: "●●○"},
+	{Value: 3, Label: "●●●"},
+}
+
 func (c CharacterSkillDetailTO) ToCharacterSkillTO() CharacterSkillTO {
 	return CharacterSkillTO{
 		ID:             c.ID,
