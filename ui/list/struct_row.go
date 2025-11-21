@@ -3,12 +3,14 @@ package list
 import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/util"
 )
 
 type StructRow[T any] struct {
+	id         uuid.UUID
 	keymap     util.KeyMap
 	value      *T
 	renderer   func(*T) string
@@ -24,6 +26,7 @@ func NewStructRow[T any](
 	editors []editor.ValueEditor,
 ) *StructRow[T] {
 	return &StructRow[T]{
+		id:       uuid.New(),
 		keymap:   keymap,
 		value:    value,
 		renderer: renderer,
@@ -39,6 +42,10 @@ func (r *StructRow[T]) WithDestructor(callback func() tea.Cmd) *StructRow[T] {
 func (r *StructRow[T]) WithReader(reader func(*T) string) *StructRow[T] {
 	r.reader = reader
 	return r
+}
+
+func (r *StructRow[T]) Id() uuid.UUID {
+	return r.id
 }
 
 func (r *StructRow[T]) Init() tea.Cmd {
@@ -70,4 +77,8 @@ func (r *StructRow[T]) Editors() []editor.ValueEditor {
 
 func (r *StructRow[T]) Value() *T {
 	return r.value
+}
+
+func (r *StructRow[T]) Selectable() bool {
+	return true
 }

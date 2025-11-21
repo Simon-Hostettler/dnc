@@ -28,10 +28,36 @@ func TestSeparatorSkips(t *testing.T) {
 
 	msg := tea.KeyMsg{Type: tea.KeyDown}
 	list.Update(msg)
-	list.Update(msg)
 
 	if !(list.CursorPos() == 2) {
 		t.Errorf("Separator row was not skipped, cursor at %d instead of 2", list.CursorPos())
+	}
+}
+
+func TestInvisibleSkips(t *testing.T) {
+	tmp := "tmp"
+	list := NewListWithDefaults(testKM).WithRows([]Row{
+		createDummyRow(),
+		NewLabeledStringRow(testKM, "string", &tmp, editor.NewStringEditor(testKM, "string", &tmp)),
+		createDummyRow(),
+	})
+	list.Init()
+	list.Focus()
+
+	list.Filter(func(r Row) bool {
+		switch r.(type) {
+		case *LabeledStringRow:
+			return false
+		default:
+			return true
+		}
+	})
+
+	msg := tea.KeyMsg{Type: tea.KeyDown}
+	list.Update(msg)
+
+	if !(list.CursorPos() == 2) {
+		t.Errorf("Filtered row was not skipped, cursor at %d instead of 2", list.CursorPos())
 	}
 }
 
@@ -87,5 +113,63 @@ func TestListExits(t *testing.T) {
 		}
 	default:
 		t.Errorf("List was not exited.")
+	}
+}
+
+func TestRenderedRowCountWithFilter(t *testing.T) {
+	tmp := "tmp"
+	list := NewListWithDefaults(testKM).WithRows([]Row{
+		createDummyRow(),
+		NewLabeledStringRow(testKM, "string", &tmp, editor.NewStringEditor(testKM, "string", &tmp)),
+		createDummyRow(),
+	})
+	list.Init()
+	list.Focus()
+
+	list.Filter(func(r Row) bool {
+		switch r.(type) {
+		case *LabeledStringRow:
+			return false
+		default:
+			return true
+		}
+	})
+
+	view := list.View()
+	if got, want := lipgloss.Height(view), 2; got != want {
+		t.Errorf("Rendered row count mismatch. Got %d, want %d", got, want)
+	}
+}
+
+func TestCursorDoesNotMoveIntoInvisibleTail(t *testing.T) {
+	tmp := "tmp"
+	list := NewListWithDefaults(testKM).WithRows([]Row{
+		createDummyRow(),
+		NewLabeledStringRow(testKM, "string", &tmp, editor.NewStringEditor(testKM, "string", &tmp)),
+	})
+	list.Init()
+	list.Focus()
+
+	list.Filter(func(r Row) bool {
+		switch r.(type) {
+		case *LabeledStringRow:
+			return false
+		default:
+			return true
+		}
+	})
+
+	msg := tea.KeyMsg{Type: tea.KeyDown}
+	_, cmd := list.Update(msg)
+
+	if list.CursorPos() != 0 {
+		t.Errorf("Cursor moved into/over invisible tail. Got %d, want %d", list.CursorPos(), 0)
+	}
+	if cmd == nil {
+		t.Fatalf("expected a command, got nil")
+	}
+	m := cmd()
+	if _, ok := m.(command.FocusNextElementMsg); !ok {
+		t.Errorf("Expected FocusNextElementMsg, got %T", m)
 	}
 }

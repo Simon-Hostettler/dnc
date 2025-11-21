@@ -1,11 +1,13 @@
 package list
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/styles"
@@ -15,10 +17,12 @@ import (
 var DefaultColWidth = 16
 
 type Row interface {
+	Id() uuid.UUID
 	Init() tea.Cmd
 	Update(tea.Msg) (tea.Model, tea.Cmd)
 	View() string
 	Editors() []editor.ValueEditor
+	Selectable() bool
 }
 
 type ListStyles struct {
@@ -40,6 +44,7 @@ type List struct {
 	focus      bool
 	title      string
 	content    []Row
+	visible    []uuid.UUID
 	cursor     int
 	fixedWidth int
 
@@ -60,6 +65,7 @@ func (t *List) WithStyles(s ListStyles) *List {
 
 func (t *List) WithRows(r []Row) *List {
 	t.content = r
+	t.visible = util.Map(r, func(row Row) uuid.UUID { return row.Id() })
 	return t
 }
 
@@ -78,6 +84,16 @@ func (t *List) WithViewport(height int) *List {
 	t.vpHeight = height
 	t.vpCursor = 0
 	return t
+}
+
+func (t *List) Filter(filter func(Row) bool) {
+	filtered := []uuid.UUID{}
+	for _, r := range t.content {
+		if filter(r) {
+			filtered = append(filtered, r.Id())
+		}
+	}
+	t.visible = filtered
 }
 
 func (t *List) Focus() {
@@ -109,16 +125,24 @@ func (t *List) CursorPos() int {
 }
 
 func (t *List) SetCursor(idx int) {
-	if !(idx < 0 || idx > len(t.content)) {
+	if t.inRange(idx) {
 		t.cursor = idx
 	}
 }
 
 func (t *List) MoveCursor(offset int) tea.Cmd {
-	newCursor := t.cursor + offset
+	finalOffset := offset
+
+	// skip invisible and separator row
+	for t.inRange(t.cursor+finalOffset) &&
+		(!t.rowVisible(t.cursor+finalOffset) || !t.content[t.cursor+finalOffset].Selectable()) {
+		finalOffset += offset
+	}
+
+	newCursor := t.cursor + finalOffset
 
 	// exiting list
-	if newCursor < 0 || newCursor >= len(t.content) {
+	if !t.inRange(newCursor) {
 		if newCursor < 0 {
 			return command.FocusNextElementCmd(command.UpDirection)
 		} else {
@@ -132,17 +156,12 @@ func (t *List) MoveCursor(offset int) tea.Cmd {
 			t.vpCursor = newCursor
 		}
 		if newCursor >= t.viewportEnd() {
-			t.vpCursor += offset
+			t.vpCursor += finalOffset
 		}
 	}
 
 	t.cursor = newCursor
-	switch t.content[newCursor].(type) {
-	case *SeparatorRow: // not selectable, skip over
-		return t.MoveCursor(offset)
-	default:
-		return nil
-	}
+	return nil
 }
 
 func NewList(k util.KeyMap, s ListStyles) *List {
@@ -204,6 +223,14 @@ func (t *List) viewportEnd() int {
 	return min(len(t.toLines()), t.vpCursor+t.vpHeight)
 }
 
+func (t *List) rowVisible(idx int) bool {
+	return slices.Contains(t.visible, t.content[idx].Id())
+}
+
+func (t *List) inRange(idx int) bool {
+	return idx >= 0 && idx < len(t.content)
+}
+
 func (t *List) RenderFullContent() string {
 	body := t.RenderBody()
 	if t.title != "" {
@@ -222,6 +249,9 @@ func (t *List) RenderBody() string {
 	rows := []string{}
 
 	for i, el := range t.content {
+		if !t.rowVisible(i) {
+			continue
+		}
 		elStr := el.View()
 		var row string
 		if t.focus && i == t.cursor {

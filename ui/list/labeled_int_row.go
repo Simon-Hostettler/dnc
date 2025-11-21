@@ -5,12 +5,14 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/uuid"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/util"
 )
 
 type LabeledIntRow struct {
+	id     uuid.UUID
 	keymap util.KeyMap
 	config LabeledIntRowConfig
 	label  string
@@ -30,12 +32,16 @@ func DefaultLabeledIntRowConfig() LabeledIntRowConfig {
 }
 
 func NewLabeledIntRow(keymap util.KeyMap, label string, value *int, editor editor.ValueEditor) *LabeledIntRow {
-	return &LabeledIntRow{keymap, DefaultLabeledIntRowConfig(), label, value, editor}
+	return &LabeledIntRow{uuid.New(), keymap, DefaultLabeledIntRowConfig(), label, value, editor}
 }
 
 func (r *LabeledIntRow) WithConfig(c LabeledIntRowConfig) *LabeledIntRow {
 	r.config = c
 	return r
+}
+
+func (r *LabeledIntRow) Id() uuid.UUID {
+	return r.id
 }
 
 func (r *LabeledIntRow) Init() tea.Cmd {
@@ -63,4 +69,8 @@ func (r *LabeledIntRow) View() string {
 
 func (r *LabeledIntRow) Editors() []editor.ValueEditor {
 	return []editor.ValueEditor{r.editor}
+}
+
+func (r *LabeledIntRow) Selectable() bool {
+	return true
 }

@@ -3,6 +3,7 @@ package list
 import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/ui/editor"
@@ -10,12 +11,17 @@ import (
 )
 
 type CharacterRow struct {
+	id        uuid.UUID
 	keymap    util.KeyMap
 	character *models.CharacterSummary
 }
 
 func NewCharacterRow(keymap util.KeyMap, character *models.CharacterSummary) *CharacterRow {
-	return &CharacterRow{keymap, character}
+	return &CharacterRow{uuid.New(), keymap, character}
+}
+
+func (c *CharacterRow) Id() uuid.UUID {
+	return c.id
 }
 
 func (c *CharacterRow) Init() tea.Cmd {
@@ -45,4 +51,8 @@ func (c *CharacterRow) View() string {
 
 func (c *CharacterRow) Editors() []editor.ValueEditor {
 	return []editor.ValueEditor{}
+}
+
+func (c *CharacterRow) Selectable() bool {
+	return true
 }
