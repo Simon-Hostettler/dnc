@@ -1,7 +1,6 @@
 package list
 
 import (
-	"slices"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -44,7 +43,7 @@ type List struct {
 	focus      bool
 	title      string
 	content    []Row
-	visible    []uuid.UUID
+	visible    []Row
 	cursor     int
 	fixedWidth int
 
@@ -65,7 +64,7 @@ func (t *List) WithStyles(s ListStyles) *List {
 
 func (t *List) WithRows(r []Row) *List {
 	t.content = r
-	t.visible = util.Map(r, func(row Row) uuid.UUID { return row.Id() })
+	t.visible = r
 	return t
 }
 
@@ -87,13 +86,14 @@ func (t *List) WithViewport(height int) *List {
 }
 
 func (t *List) Filter(filter func(Row) bool) {
-	filtered := []uuid.UUID{}
+	filtered := []Row{}
 	for _, r := range t.content {
 		if filter(r) {
-			filtered = append(filtered, r.Id())
+			filtered = append(filtered, r)
 		}
 	}
 	t.visible = filtered
+	t.ResetCursor()
 }
 
 func (t *List) Focus() {
@@ -109,15 +109,15 @@ func (t *List) InFocus() bool {
 }
 
 func (t *List) Size() int {
-	return len(t.content)
+	return len(t.visible)
 }
 
 func (t *List) Content() []Row {
-	return t.content
+	return t.visible
 }
 
 func (t *List) FocussedRow() Row {
-	return t.content[t.cursor]
+	return t.visible[t.cursor]
 }
 
 func (t *List) CursorPos() int {
@@ -130,12 +130,17 @@ func (t *List) SetCursor(idx int) {
 	}
 }
 
+func (t *List) ResetCursor() {
+	t.cursor = 0
+	t.vpCursor = 0
+}
+
 func (t *List) MoveCursor(offset int) tea.Cmd {
 	finalOffset := offset
 
-	// skip invisible and separator row
+	// skip separator row
 	for t.inRange(t.cursor+finalOffset) &&
-		(!t.rowVisible(t.cursor+finalOffset) || !t.content[t.cursor+finalOffset].Selectable()) {
+		(!t.visible[t.cursor+finalOffset].Selectable()) {
 		finalOffset += offset
 	}
 
@@ -199,8 +204,8 @@ func (t *List) Update(m tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, t.KeyMap.Escape):
 			t.focus = false
 		default:
-			if t.cursor < len(t.content) {
-				_, cmd = t.content[t.cursor].Update(m)
+			if t.cursor < len(t.visible) {
+				_, cmd = t.visible[t.cursor].Update(m)
 			}
 		}
 	}
@@ -223,12 +228,8 @@ func (t *List) viewportEnd() int {
 	return min(len(t.toLines()), t.vpCursor+t.vpHeight)
 }
 
-func (t *List) rowVisible(idx int) bool {
-	return slices.Contains(t.visible, t.content[idx].Id())
-}
-
 func (t *List) inRange(idx int) bool {
-	return idx >= 0 && idx < len(t.content)
+	return idx >= 0 && idx < len(t.visible)
 }
 
 func (t *List) RenderFullContent() string {
@@ -248,10 +249,7 @@ func (t *List) RenderFullContent() string {
 func (t *List) RenderBody() string {
 	rows := []string{}
 
-	for i, el := range t.content {
-		if !t.rowVisible(i) {
-			continue
-		}
+	for i, el := range t.visible {
 		elStr := el.View()
 		var row string
 		if t.focus && i == t.cursor {

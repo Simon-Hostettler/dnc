@@ -34,7 +34,7 @@ func TestSeparatorSkips(t *testing.T) {
 	}
 }
 
-func TestInvisibleSkips(t *testing.T) {
+func TestVisibleIndexComputation(t *testing.T) {
 	tmp := "tmp"
 	list := NewListWithDefaults(testKM).WithRows([]Row{
 		createDummyRow(),
@@ -56,8 +56,11 @@ func TestInvisibleSkips(t *testing.T) {
 	msg := tea.KeyMsg{Type: tea.KeyDown}
 	list.Update(msg)
 
-	if !(list.CursorPos() == 2) {
-		t.Errorf("Filtered row was not skipped, cursor at %d instead of 2", list.CursorPos())
+	if !(list.Size() == 2) {
+		t.Errorf("Row was not filtered, size is %d instead of 2", list.Size())
+	}
+	if !(list.CursorPos() == 1) {
+		t.Errorf("Expected cursor at 1, got %d instead", list.CursorPos())
 	}
 }
 

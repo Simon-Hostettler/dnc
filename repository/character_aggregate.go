@@ -16,6 +16,7 @@ type CharacterAggregate struct {
 	Attacks      []models.AttackTO
 	Skills       []models.CharacterSkillDetailTO
 	Features     []models.FeatureTO
+	Notes        []models.NoteTO
 }
 
 // Helper methods - Modify TOs not database, changes have to be written back (See command.WriteBackRequest)
@@ -42,6 +43,12 @@ func (c *CharacterAggregate) AddEmptyFeature() uuid.UUID {
 	feat := models.FeatureTO{ID: uuid.New()}
 	c.Features = append(c.Features, feat)
 	return feat.ID
+}
+
+func (c *CharacterAggregate) AddEmptyNote() uuid.UUID {
+	note := models.NoteTO{ID: uuid.New()}
+	c.Notes = append(c.Notes, note)
+	return note.ID
 }
 
 func (c *CharacterAggregate) DeleteAttack(id uuid.UUID) {
@@ -82,6 +89,16 @@ func (c *CharacterAggregate) DeleteFeature(id uuid.UUID) {
 		}
 	}
 	c.Features = newFeatures
+}
+
+func (c *CharacterAggregate) DeleteNote(id uuid.UUID) {
+	newNotes := []models.NoteTO{}
+	for i := range c.Notes {
+		if c.Notes[i].ID != id {
+			newNotes = append(newNotes, c.Notes[i])
+		}
+	}
+	c.Notes = newNotes
 }
 
 func (c *CharacterAggregate) GetSpellsByLevel(l int) []*models.SpellTO {

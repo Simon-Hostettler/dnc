@@ -90,6 +90,11 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
 				return err
 			}
 		}
+		if len(agg.Notes) > 0 {
+			if err := replaceNotes(ctx, tx, newID, agg.Notes); err != nil {
+				return err
+			}
+		}
 		skills := util.Map(agg.Skills, func(s models.CharacterSkillDetailTO) models.CharacterSkillTO { return s.ToCharacterSkillTO() })
 		if len(skills) > 0 {
 			if err := replaceSkills(ctx, tx, newID, skills); err != nil {
@@ -114,6 +119,7 @@ func (r *DBCharacterRepository) CreateEmpty(ctx context.Context, name string) (u
 		Attacks:      []models.AttackTO{},
 		Skills:       []models.CharacterSkillDetailTO{},
 		Features:     []models.FeatureTO{},
+		Notes:        []models.NoteTO{},
 	}
 	newID, err := r.Create(ctx, &agg)
 	if err != nil {
@@ -179,6 +185,11 @@ func (r *DBCharacterRepository) GetByID(ctx context.Context, id uuid.UUID) (*Cha
 		return nil, err
 	} else {
 		agg.Features = feats
+	}
+	if notes, err := listNotes(ctx, r.db, id); err != nil {
+		return nil, err
+	} else {
+		agg.Notes = notes
 	}
 	if skills, err := r.ListSkillDetailsByCharacter(ctx, id); err != nil {
 		return nil, err
@@ -290,6 +301,9 @@ func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggreg
 			return err
 		}
 		if err := replaceFeatures(ctx, tx, id, agg.Features); err != nil {
+			return err
+		}
+		if err := replaceNotes(ctx, tx, id, agg.Notes); err != nil {
 			return err
 		}
 		skills := util.Map(agg.Skills, func(s models.CharacterSkillDetailTO) models.CharacterSkillTO { return s.ToCharacterSkillTO() })
@@ -440,6 +454,24 @@ func replaceFeatures(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, fe
 	return nil
 }
 
+func replaceNotes(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, notes []models.NoteTO) error {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM notes WHERE character_id=?`, characterID); err != nil {
+		return err
+	}
+	for _, n := range notes {
+		if n.ID == uuid.Nil {
+			n.ID = uuid.New()
+		}
+		if _, err := tx.ExecContext(ctx, `
+            INSERT INTO notes (id, character_id, title, note)
+            VALUES (?,?,?,?)
+        `, n.ID, characterID, n.Title, n.Note); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func replaceSkills(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, skills []models.CharacterSkillTO) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM character_skill WHERE character_id=?`, characterID); err != nil {
 		return err
@@ -521,6 +553,14 @@ func listFeatures(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]
 		return nil, err
 	}
 	return features, nil
+}
+
+func listNotes(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]models.NoteTO, error) {
+	var notes []models.NoteTO
+	if err := sqlx.SelectContext(ctx, db, &notes, `SELECT * FROM notes WHERE character_id=? ORDER BY title ASC`, id); err != nil {
+		return nil, err
+	}
+	return notes, nil
 }
 
 func (r *DBCharacterRepository) ListSkillDefinitions(ctx context.Context) ([]models.SkillDefinitionTO, error) {

@@ -16,6 +16,7 @@ const (
 	InventoryScreenIndex
 	ReaderScreenIndex
 	ProfileScreenIndex
+	NoteScreenIndex
 )
 
 type Direction int

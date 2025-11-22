@@ -72,8 +72,27 @@ Down
 
 Sleep 1
 Enter
-Sleep 4
+Sleep 2
 
+Left
+Sleep 0.5
+Down
+Sleep 1
+Enter 
+Sleep 2
+
+Type "Lorem Ipsum"
+Sleep 1
+Down 
+Sleep 0.5
+Down
+Sleep 0.5
+Down
+Sleep 0.5
+Type " "
+Sleep 3
+Type " "
+Sleep 2
 
 Hide
 Type "rm demo"
