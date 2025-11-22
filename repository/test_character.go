@@ -1,12 +1,14 @@
 package repository
 
 import (
+	"sort"
+
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/models"
 )
 
 func TestCharacter(id uuid.UUID) CharacterAggregate {
-	return CharacterAggregate{
+	c := CharacterAggregate{
 		Character: &models.CharacterTO{
 			ID:                  id,
 			Name:                "Bobby",
@@ -248,11 +250,136 @@ func TestCharacter(id uuid.UUID) CharacterAggregate {
 			Name:        "Winged",
 			Description: "Can fly",
 		}},
-		Notes: []models.NoteTO{{
-			ID:          uuid.New(),
-			CharacterID: id,
-			Title:       "Principia Mathematica",
-			Note:        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum",
-		}},
+		Notes: []models.NoteTO{
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Principia Mathematica",
+				Note:        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Hidden Annotation #1",
+				Note:        "Aliquam erat volutpat. Suspendisse potenti. Donec porta dui sed laoreet maximus; ante sapien facilisis risus, vitae sagittis odio nisl a justo. Integer facilisis ligula sed erat hendrerit, vitae aliquam metus viverra.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Arcane Memory #2",
+				Note:        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus non orci sed sapien tristique convallis. Integer facilisis ligula sed erat hendrerit, vitae aliquam metus viverra.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Fractured Note #3",
+				Note:        "Phasellus non orci sed sapien tristique convallis. Accusantium doloremque laudantium totam rem aperiam eaque ipsa quae ab illo inventore veritatis. Aliquam erat volutpat. Suspendisse potenti. Phasellus non orci sed sapien tristique convallis. Praesent consequat sapien quis elit pretium, sit amet dictum nisl cursus.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Ancient Theory #4",
+				Note:        "Integer facilisis ligula sed erat hendrerit, vitae aliquam metus viverra. Aliquam erat volutpat. Suspendisse potenti. Donec porta dui sed laoreet maximus; ante sapien facilisis risus, vitae sagittis odio nisl a justo.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Ethereal Diary #5",
+				Note:        "Accusantium doloremque laudantium totam rem aperiam eaque ipsa quae ab illo inventore veritatis. Quisque vehicula tortor nec turpis laoreet, a feugiat risus gravida. Aliquam erat volutpat. Suspendisse potenti. Aliquam erat volutpat. Suspendisse potenti. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Fractured Fragment #6",
+				Note:        "Integer facilisis ligula sed erat hendrerit, vitae aliquam metus viverra. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae. Phasellus non orci sed sapien tristique convallis. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Starlit Scroll #7",
+				Note:        "Praesent consequat sapien quis elit pretium, sit amet dictum nisl cursus. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Quisque vehicula tortor nec turpis laoreet, a feugiat risus gravida. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Silent Note #8",
+				Note:        "Accusantium doloremque laudantium totam rem aperiam eaque ipsa quae ab illo inventore veritatis. Aliquam erat volutpat. Suspendisse potenti. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Lost Note #9",
+				Note:        "Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit. Aliquam erat volutpat. Suspendisse potenti. Praesent consequat sapien quis elit pretium, sit amet dictum nisl cursus.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Hidden Ritual #10",
+				Note:        "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Accusantium doloremque laudantium totam rem aperiam eaque ipsa quae ab illo inventore veritatis.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Obscure Fragment #11",
+				Note:        "Donec porta dui sed laoreet maximus; ante sapien facilisis risus, vitae sagittis odio nisl a justo. Phasellus non orci sed sapien tristique convallis. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit. Praesent consequat sapien quis elit pretium, sit amet dictum nisl cursus. Phasellus non orci sed sapien tristique convallis.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Ancient Diary #12",
+				Note:        "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam. Accusantium doloremque laudantium totam rem aperiam eaque ipsa quae ab illo inventore veritatis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae. Quisque vehicula tortor nec turpis laoreet, a feugiat risus gravida.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Starlit Record #13",
+				Note:        "Quisque vehicula tortor nec turpis laoreet, a feugiat risus gravida. Praesent consequat sapien quis elit pretium, sit amet dictum nisl cursus. Donec porta dui sed laoreet maximus; ante sapien facilisis risus, vitae sagittis odio nisl a justo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit. Integer facilisis ligula sed erat hendrerit, vitae aliquam metus viverra.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Silent Treatise #14",
+				Note:        "Praesent consequat sapien quis elit pretium, sit amet dictum nisl cursus. Quisque vehicula tortor nec turpis laoreet, a feugiat risus gravida. Phasellus non orci sed sapien tristique convallis.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Lost Theory #15",
+				Note:        "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Fractured Codex #16",
+				Note:        "Aliquam erat volutpat. Suspendisse potenti. Quisque vehicula tortor nec turpis laoreet, a feugiat risus gravida. Praesent consequat sapien quis elit pretium, sit amet dictum nisl cursus. Praesent consequat sapien quis elit pretium, sit amet dictum nisl cursus.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Fractured Note #17",
+				Note:        "Aliquam erat volutpat. Suspendisse potenti. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus non orci sed sapien tristique convallis. Quisque vehicula tortor nec turpis laoreet, a feugiat risus gravida.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Forgotten Codex #18",
+				Note:        "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit. Accusantium doloremque laudantium totam rem aperiam eaque ipsa quae ab illo inventore veritatis. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Crimson Memory #19",
+				Note:        "Donec porta dui sed laoreet maximus; ante sapien facilisis risus, vitae sagittis odio nisl a justo. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium. Phasellus non orci sed sapien tristique convallis.",
+			},
+			{
+				ID:          uuid.New(),
+				CharacterID: id,
+				Title:       "Hidden Memory #20",
+				Note:        "Phasellus non orci sed sapien tristique convallis. Integer facilisis ligula sed erat hendrerit, vitae aliquam metus viverra. Phasellus non orci sed sapien tristique convallis.",
+			},
+		},
 	}
+	// Ensure deterministic alphabetical order by Title so persistence test matches
+	sort.Slice(c.Notes, func(i, j int) bool { return c.Notes[i].Title < c.Notes[j].Title })
+	return c
 }

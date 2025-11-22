@@ -35,12 +35,15 @@ func (e *TextEditor) Init(keymap util.KeyMap, label string, delegatorPointer int
 
 	ta := textarea.New()
 	ta.SetWidth(styles.SmallScreenWidth - 4)
+	ta.SetHeight(8)
 	ta.ShowLineNumbers = false
 	ta.Prompt = ""
 
 	if ptr != nil {
 		ta.SetValue(*ptr)
 	}
+
+	ta.CursorStart()
 
 	e.textArea = ta
 	e.label = label

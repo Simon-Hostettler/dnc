@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
+	ti "github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
@@ -13,6 +14,7 @@ import (
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/list"
 	"hostettler.dev/dnc/ui/styles"
+	"hostettler.dev/dnc/ui/textinput"
 	"hostettler.dev/dnc/util"
 )
 
@@ -28,21 +30,29 @@ type NoteScreen struct {
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
 
-	noteList *list.List
+	searchField *textinput.TextInput
+	noteList    *list.List
 }
 
 func NewNoteScreen(k util.KeyMap, c *repository.CharacterAggregate) *NoteScreen {
+	sf := ti.New()
+	sf.Width = noteColWidth
+	sf.CharLimit = noteColWidth
+	sf.Placeholder = ""
+	sf.Prompt = ""
+
 	return &NoteScreen{
-		keymap:    k,
-		character: c,
+		keymap:      k,
+		character:   c,
+		searchField: textinput.New(sf),
 	}
 }
 
 func (s *NoteScreen) Init() tea.Cmd {
 	s.populateNotes()
 
-	s.focusOn(s.noteList)
-	s.lastFocusedElement = s.noteList
+	s.focusOn(s.searchField)
+	s.lastFocusedElement = s.searchField
 
 	return nil
 }
@@ -73,6 +83,17 @@ func (s *NoteScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		s.moveFocus(msg.Direction)
 	case tea.KeyMsg:
 		switch s.focusedElement.(type) {
+		case *textinput.TextInput:
+			switch {
+			case key.Matches(msg, s.keymap.Down):
+				cmd = s.moveFocus(command.DownDirection)
+			case key.Matches(msg, s.keymap.Left):
+				cmd = s.moveFocus(command.LeftDirection)
+			default:
+				_, cmd = s.focusedElement.Update(msg)
+				term := s.searchField.Value()
+				s.noteList.Filter(searchFilter(term))
+			}
 		case *list.List:
 			switch {
 			case key.Matches(msg, s.keymap.Right):
@@ -122,8 +143,19 @@ func (s *NoteScreen) moveFocus(d command.Direction) tea.Cmd {
 	s.Blur()
 
 	switch s.lastFocusedElement {
+	case s.searchField:
+		switch d {
+		case command.LeftDirection:
+			cmd = command.ReturnFocusToParentCmd
+		case command.DownDirection:
+			s.focusOn(s.noteList)
+		default:
+			s.focusOn(s.searchField)
+		}
 	case s.noteList:
 		switch d {
+		case command.UpDirection:
+			s.focusOn(s.searchField)
 		case command.LeftDirection:
 			cmd = command.ReturnFocusToParentCmd
 		default:
@@ -191,11 +223,27 @@ func (s *NoteScreen) RenderNoteScreenTopBar() string {
 	return styles.DefaultBorderStyle.
 		Width(styles.ScreenWidth).
 		AlignHorizontal(lipgloss.Left).
-		Render("")
+		Render(s.searchField.View())
 }
 
 func renderNoteInfoRow(n *models.NoteTO) string {
 	return n.Title
+}
+
+func searchFilter(term string) func(list.Row) bool {
+	normalized := strings.ToLower(strings.TrimSpace(term))
+	if normalized == "" {
+		return func(r list.Row) bool { return true }
+	}
+	return func(r list.Row) bool {
+		if rr, ok := r.(*list.StructRow[models.NoteTO]); ok {
+			n := rr.Value()
+			title := strings.ToLower(n.Title)
+			body := strings.ToLower(n.Note)
+			return strings.Contains(title, normalized) || strings.Contains(body, normalized)
+		}
+		return true
+	}
 }
 
 func renderFullNoteInfo(n *models.NoteTO) string {
