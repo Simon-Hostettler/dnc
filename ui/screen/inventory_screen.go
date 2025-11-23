@@ -53,7 +53,6 @@ func NewInventoryScreen(k util.KeyMap, c *repository.CharacterAggregate) *Invent
 func (s *InventoryScreen) Init() tea.Cmd {
 	s.populateItems()
 
-	s.focusOn(s.copper)
 	s.lastFocusedElement = s.copper
 
 	return nil

@@ -51,7 +51,6 @@ func NewNoteScreen(k util.KeyMap, c *repository.CharacterAggregate) *NoteScreen 
 func (s *NoteScreen) Init() tea.Cmd {
 	s.populateNotes()
 
-	s.focusOn(s.searchField)
 	s.lastFocusedElement = s.searchField
 
 	return nil

@@ -90,7 +90,6 @@ func (s *StatScreen) Init() tea.Cmd {
 	s.CreateSavingThrowRows()
 
 	s.lastFocusedElement = s.characterInfo
-	s.focusOn(s.characterInfo)
 
 	return tea.Batch(cmds...)
 }

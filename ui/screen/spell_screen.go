@@ -54,7 +54,6 @@ func (s *SpellScreen) Init() tea.Cmd {
 	cmds = append(cmds, s.spellSaveDC.Init())
 	cmds = append(cmds, s.spellAtkBonus.Init())
 	cmds = util.DropNil(cmds)
-	s.focusOn(s.spellAbility)
 	s.lastFocusedElement = s.spellAbility
 
 	s.populateSpells()

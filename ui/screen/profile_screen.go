@@ -73,7 +73,6 @@ func (s *ProfileScreen) Init() tea.Cmd {
 	s.CreateFeatureRows()
 
 	s.lastFocusedElement = s.characterInfo
-	s.focusOn(s.characterInfo)
 
 	return tea.Batch(cmds...)
 }

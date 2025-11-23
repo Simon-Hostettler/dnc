@@ -116,6 +116,8 @@ func (a *DnCApp) Init() tea.Cmd {
 	if a.titleScreen != nil {
 		cmds = append(cmds, a.titleScreen.Init())
 		a.switchScreen(command.TitleScreenIndex)
+		a.screenInView.Focus()
+		a.isScreenFocused = true
 	}
 	if a.statScreen != nil {
 		cmds = append(cmds, a.statScreen.Init())
@@ -275,8 +277,6 @@ func (a *DnCApp) populateCharacterScreens(agg *repository.CharacterAggregate) te
 }
 
 func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
-	a.isScreenFocused = true
-	a.selectedTab.Blur()
 	if a.screenInView != nil {
 		a.screenInView.Blur()
 	}
@@ -309,7 +309,9 @@ func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
 	}
 
 	a.curScreenIdx = idx
-	a.screenInView.Focus()
+	if a.isScreenFocused {
+		a.screenInView.Focus()
+	}
 }
 
 func (a *DnCApp) displayTabs() bool {
