@@ -37,6 +37,12 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// editor in focus
 	if s.cursor >= 0 && s.cursor < len(s.editors) {
 		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			if key.Matches(msg, s.keymap.Escape) {
+				cmd = command.SwitchToPrevScreenCmd
+			} else {
+				cmd = s.editors[s.cursor].Update(msg)
+			}
 		case command.FocusNextElementMsg:
 			switch msg.Direction {
 			case command.UpDirection:
@@ -62,6 +68,8 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch {
+			case key.Matches(msg, s.keymap.Escape):
+				cmd = command.SwitchToPrevScreenCmd
 			case key.Matches(msg, s.keymap.Up):
 				s.cursor--
 				s.editors[s.cursor].Focus()
