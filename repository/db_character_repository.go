@@ -525,7 +525,7 @@ func getWallet(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) (*mode
 
 func listItems(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]models.ItemTO, error) {
 	var items []models.ItemTO
-	if err := sqlx.SelectContext(ctx, db, &items, `SELECT * FROM item WHERE character_id=? ORDER BY created_at ASC`, id); err != nil {
+	if err := sqlx.SelectContext(ctx, db, &items, `SELECT * FROM item WHERE character_id=? ORDER BY name ASC`, id); err != nil {
 		return nil, err
 	}
 	return items, nil
