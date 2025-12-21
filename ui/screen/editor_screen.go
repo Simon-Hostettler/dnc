@@ -10,14 +10,17 @@ import (
 	"hostettler.dev/dnc/util"
 )
 
+var numEditorsVisible = 6
+
 type EditorScreen struct {
-	keymap  util.KeyMap
-	cursor  int
-	editors []editor.ValueEditor
+	keymap   util.KeyMap
+	cursor   int
+	vpCursor int
+	editors  []editor.ValueEditor
 }
 
 func NewEditorScreen(keymap util.KeyMap, editors []editor.ValueEditor) *EditorScreen {
-	return &EditorScreen{keymap, 0, editors}
+	return &EditorScreen{keymap, 0, 0, editors}
 }
 
 func (s *EditorScreen) Init() tea.Cmd {
@@ -28,7 +31,8 @@ func (s *EditorScreen) StartEdit(editors []editor.ValueEditor) {
 	s.editors = editors
 	if len(s.editors) > 0 {
 		s.cursor = 0
-		s.editors[0].Focus()
+		s.vpCursor = 0
+		s.focusCurrentRow()
 	}
 }
 
@@ -44,23 +48,7 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd = s.editors[s.cursor].Update(msg)
 			}
 		case command.FocusNextElementMsg:
-			switch msg.Direction {
-			case command.UpDirection:
-				if s.cursor > 0 {
-					s.editors[s.cursor].Blur()
-					s.cursor--
-					s.editors[s.cursor].Focus()
-				} else if s.cursor == 0 {
-					s.editors[s.cursor].Blur()
-					s.cursor = len(s.editors)
-				}
-			case command.DownDirection:
-				s.editors[s.cursor].Blur()
-				s.cursor++
-				if s.cursor < len(s.editors) {
-					s.editors[s.cursor].Focus()
-				}
-			}
+			s.moveCursor(msg.Direction)
 		default:
 			cmd = s.editors[s.cursor].Update(msg)
 		}
@@ -71,11 +59,9 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, s.keymap.Escape):
 				cmd = command.SwitchToPrevScreenCmd
 			case key.Matches(msg, s.keymap.Up):
-				s.cursor--
-				s.editors[s.cursor].Focus()
+				s.moveCursor(command.UpDirection)
 			case key.Matches(msg, s.keymap.Down):
-				s.cursor = 0
-				s.editors[s.cursor].Focus()
+				s.moveCursor(command.DownDirection)
 			case key.Matches(msg, s.keymap.Enter):
 				cmds := []tea.Cmd{}
 				for _, e := range s.editors {
@@ -89,25 +75,72 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, cmd
 }
 
+func (s *EditorScreen) moveCursor(dir command.Direction) {
+	switch dir {
+	case command.UpDirection:
+		if s.cursor > 0 {
+			s.blurCurrentRow()
+			s.cursor--
+			s.focusCurrentRow()
+			if s.cursor < s.vpCursor {
+				s.vpCursor = s.cursor
+			}
+		} else if s.cursor == 0 {
+			s.blurCurrentRow()
+			s.cursor = len(s.editors)
+			s.vpCursor = max(0, s.cursor-numEditorsVisible)
+		}
+	case command.DownDirection:
+		s.blurCurrentRow()
+		if s.cursor == len(s.editors) {
+			s.cursor = 0
+			s.vpCursor = 0
+		} else {
+			s.cursor++
+			if s.vpCursor+numEditorsVisible <= s.cursor && s.cursor <= len(s.editors) {
+				s.vpCursor++
+			}
+		}
+		s.focusCurrentRow()
+	}
+}
+
 func (s *EditorScreen) View() string {
 	rows := []string{}
 	for _, e := range s.editors {
 		rows = append(rows, styles.ForceWidth(e.View(), styles.SmallScreenWidth-8))
 	}
 	saveButton := styles.RenderItem(s.cursor == len(s.editors), "[ Save ]")
-	rows = append(rows, saveButton)
 
 	horizontalSeparator := styles.MakeHorizontalSeparator(styles.SmallScreenWidth-8, 1)
 
-	separated := []string{rows[0]}
+	separated := []string{rows[s.vpCursor]}
 
-	for _, row := range rows[1:] {
+	for _, row := range rows[s.vpCursor+1 : s.viewportEnd()] {
 		separated = append(separated, horizontalSeparator, row)
 	}
+
+	separated = append(separated, horizontalSeparator, saveButton)
 
 	return styles.DefaultBorderStyle.
 		Width(styles.SmallScreenWidth).
 		Render(lipgloss.JoinVertical(lipgloss.Center, separated...))
+}
+
+func (s *EditorScreen) viewportEnd() int {
+	return min(len(s.editors), s.vpCursor+numEditorsVisible)
+}
+
+func (s *EditorScreen) blurCurrentRow() {
+	if s.cursor != len(s.editors) {
+		s.editors[s.cursor].Blur()
+	}
+}
+
+func (s *EditorScreen) focusCurrentRow() {
+	if s.cursor != len(s.editors) {
+		s.editors[s.cursor].Focus()
+	}
 }
 
 // to fulfill FocusableModel interface

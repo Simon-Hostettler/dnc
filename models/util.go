@@ -27,6 +27,13 @@ const (
 	Expertise
 )
 
+type SpellSource int
+
+const (
+	InSpellbook SpellSource = iota
+	Temporary
+)
+
 var ProficiencySymbols []EnumMapping = []EnumMapping{
 	{Value: int(NoProficiency), Label: "○"},
 	{Value: int(Proficient), Label: "◐"},
@@ -50,6 +57,16 @@ type EnumMapping struct {
 var PreparedSymbols []EnumMapping = []EnumMapping{
 	{Value: 0, Label: "□"},
 	{Value: 1, Label: "■"},
+}
+
+var SpellSourceStrings []EnumMapping = []EnumMapping{
+	{Value: int(InSpellbook), Label: "In Spellbook"},
+	{Value: int(Temporary), Label: "Temporary"},
+}
+
+var SpellSourceSymbols []EnumMapping = []EnumMapping{
+	{Value: int(InSpellbook), Label: ""},
+	{Value: int(Temporary), Label: "⧖"},
 }
 
 var EquippedSymbols []EnumMapping = []EnumMapping{

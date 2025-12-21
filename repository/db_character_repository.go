@@ -409,9 +409,9 @@ func replaceSpells(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, spel
 			sp.ID = uuid.New()
 		}
 		if _, err := tx.ExecContext(ctx, `
-            INSERT INTO spell (id, character_id, name, level, prepared, damage, casting_time, range, duration, components, description)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)
-        `, sp.ID, characterID, sp.Name, sp.Level, sp.Prepared, sp.Damage, sp.CastingTime, sp.Range, sp.Duration, sp.Components, sp.Description); err != nil {
+            INSERT INTO spell (id, character_id, name, school, level, prepared, spell_source, damage, casting_time, range, duration, components, description)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+        `, sp.ID, characterID, sp.Name, sp.School, sp.Level, sp.Prepared, sp.SpellSource, sp.Damage, sp.CastingTime, sp.Range, sp.Duration, sp.Components, sp.Description); err != nil {
 			return err
 		}
 	}

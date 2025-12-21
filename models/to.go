@@ -74,9 +74,11 @@ type SpellTO struct {
 	ID          uuid.UUID `db:"id"`
 	CharacterID uuid.UUID `db:"character_id"`
 	Name        string    `db:"name"`
+	School      string    `db:"school"`
 	Level       int       `db:"level"`
 	// Prepared is stored as 0/1 integer in DB for compactness.
 	Prepared    int       `db:"prepared"`
+	SpellSource int       `db:"spell_source"`
 	Damage      string    `db:"damage"`
 	CastingTime string    `db:"casting_time"`
 	Range       string    `db:"range"`
