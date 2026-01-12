@@ -1,6 +1,8 @@
 package util
 
 import (
+	"unicode"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -43,4 +45,10 @@ func I2b(i int) bool {
 
 func Clamp(i int, l int, h int) int {
 	return min(h, max(l, i))
+}
+
+func IsLetterKey(msg tea.KeyMsg) bool {
+	return msg.Type == tea.KeyRunes &&
+		len(msg.Runes) == 1 &&
+		unicode.IsLetter(msg.Runes[0])
 }

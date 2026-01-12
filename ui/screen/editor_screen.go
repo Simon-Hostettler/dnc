@@ -42,7 +42,7 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if s.cursor >= 0 && s.cursor < len(s.editors) {
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
-			if key.Matches(msg, s.keymap.Escape) {
+			if key.Matches(msg, s.keymap.Escape) && !util.IsLetterKey(msg) {
 				cmd = command.SwitchToPrevScreenCmd
 			} else {
 				cmd = s.editors[s.cursor].Update(msg)
