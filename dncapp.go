@@ -55,7 +55,7 @@ type DnCApp struct {
 }
 
 func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
-	km := util.DefaultKeyMap()
+	km := cfg.KeyMap
 
 	handle, err := db.Open(cfg.DatabasePath)
 	if err != nil {
