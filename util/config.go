@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -15,6 +16,7 @@ import (
 func DefaultConfigDir() string {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
+		slog.Error("cannot determine user config directory", "error", err)
 		panic("Cannot start without a writable data directory.")
 	}
 	return configDir
@@ -79,10 +81,11 @@ func LoadConfig(cfgDir string) (Config, error) {
 	cfgPath := configPath(cfgDir)
 	f, err := os.Open(cfgPath)
 	if err != nil {
+		slog.Warn("config file unreadable, using defaults", "path", cfgPath, "error", err)
 		return def, nil
 	}
 	defer f.Close()
-	var cfg Config
+	cfg := def
 	if err := json.NewDecoder(f).Decode(&cfg); err != nil {
 		return def, err
 	}
@@ -215,8 +218,6 @@ func (km *KeyMap) UnmarshalJSON(data []byte) error {
 		}
 		if dto, ok := m[name]; ok {
 			kmVal.Field(i).Set(reflect.ValueOf(fromDTO(dto)))
-		} else {
-			kmVal.Field(i).Set(reflect.ValueOf(key.Binding{}))
 		}
 	}
 	return nil

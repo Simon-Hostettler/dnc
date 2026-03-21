@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"regexp"
 	"sort"
 	"strings"
@@ -214,6 +215,7 @@ func applyUp(db *sqlx.DB, version int, name, upSQL string) error {
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("commit up %s: %w", name, err)
 	}
+	slog.Info("migration applied", "name", name)
 	return nil
 }
 
@@ -234,6 +236,7 @@ func applyDown(db *sqlx.DB, version int, name, downSQL string) error {
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("commit down %s: %w", name, err)
 	}
+	slog.Info("migration rolled back", "name", name)
 	return nil
 }
 

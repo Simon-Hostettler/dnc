@@ -230,6 +230,12 @@ func (r *DBCharacterRepository) Delete(ctx context.Context, id uuid.UUID) error 
 		if _, err := tx.ExecContext(ctx, `DELETE FROM character_skill WHERE character_id=?`, id); err != nil {
 			return err
 		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM features WHERE character_id=?`, id); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM notes WHERE character_id=?`, id); err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {

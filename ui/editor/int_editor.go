@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"log/slog"
 	"strconv"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -76,6 +77,7 @@ func (s *IntEditor) View() string {
 func (s *IntEditor) Save() tea.Cmd {
 	value, err := strconv.Atoi(s.textInput.Value())
 	if err != nil {
+		slog.Debug("IntEditor: non-numeric input discarded", "label", s.label, "input", s.textInput.Value())
 		return nil
 	}
 	if s.value != nil {

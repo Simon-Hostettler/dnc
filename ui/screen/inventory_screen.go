@@ -117,7 +117,7 @@ func (s *InventoryScreen) View() string {
 
 	content := styles.DefaultBorderStyle.
 		Width(styles.ScreenWidth).
-		Height(spellColHeight).
+		Height(itemColHeight).
 		Render(renderedItems)
 	return lipgloss.JoinVertical(lipgloss.Left, topbar, content)
 }

@@ -102,7 +102,7 @@ func (c CharacterSkillDetailTO) ToCharacterSkillTO() CharacterSkillTO {
 }
 
 func ToModifier(score int, prof Proficiency, profBonus int) int {
-	return (score-10)/2 + profBonus*int(prof)
+	return (score-10)>>1 + profBonus*int(prof)
 }
 
 func (a AbilitiesTO) ToScoreByName(ability string) int {
