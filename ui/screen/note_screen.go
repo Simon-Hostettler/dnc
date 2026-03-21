@@ -126,7 +126,7 @@ func (s *NoteScreen) View() string {
 
 	content := styles.DefaultBorderStyle.
 		Width(styles.ScreenWidth).
-		Height(spellColHeight).
+		Height(noteColHeight).
 		Render(renderedNotes)
 
 	return lipgloss.JoinVertical(lipgloss.Left, topbar, content)
