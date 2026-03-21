@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -69,7 +70,9 @@ func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
 
 	if cfg.Demo {
 		agg := repository.TestCharacter(uuid.New())
-		_, _ = repo.Create(ctx, &agg)
+		if _, err := repo.Create(ctx, &agg); err != nil {
+			slog.Warn("demo mode: failed to create test character", "error", err)
+		}
 	}
 
 	app := &DnCApp{

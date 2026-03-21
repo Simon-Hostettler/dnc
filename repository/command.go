@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"log/slog"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/google/uuid"
@@ -15,6 +16,7 @@ type LoadSummariesMsg struct {
 func LoadSummariesCommand(r CharacterRepository, ctx context.Context) func() tea.Msg {
 	return func() tea.Msg {
 		if sum, err := r.ListSummary(ctx); err != nil {
+			slog.Error("LoadSummaries failed", "error", err)
 			return LoadSummariesMsg{[]models.CharacterSummary{}}
 		} else {
 			return LoadSummariesMsg{sum}
@@ -30,6 +32,7 @@ func DeleteCharacterCmd(r CharacterRepository, ctx context.Context, id uuid.UUID
 	return func() tea.Msg {
 		err := r.Delete(ctx, id)
 		if err != nil {
+			slog.Error("DeleteCharacter failed", "characterId", id, "error", err)
 			return DeleteCharacterMsg{false}
 		}
 		return DeleteCharacterMsg{true}
@@ -43,6 +46,7 @@ type CreateCharacterMsg struct {
 func CreateCharacterCmd(r CharacterRepository, ctx context.Context, name string) func() tea.Msg {
 	return func() tea.Msg {
 		if id, err := r.CreateEmpty(ctx, name); err != nil {
+			slog.Error("CreateCharacter failed", "name", name, "error", err)
 			return CreateCharacterMsg{}
 		} else {
 			return CreateCharacterMsg{id}
@@ -57,7 +61,15 @@ type WriteBackMsg struct {
 func WriteBackCmd(r CharacterRepository, ctx context.Context, c *CharacterAggregate) func() tea.Msg {
 	return func() tea.Msg {
 		err := r.Update(ctx, c)
-		return WriteBackMsg{err == nil}
+		if err != nil {
+			id := ""
+			if c != nil && c.Character != nil {
+				id = c.Character.ID.String()
+			}
+			slog.Error("WriteBack failed", "characterId", id, "error", err)
+			return WriteBackMsg{false}
+		}
+		return WriteBackMsg{true}
 	}
 }
 
@@ -69,6 +81,7 @@ func LoadCharacterCmd(r CharacterRepository, ctx context.Context, id uuid.UUID) 
 	return func() tea.Msg {
 		c, err := r.GetByID(ctx, id)
 		if err != nil {
+			slog.Error("LoadCharacter failed", "characterId", id, "error", err)
 			return LoadCharacterMsg{nil}
 		}
 		return LoadCharacterMsg{c}
