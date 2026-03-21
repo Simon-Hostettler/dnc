@@ -82,7 +82,7 @@ func LoadConfig(cfgDir string) (Config, error) {
 		return def, nil
 	}
 	defer f.Close()
-	var cfg Config
+	cfg := def
 	if err := json.NewDecoder(f).Decode(&cfg); err != nil {
 		return def, err
 	}
@@ -215,8 +215,6 @@ func (km *KeyMap) UnmarshalJSON(data []byte) error {
 		}
 		if dto, ok := m[name]; ok {
 			kmVal.Field(i).Set(reflect.ValueOf(fromDTO(dto)))
-		} else {
-			kmVal.Field(i).Set(reflect.ValueOf(key.Binding{}))
 		}
 	}
 	return nil
