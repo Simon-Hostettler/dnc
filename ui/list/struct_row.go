@@ -10,12 +10,12 @@ import (
 )
 
 type StructRow[T any] struct {
-	id         uuid.UUID
-	keymap     util.KeyMap
-	value      *T
-	renderer   func(*T) string
-	editors    []editor.ValueEditor
-	destructor func() tea.Cmd
+	id          uuid.UUID
+	keymap      util.KeyMap
+	value       *T
+	renderer    func(*T) string
+	editors     []editor.ValueEditor
+	destructor  func() tea.Cmd
 	reader      func(*T) string
 	quickAction func(*T) tea.Cmd
 }

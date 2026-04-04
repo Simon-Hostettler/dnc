@@ -41,21 +41,22 @@ This repository is organized as a single Go module (`hostettler.dev/dnc`) with t
 
 ```
 ├── LICENSE
-├── README.md     // <-- You are here
-├── command       // generic cross-package tea commands
-├── db            // Driver for DuckDB, migration logic + migrations
-├── demo.tape     // vhs tape to produce demo gif
-├── dncapp.go     // Main command handler & coordinator, top-level bubble tea program
+├── README.md              // <-- You are here
+├── architecture_test.go   // enforces arch layout + interface implementation
+├── command                // generic cross-package tea commands
+├── db                     // Driver for DuckDB, migration logic + migrations
+├── demo.tape              // vhs tape to produce demo gif
+├── dncapp.go              // Main command handler & coordinator, top-level bubble tea program
 ├── go.mod
 ├── go.sum
-├── main.go       // Application bootstrap
-├── models        // Types reflecting stored data objects & helper types
-├── repository    // Interfaces + implementations for data repositories
-├── ui            // Screens, editors, other tea models
-└── util          // Configs & small utilities
+├── main.go                // Application bootstrap
+├── models                 // Types reflecting stored data objects & helper types
+├── repository             // Interfaces + implementations for data repositories
+├── ui                     // Screens, editors, other tea models
+└── util                   // Configs & small utilities
 ```
 
-To avoid convoluted dependencies, `command`, `util` and `db` are not allowed to have internal dependencies. `repository` can only depend on `models`, `db` and `util`. Only `dncapp.go` and packages in `ui` are allowed to import the others. Packages in `ui` should avoid depending on each other, except for `screen`, which brings them together.
+To avoid convoluted dependencies, `command`, `util`, `models` and `db` are not allowed to have internal dependencies. `repository` can only depend on `models`, `db` and `util`. Only `dncapp.go` and packages in `ui` are allowed to import the others. Packages in `ui` should avoid depending on each other, except for `screen`, which brings them together.
 
 ## Data
 

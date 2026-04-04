@@ -122,42 +122,42 @@ func GetConfig(cfgDir string, demo bool) (Config, func(), error) {
 }
 
 type KeyMap struct {
-	Up         key.Binding `json:"up"`
-	Down       key.Binding `json:"down"`
-	Left       key.Binding `json:"left"`
-	Right      key.Binding `json:"right"`
-	Select     key.Binding `json:"select"`
-	Edit       key.Binding `json:"edit"`
-	Enter      key.Binding `json:"enter"`
-	Escape     key.Binding `json:"escape"`
-	Delete     key.Binding `json:"delete"`
-	ForceQuit  key.Binding `json:"force_quit"`
-	Show       key.Binding `json:"show"`
-	Screen1    key.Binding `json:"screen1"`
-	Screen2    key.Binding `json:"screen2"`
-	Screen3    key.Binding `json:"screen3"`
-	Screen4    key.Binding `json:"screen4"`
-	ShowKeymap    key.Binding `json:"show_keymap"`
-	QuickAction   key.Binding `json:"quick_action"`
+	Up          key.Binding `json:"up"`
+	Down        key.Binding `json:"down"`
+	Left        key.Binding `json:"left"`
+	Right       key.Binding `json:"right"`
+	Select      key.Binding `json:"select"`
+	Edit        key.Binding `json:"edit"`
+	Enter       key.Binding `json:"enter"`
+	Escape      key.Binding `json:"escape"`
+	Delete      key.Binding `json:"delete"`
+	ForceQuit   key.Binding `json:"force_quit"`
+	Show        key.Binding `json:"show"`
+	Screen1     key.Binding `json:"screen1"`
+	Screen2     key.Binding `json:"screen2"`
+	Screen3     key.Binding `json:"screen3"`
+	Screen4     key.Binding `json:"screen4"`
+	ShowKeymap  key.Binding `json:"show_keymap"`
+	QuickAction key.Binding `json:"quick_action"`
 }
 
 func DefaultKeyMap() KeyMap {
 	return KeyMap{
-		Up:         key.NewBinding(key.WithKeys("up")),
-		Down:       key.NewBinding(key.WithKeys("down")),
-		Left:       key.NewBinding(key.WithKeys("left")),
-		Right:      key.NewBinding(key.WithKeys("right")),
-		Select:     key.NewBinding(key.WithKeys(" ", "enter")),
-		Edit:       key.NewBinding(key.WithKeys("e")),
-		Enter:      key.NewBinding(key.WithKeys("enter")),
-		Escape:     key.NewBinding(key.WithKeys("esc", "q")),
-		Delete:     key.NewBinding(key.WithKeys("x", "del")),
-		ForceQuit:  key.NewBinding(key.WithKeys("ctrl+c")),
-		Show:       key.NewBinding(key.WithKeys(" ")),
-		Screen1:    key.NewBinding(key.WithKeys("ctrl+a")),
-		Screen2:    key.NewBinding(key.WithKeys("ctrl+s")),
-		Screen3:    key.NewBinding(key.WithKeys("ctrl+d")),
-		Screen4:    key.NewBinding(key.WithKeys("ctrl+f")),
+		Up:          key.NewBinding(key.WithKeys("up")),
+		Down:        key.NewBinding(key.WithKeys("down")),
+		Left:        key.NewBinding(key.WithKeys("left")),
+		Right:       key.NewBinding(key.WithKeys("right")),
+		Select:      key.NewBinding(key.WithKeys(" ", "enter")),
+		Edit:        key.NewBinding(key.WithKeys("e")),
+		Enter:       key.NewBinding(key.WithKeys("enter")),
+		Escape:      key.NewBinding(key.WithKeys("esc", "q")),
+		Delete:      key.NewBinding(key.WithKeys("x", "del")),
+		ForceQuit:   key.NewBinding(key.WithKeys("ctrl+c")),
+		Show:        key.NewBinding(key.WithKeys(" ")),
+		Screen1:     key.NewBinding(key.WithKeys("ctrl+a")),
+		Screen2:     key.NewBinding(key.WithKeys("ctrl+s")),
+		Screen3:     key.NewBinding(key.WithKeys("ctrl+d")),
+		Screen4:     key.NewBinding(key.WithKeys("ctrl+f")),
 		ShowKeymap:  key.NewBinding(key.WithKeys("ctrl+h")),
 		QuickAction: key.NewBinding(key.WithKeys("tab")),
 	}

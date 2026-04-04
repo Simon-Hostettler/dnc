@@ -118,7 +118,7 @@ func TestDeleteNote(t *testing.T) {
 
 func TestGetSpellsByLevel(t *testing.T) {
 	agg := newTestAggregate()
-	agg.AddEmptySpell(0) // cantrip
+	agg.AddEmptySpell(0)
 	agg.AddEmptySpell(1)
 	agg.AddEmptySpell(1)
 	agg.AddEmptySpell(3)
