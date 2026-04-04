@@ -206,13 +206,7 @@ func (s *SpellScreen) populateSpells() {
 func (s *SpellScreen) getSpellListByLevel(l int) []list.Row {
 	rows := []list.Row{}
 	spells := s.character.GetSpellsByLevel(l)
-	rows = append(rows, list.NewStructRow(s.keymap,
-		&SpellListHeader{l, &s.character.Character.SpellSlots[l], &s.character.Character.SpellSlotsUsed[l]},
-		renderSpellHeaderRow,
-		[]editor.ValueEditor{
-			editor.NewIntEditor(s.keymap, "Used Spell Slots", &s.character.Character.SpellSlotsUsed[l]),
-			editor.NewIntEditor(s.keymap, "Max Spell Slots", &s.character.Character.SpellSlots[l]),
-		}))
+	rows = append(rows, s.newSpellHeaderRow(l))
 	rows = append(rows, list.NewSeparatorRow("─", spellColWidth-6))
 	for _, spell := range spells {
 		rows = append(rows, list.NewStructRow(s.keymap, spell,
@@ -277,6 +271,24 @@ type SpellListHeader struct {
 	level int
 	slots *int
 	used  *int
+}
+
+func (s *SpellScreen) newSpellHeaderRow(l int) *list.StructRow[SpellListHeader] {
+	return list.NewStructRow(s.keymap,
+		&SpellListHeader{l, &s.character.Character.SpellSlots[l], &s.character.Character.SpellSlotsUsed[l]},
+		renderSpellHeaderRow,
+		[]editor.ValueEditor{
+			editor.NewIntEditor(s.keymap, "Used Spell Slots", &s.character.Character.SpellSlotsUsed[l]),
+			editor.NewIntEditor(s.keymap, "Max Spell Slots", &s.character.Character.SpellSlots[l]),
+		}).WithQuickAction(cycleSpellSlots)
+}
+
+func cycleSpellSlots(h *SpellListHeader) tea.Cmd {
+	if *h.slots <= 0 {
+		return nil
+	}
+	*h.used = (*h.used + 1) % (*h.slots + 1)
+	return command.WriteBackRequest
 }
 
 func renderSpellHeaderRow(h *SpellListHeader) string {

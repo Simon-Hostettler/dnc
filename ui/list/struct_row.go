@@ -16,7 +16,8 @@ type StructRow[T any] struct {
 	renderer   func(*T) string
 	editors    []editor.ValueEditor
 	destructor func() tea.Cmd
-	reader     func(*T) string
+	reader      func(*T) string
+	quickAction func(*T) tea.Cmd
 }
 
 func NewStructRow[T any](
@@ -44,6 +45,11 @@ func (r *StructRow[T]) WithReader(reader func(*T) string) *StructRow[T] {
 	return r
 }
 
+func (r *StructRow[T]) WithQuickAction(action func(*T) tea.Cmd) *StructRow[T] {
+	r.quickAction = action
+	return r
+}
+
 func (r *StructRow[T]) Id() uuid.UUID {
 	return r.id
 }
@@ -62,6 +68,8 @@ func (r *StructRow[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r, command.LaunchConfirmationDialogueCmd(r.destructor)
 		case key.Matches(msg, r.keymap.Show) && r.reader != nil:
 			return r, command.LaunchReaderScreenCmd(r.reader(r.value))
+		case key.Matches(msg, r.keymap.QuickAction) && r.quickAction != nil:
+			return r, r.quickAction(r.value)
 		}
 	}
 	return r, nil
