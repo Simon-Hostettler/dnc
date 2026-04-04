@@ -1,7 +1,7 @@
 package editor
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"hostettler.dev/dnc/util"
 )
 
@@ -19,7 +19,7 @@ type ValueEditor interface {
 
 	Update(tea.Msg) tea.Cmd
 
-	View() string
+	View() string // ValueEditor is not a tea.Model; returns plain string
 
 	// Updates the delegator, does not store changes to filesystem.
 	Save() tea.Cmd

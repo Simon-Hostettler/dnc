@@ -1,8 +1,8 @@
 package list
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/editor"
@@ -60,7 +60,7 @@ func (r *StructRow[T]) Init() tea.Cmd {
 
 func (r *StructRow[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, r.keymap.Edit):
 			return r, editor.EditValueCmd(r.editors)
@@ -75,8 +75,8 @@ func (r *StructRow[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return r, nil
 }
 
-func (r *StructRow[T]) View() string {
-	return r.renderer(r.value)
+func (r *StructRow[T]) View() tea.View {
+	return tea.NewView(r.renderer(r.value))
 }
 
 func (r *StructRow[T]) Editors() []editor.ValueEditor {

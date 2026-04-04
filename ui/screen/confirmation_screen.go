@@ -1,9 +1,9 @@
 package screen
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/util"
@@ -39,7 +39,7 @@ func (s *ConfirmationScreen) LaunchConfirmation(callback func() tea.Cmd) {
 func (s *ConfirmationScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, s.keymap.Enter):
 			if s.confirmation {
@@ -56,7 +56,7 @@ func (s *ConfirmationScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, cmd
 }
 
-func (s *ConfirmationScreen) View() string {
+func (s *ConfirmationScreen) View() tea.View {
 	dialogue := styles.DefaultTextStyle.
 		Height(confirmationScreenHeight/2 - 1).
 		AlignHorizontal(lipgloss.Center).
@@ -77,8 +77,8 @@ func (s *ConfirmationScreen) View() string {
 
 	content := lipgloss.JoinVertical(lipgloss.Center, dialogue, buttons)
 
-	return styles.DefaultBorderStyle.
-		Render(content)
+	return tea.NewView(styles.DefaultBorderStyle.
+		Render(content))
 }
 
 // to fulfill FocusableModel interface

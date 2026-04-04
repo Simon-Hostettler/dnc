@@ -3,7 +3,7 @@ package list
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/ui/editor"
 )
@@ -30,8 +30,8 @@ func (r *SeparatorRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return r, nil
 }
 
-func (r *SeparatorRow) View() string {
-	return strings.Repeat(r.symbol, r.width)
+func (r *SeparatorRow) View() tea.View {
+	return tea.NewView(strings.Repeat(r.symbol, r.width))
 }
 
 func (c *SeparatorRow) Editors() []editor.ValueEditor {

@@ -3,7 +3,7 @@ package util
 import (
 	"unicode"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 func Map[T, V any](ts []T, fn func(T) V) []V {
@@ -47,8 +47,7 @@ func Clamp(i int, l int, h int) int {
 	return min(h, max(l, i))
 }
 
-func IsLetterKey(msg tea.KeyMsg) bool {
-	return msg.Type == tea.KeyRunes &&
-		len(msg.Runes) == 1 &&
-		unicode.IsLetter(msg.Runes[0])
+func IsLetterKey(msg tea.KeyPressMsg) bool {
+	return len(msg.Text) == 1 &&
+		unicode.IsLetter(rune(msg.Text[0]))
 }

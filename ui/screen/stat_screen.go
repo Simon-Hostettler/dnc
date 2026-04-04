@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/models"
@@ -110,7 +110,7 @@ func (s *StatScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch s.focusedElement.(type) {
 		case *list.List:
 			switch {
@@ -263,10 +263,10 @@ func (s *StatScreen) moveFocus(d command.Direction) tea.Cmd {
 	return cmd
 }
 
-func (s *StatScreen) View() string {
-	characterInfo := s.characterInfo.View()
+func (s *StatScreen) View() tea.View {
+	characterInfo := s.characterInfo.View().Content
 
-	abilities := s.abilities.View()
+	abilities := s.abilities.View().Content
 
 	topBarSeparator := styles.MakeVerticalSeparator(statTopBarHeight)
 
@@ -281,11 +281,11 @@ func (s *StatScreen) View() string {
 	leftColumn := styles.DefaultBorderStyle.
 		Height(statColHeight).
 		Width(statLeftColWidth).
-		Render(s.skills.View())
+		Render(s.skills.View().Content)
 
-	savingThrows := s.savingThrows.View()
+	savingThrows := s.savingThrows.View().Content
 
-	combatInfo := s.combatInfo.View()
+	combatInfo := s.combatInfo.View().Content
 
 	midBoxInnerSeparator := styles.MakeHorizontalSeparator(statMidColWidth-4, 1)
 
@@ -296,7 +296,7 @@ func (s *StatScreen) View() string {
 
 	actions := s.RenderActions()
 
-	attacks := s.attacks.View()
+	attacks := s.attacks.View().Content
 
 	rightBoxInnerSeparator := styles.MakeHorizontalSeparator(statRightContentWidth, 1)
 
@@ -307,17 +307,17 @@ func (s *StatScreen) View() string {
 
 	body := lipgloss.JoinHorizontal(lipgloss.Left, leftColumn, midColumn, rightColumn)
 
-	return lipgloss.JoinVertical(lipgloss.Center, topBar, body)
+	return tea.NewView(lipgloss.JoinVertical(lipgloss.Center, topBar, body))
 }
 
 func (s *StatScreen) RenderActions() string {
 	actionTitle := styles.RenderItem(s.actions.InFocus(), "Actions") + "\n"
-	actionBody := styles.DefaultTextStyle.Width(statRightContentWidth).Render(s.actions.View())
+	actionBody := styles.DefaultTextStyle.Width(statRightContentWidth).Render(s.actions.View().Content)
 
 	separator := styles.MakeHorizontalSeparator(statRightContentWidth, 1)
 
 	bonusActionTitle := styles.RenderItem(s.bonusActions.InFocus(), "Bonus Actions") + "\n"
-	bonusActionBody := styles.DefaultTextStyle.Width(statRightContentWidth).Render(s.bonusActions.View())
+	bonusActionBody := styles.DefaultTextStyle.Width(statRightContentWidth).Render(s.bonusActions.View().Content)
 
 	return lipgloss.JoinVertical(lipgloss.Center, actionTitle, actionBody, separator, bonusActionTitle, bonusActionBody)
 }

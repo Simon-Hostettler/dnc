@@ -3,9 +3,9 @@ package viewport
 import (
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"hostettler.dev/dnc/util"
 )
 
@@ -37,7 +37,7 @@ func (v *Viewport) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, v.keymap.Up):
 			v.MoveCursor(-1)
@@ -48,11 +48,11 @@ func (v *Viewport) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return v, cmd
 }
 
-func (v *Viewport) View() string {
+func (v *Viewport) View() tea.View {
 	viewableContent := strings.Join(v.content[v.cursor:v.cursorEnd()], "\n")
 
-	return lipgloss.NewStyle().
-		Render(viewableContent)
+	return tea.NewView(lipgloss.NewStyle().
+		Render(viewableContent))
 }
 
 func (v *Viewport) UpdateContent(content string) {

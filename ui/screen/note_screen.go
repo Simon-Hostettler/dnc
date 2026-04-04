@@ -3,10 +3,10 @@ package screen
 import (
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
-	ti "github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	ti "charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/models"
@@ -36,7 +36,7 @@ type NoteScreen struct {
 
 func NewNoteScreen(k util.KeyMap, c *repository.CharacterAggregate) *NoteScreen {
 	sf := ti.New()
-	sf.Width = noteColWidth
+	sf.SetWidth(noteColWidth)
 	sf.CharLimit = noteColWidth
 	sf.Placeholder = ""
 	sf.Prompt = ""
@@ -80,7 +80,7 @@ func (s *NoteScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch s.focusedElement.(type) {
 		case *textinput.TextInput:
 			switch {
@@ -120,16 +120,16 @@ func (s *NoteScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, cmd
 }
 
-func (s *NoteScreen) View() string {
+func (s *NoteScreen) View() tea.View {
 	topbar := s.RenderNoteScreenTopBar()
-	renderedNotes := s.noteList.View()
+	renderedNotes := s.noteList.View().Content
 
 	content := styles.DefaultBorderStyle.
 		Width(styles.ScreenWidth).
 		Height(noteColHeight).
 		Render(renderedNotes)
 
-	return lipgloss.JoinVertical(lipgloss.Left, topbar, content)
+	return tea.NewView(lipgloss.JoinVertical(lipgloss.Left, topbar, content))
 }
 
 func (s *NoteScreen) focusOn(m FocusableModel) {
@@ -222,7 +222,7 @@ func (s *NoteScreen) RenderNoteScreenTopBar() string {
 	return styles.DefaultBorderStyle.
 		Width(styles.ScreenWidth).
 		AlignHorizontal(lipgloss.Left).
-		Render(s.searchField.View())
+		Render(s.searchField.View().Content)
 }
 
 func renderNoteInfoRow(n *models.NoteTO) string {

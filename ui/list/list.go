@@ -3,9 +3,9 @@ package list
 import (
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/editor"
@@ -19,7 +19,7 @@ type Row interface {
 	Id() uuid.UUID
 	Init() tea.Cmd
 	Update(tea.Msg) (tea.Model, tea.Cmd)
-	View() string
+	View() tea.View
 	Editors() []editor.ValueEditor
 	Selectable() bool
 }
@@ -195,7 +195,7 @@ func (t *List) Update(m tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := m.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, t.KeyMap.Up):
 			cmd = t.MoveCursor(-1)
@@ -212,11 +212,11 @@ func (t *List) Update(m tea.Msg) (tea.Model, tea.Cmd) {
 	return t, cmd
 }
 
-func (t *List) View() string {
+func (t *List) View() tea.View {
 	if t.viewport {
-		return strings.Join(t.toLines()[t.vpCursor:t.viewportEnd()], "\n")
+		return tea.NewView(strings.Join(t.toLines()[t.vpCursor:t.viewportEnd()], "\n"))
 	} else {
-		return t.RenderFullContent()
+		return tea.NewView(t.RenderFullContent())
 	}
 }
 
@@ -250,7 +250,7 @@ func (t *List) RenderBody() string {
 	rows := []string{}
 
 	for i, el := range t.visible {
-		elStr := el.View()
+		elStr := el.View().Content
 		var row string
 		if t.focus && i == t.cursor {
 			if t.fixedWidth != -1 {

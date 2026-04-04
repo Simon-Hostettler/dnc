@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/models"
@@ -93,7 +93,7 @@ func (s *ProfileScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch s.focusedElement.(type) {
 		case *list.List:
 			switch {
@@ -217,10 +217,10 @@ func (s *ProfileScreen) moveFocus(d command.Direction) tea.Cmd {
 	return cmd
 }
 
-func (s *ProfileScreen) View() string {
-	characterInfo := s.characterInfo.View()
+func (s *ProfileScreen) View() tea.View {
+	characterInfo := s.characterInfo.View().Content
 
-	characterAppearance := s.characterAppearance.View()
+	characterAppearance := s.characterAppearance.View().Content
 
 	topBarSeparator := styles.MakeVerticalSeparator(profileTopBarHeight)
 
@@ -235,7 +235,7 @@ func (s *ProfileScreen) View() string {
 	leftColumn := styles.DefaultBorderStyle.
 		Height(profileColHeight).
 		Width(profileLeftColWidth).
-		Render(s.features.View())
+		Render(s.features.View().Content)
 
 	midColumn := styles.DefaultBorderStyle.
 		Width(profileMidColWidth).
@@ -254,14 +254,14 @@ func (s *ProfileScreen) View() string {
 
 	body := lipgloss.JoinHorizontal(lipgloss.Left, leftColumn, midColumn, rightColumn)
 
-	return lipgloss.JoinVertical(lipgloss.Center, topBar, body)
+	return tea.NewView(lipgloss.JoinVertical(lipgloss.Center, topBar, body))
 }
 
 func (s *ProfileScreen) RenderBackstory() string {
 	title := lipgloss.NewStyle().Width(profileMidColWidth).Render(
 		styles.RenderItem(s.backstory.InFocus(), "Backstory") + "\n",
 	)
-	body := styles.DefaultTextStyle.Width(profileMidColWidth).Render(s.backstory.View())
+	body := styles.DefaultTextStyle.Width(profileMidColWidth).Render(s.backstory.View().Content)
 
 	return lipgloss.JoinVertical(lipgloss.Center, title, body)
 }
@@ -270,7 +270,7 @@ func (s *ProfileScreen) RenderPersonality() string {
 	title := lipgloss.NewStyle().Width(profileRightColWidth).Render(
 		styles.RenderItem(s.personality.InFocus(), "Personality") + "\n",
 	)
-	body := styles.DefaultTextStyle.Width(profileRightColWidth).Render(s.personality.View())
+	body := styles.DefaultTextStyle.Width(profileRightColWidth).Render(s.personality.View().Content)
 
 	return lipgloss.JoinVertical(lipgloss.Center, title, body)
 }
@@ -279,7 +279,7 @@ func (s *ProfileScreen) RenderAppearance() string {
 	title := lipgloss.NewStyle().Width(profileRightColWidth).Render(
 		styles.RenderItem(s.appearance.InFocus(), "Appearance") + "\n",
 	)
-	body := styles.DefaultTextStyle.Width(profileRightColWidth).Render(s.appearance.View())
+	body := styles.DefaultTextStyle.Width(profileRightColWidth).Render(s.appearance.View().Content)
 
 	return lipgloss.JoinVertical(lipgloss.Center, title, body)
 }

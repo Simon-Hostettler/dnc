@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/models"
@@ -79,7 +79,7 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch s.focusedElement.(type) {
 		case *list.List:
 			switch {
@@ -108,15 +108,15 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, cmd
 }
 
-func (s *SpellScreen) View() string {
+func (s *SpellScreen) View() tea.View {
 	topbar := s.RenderSpellScreenTopBar()
-	renderedSpells := s.spellList.View()
+	renderedSpells := s.spellList.View().Content
 
 	content := styles.DefaultBorderStyle.
 		Width(styles.ScreenWidth).
 		Height(spellColHeight).
 		Render(renderedSpells)
-	return lipgloss.JoinVertical(lipgloss.Left, topbar, content)
+	return tea.NewView(lipgloss.JoinVertical(lipgloss.Left, topbar, content))
 }
 
 func (s *SpellScreen) focusOn(m FocusableModel) {
@@ -260,11 +260,11 @@ func (s *SpellScreen) RenderSpellScreenTopBar() string {
 	return styles.DefaultBorderStyle.
 		Width(styles.ScreenWidth).
 		Render(lipgloss.JoinHorizontal(lipgloss.Center,
-			styles.ForceWidth(s.spellAbility.View(), spellTopBarElemWidth),
+			styles.ForceWidth(s.spellAbility.View().Content, spellTopBarElemWidth),
 			separator,
-			styles.ForceWidth(s.spellSaveDC.View(), spellTopBarElemWidth),
+			styles.ForceWidth(s.spellSaveDC.View().Content, spellTopBarElemWidth),
 			separator,
-			styles.ForceWidth(s.spellAtkBonus.View(), spellTopBarElemWidth)))
+			styles.ForceWidth(s.spellAtkBonus.View().Content, spellTopBarElemWidth)))
 }
 
 type SpellListHeader struct {

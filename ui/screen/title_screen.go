@@ -7,16 +7,16 @@ import (
 	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/util"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 type FocusableModel interface {
 	Init() tea.Cmd
 	Update(tea.Msg) (tea.Model, tea.Cmd)
-	View() string
+	View() tea.View
 	Focus()
 	Blur()
 }
@@ -46,7 +46,7 @@ type TitleScreen struct {
 
 func NewTitleScreen(km util.KeyMap) *TitleScreen {
 	ti := textinput.New()
-	ti.Width = inputWidth
+	ti.SetWidth(inputWidth)
 	ti.CharLimit = inputLimit
 	ti.Placeholder = "Character Name"
 
@@ -75,7 +75,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// New character creation
 	if m.nameInput.Focused() {
 		switch msg := msg.(type) {
-		case tea.KeyMsg:
+		case tea.KeyPressMsg:
 			switch {
 			case key.Matches(msg, m.KeyMap.Escape):
 				m.nameInput.Reset()
@@ -106,7 +106,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	} else {
 		// Otherwise
 		switch msg := msg.(type) {
-		case tea.KeyMsg:
+		case tea.KeyPressMsg:
 			switch {
 			case key.Matches(msg, m.KeyMap.Up):
 				m.characters.SetCursor(m.characters.Size() - 1)
@@ -123,12 +123,12 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *TitleScreen) View() string {
+func (m *TitleScreen) View() tea.View {
 	createField := styles.RenderItem(!m.characters.InFocus(), "Create new Character")
 
 	separator := styles.MakeHorizontalSeparator(titleScreenWidth/2, 1)
 
-	chars := "\n" + m.characters.View()
+	chars := "\n" + m.characters.View().Content
 
 	inputField := ""
 	if m.nameInput.Focused() {
@@ -139,14 +139,14 @@ func (m *TitleScreen) View() string {
 		"Press '" + m.KeyMap.ShowKeymap.Keys()[0] + "' to show key bindings",
 	)
 
-	return lipgloss.JoinVertical(lipgloss.Center,
+	return tea.NewView(lipgloss.JoinVertical(lipgloss.Center,
 		logo,
 		styles.DefaultBorderStyle.
 			Width(titleScreenWidth).
 			Height(titleScreenHeight).
 			Render(lipgloss.PlaceVertical(titleScreenHeight, lipgloss.Center,
 				lipgloss.JoinVertical(lipgloss.Center, createField, inputField, separator, chars))),
-		helperNotice)
+		helperNotice))
 }
 
 // to fulfill FocusableModel interface

@@ -1,7 +1,7 @@
 package list
 
 import (
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"hostettler.dev/dnc/ui/styles"
 )
 

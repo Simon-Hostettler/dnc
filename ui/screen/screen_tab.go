@@ -1,9 +1,9 @@
 package screen
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/util"
@@ -32,7 +32,7 @@ func (s *ScreenTab) Init() tea.Cmd {
 func (s *ScreenTab) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if key.Matches(msg, s.keymap.Enter) {
 			cmd = command.SwitchScreenCmd(s.screenIndex)
 		}
@@ -40,18 +40,18 @@ func (s *ScreenTab) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, cmd
 }
 
-func (s *ScreenTab) View() string {
+func (s *ScreenTab) View() tea.View {
 	name := s.name
 	if s.focus {
 		name = styles.ItemStyleSelected.Render(name)
 	} else {
 		name = styles.ItemStyleDefault.Render(name)
 	}
-	return styles.DefaultBorderStyle.UnsetPadding().
+	return tea.NewView(styles.DefaultBorderStyle.UnsetPadding().
 		AlignVertical(lipgloss.Center).
 		Width(tabWidth).
 		Height(tabHeight).
-		Render(name)
+		Render(name))
 }
 
 func (s *ScreenTab) Focus() {

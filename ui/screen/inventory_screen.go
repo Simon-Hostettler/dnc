@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/models"
@@ -82,7 +82,7 @@ func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch s.focusedElement.(type) {
 		case *list.List:
 			switch {
@@ -111,15 +111,15 @@ func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, cmd
 }
 
-func (s *InventoryScreen) View() string {
+func (s *InventoryScreen) View() tea.View {
 	topbar := s.RenderInventoryScreenTopBar()
-	renderedItems := s.itemList.View()
+	renderedItems := s.itemList.View().Content
 
 	content := styles.DefaultBorderStyle.
 		Width(styles.ScreenWidth).
 		Height(itemColHeight).
 		Render(renderedItems)
-	return lipgloss.JoinVertical(lipgloss.Left, topbar, content)
+	return tea.NewView(lipgloss.JoinVertical(lipgloss.Left, topbar, content))
 }
 
 func (s *InventoryScreen) focusOn(m FocusableModel) {
@@ -262,15 +262,15 @@ func (s *InventoryScreen) RenderInventoryScreenTopBar() string {
 		AlignHorizontal(lipgloss.Left).
 		Render(lipgloss.JoinHorizontal(
 			lipgloss.Center,
-			styles.ForceWidth(s.copper.View(), 15),
+			styles.ForceWidth(s.copper.View().Content, 15),
 			separator,
-			styles.ForceWidth(s.silver.View(), 15),
+			styles.ForceWidth(s.silver.View().Content, 15),
 			separator,
-			styles.ForceWidth(s.electrum.View(), 15),
+			styles.ForceWidth(s.electrum.View().Content, 15),
 			separator,
-			styles.ForceWidth(s.gold.View(), 15),
+			styles.ForceWidth(s.gold.View().Content, 15),
 			separator,
-			styles.ForceWidth(s.platinum.View(), 15),
+			styles.ForceWidth(s.platinum.View().Content, 15),
 		))
 }
 
