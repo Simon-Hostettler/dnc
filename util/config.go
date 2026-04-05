@@ -138,6 +138,7 @@ type KeyMap struct {
 	Screen3     key.Binding `json:"screen3"`
 	Screen4     key.Binding `json:"screen4"`
 	ShowKeymap  key.Binding `json:"show_keymap"`
+	Cycle       key.Binding `json:"cycle"`
 	QuickAction key.Binding `json:"quick_action"`
 }
 
@@ -159,7 +160,8 @@ func DefaultKeyMap() KeyMap {
 		Screen3:     key.NewBinding(key.WithKeys("ctrl+d")),
 		Screen4:     key.NewBinding(key.WithKeys("ctrl+f")),
 		ShowKeymap:  key.NewBinding(key.WithKeys("ctrl+h")),
-		QuickAction: key.NewBinding(key.WithKeys("tab")),
+		Cycle:       key.NewBinding(key.WithKeys("tab")),
+		QuickAction: key.NewBinding(key.WithKeys(":")),
 	}
 }
 

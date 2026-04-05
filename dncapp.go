@@ -13,6 +13,7 @@ import (
 	"hostettler.dev/dnc/db"
 	"hostettler.dev/dnc/repository"
 	"hostettler.dev/dnc/ui/editor"
+	"hostettler.dev/dnc/ui/quickaction"
 	"hostettler.dev/dnc/ui/screen"
 	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/util"
@@ -53,6 +54,7 @@ type DnCApp struct {
 	inventoryScreen    *screen.InventoryScreen
 	readerScreen       *screen.ReaderScreen
 	noteScreen         *screen.NoteScreen
+	palette            *quickaction.Palette
 }
 
 func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
@@ -92,6 +94,7 @@ func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
 		editorScreen:       screen.NewEditorScreen(km, []editor.ValueEditor{}),
 		confirmationScreen: screen.NewConfirmationScreen(km),
 		readerScreen:       screen.NewReaderScreen(km),
+		palette:            quickaction.NewPalette(km, quickaction.NewRegistry()),
 	}
 
 	return app, nil
@@ -148,6 +151,10 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, a.keymap.ForceQuit):
 			return a, tea.Quit
+		case a.palette.Active():
+			cmd = a.palette.Update(msg)
+		case key.Matches(msg, a.keymap.QuickAction) && a.isCharacterInitialized:
+			a.palette.Open()
 		case key.Matches(msg, a.keymap.Screen1):
 			cmd = command.SwitchScreenCmd(command.StatScreenIndex)
 		case key.Matches(msg, a.keymap.Screen2):
@@ -253,6 +260,15 @@ func (a *DnCApp) View() tea.View {
 		PaddingTop(topPad).
 		Render(pageContent)
 
+	if a.palette.Active() {
+		paletteView := a.palette.View()
+		cx := (pageWidth - lipgloss.Width(paletteView)) / 2
+		cy := (pageHeight - lipgloss.Height(paletteView)) / 2
+		bg := lipgloss.NewLayer(s)
+		fg := lipgloss.NewLayer(paletteView).X(cx).Y(cy).Z(1)
+		s = lipgloss.NewCompositor(bg, fg).Render()
+	}
+
 	v := tea.NewView(s)
 	v.AltScreen = true
 	return v
@@ -272,6 +288,7 @@ func (a *DnCApp) populateCharacterScreens(agg *repository.CharacterAggregate) te
 	a.noteScreen = screen.NewNoteScreen(a.keymap, agg)
 	cmds = append(cmds, a.noteScreen.Init())
 
+	a.palette.SetCharacter(agg)
 	a.isCharacterInitialized = true
 
 	cmds = util.DropNil(cmds)
