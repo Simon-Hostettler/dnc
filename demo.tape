@@ -65,7 +65,13 @@ Sleep 0.25
 Tab
 Sleep 0.25
 Tab
+Sleep 0.5
+Type ":"
 Sleep 0.25
+Type "cast 1"
+Sleep 0.25
+Enter
+Sleep 0.5
 Down
 Sleep 0.5
 Type " "
