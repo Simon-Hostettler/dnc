@@ -23,7 +23,7 @@ var (
 
 	profileColHeight    = 27
 	profileLeftColWidth = 32
-	profileMidColWidth  = 38
+	profileMidColWidth  = 40
 
 	profileRightColWidth     = 28
 	profileRightContentWidth = profileRightColWidth - 6
@@ -50,7 +50,7 @@ func NewProfileScreen(km util.KeyMap, c *repository.CharacterAggregate) *Profile
 	s := &ProfileScreen{
 		keymap:              km,
 		agg:                 c,
-		backstory:           component.NewSimpleTextComponent(km, "Backstory", &c.Character.Backstory, profileColHeight-4, profileMidColWidth-4),
+		backstory:           component.NewSimpleTextComponent(km, "Backstory", &c.Character.Backstory, profileColHeight-6, profileMidColWidth-6),
 		appearance:          component.NewSimpleTextComponent(km, "Appearance", &c.Character.Appearance, (profileColHeight-10)/2, profileRightColWidth-4),
 		personality:         component.NewSimpleTextComponent(km, "Personality", &c.Character.Personality, (profileColHeight-10)/2, profileRightColWidth-4),
 		characterInfo:       list.NewListWithDefaults(km),
