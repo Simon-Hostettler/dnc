@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	itemColHeight = 32
+	itemColHeight = 30
 	itemColWidth  = styles.ScreenWidth - 10
 )
 
