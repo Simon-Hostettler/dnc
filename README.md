@@ -75,6 +75,20 @@ To avoid convoluted dependencies, `command`, `util`, `models` and `db` are not a
 
 Data is currently stored in a local DuckDB database using sqlx.
 
+To create a backup of the database run:
+
+```
+dnc --backup <output_filename>
+```
+
+To restore a backup run:
+
+```
+dnc --restore <backup_filename>
+```
+
+Be aware that this irreversibly overwrites the current database! Use with caution.
+
 - Location (default): Given by `os.UserConfigDir()` (`~/Library/Application Support/dnc/dnc.db` on macOS)
 - Migrations: custom parser, migration files under `db/migrations`.
 

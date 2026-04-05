@@ -1,10 +1,33 @@
 package util
 
 import (
+	"io"
+	"os"
+	"path/filepath"
 	"unicode"
 
 	tea "charm.land/bubbletea/v2"
 )
+
+func CopyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return err
+	}
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	return err
+}
 
 func Map[T, V any](ts []T, fn func(T) V) []V {
 	result := make([]V, len(ts))
