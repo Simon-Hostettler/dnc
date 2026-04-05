@@ -280,7 +280,7 @@ func (s *SpellScreen) newSpellHeaderRow(l int) *list.StructRow[SpellListHeader] 
 		[]editor.ValueEditor{
 			editor.NewIntEditor(s.keymap, "Used Spell Slots", &s.character.Character.SpellSlotsUsed[l]),
 			editor.NewIntEditor(s.keymap, "Max Spell Slots", &s.character.Character.SpellSlots[l]),
-		}).WithQuickAction(cycleSpellSlots)
+		}).WithCycleAction(cycleSpellSlots)
 }
 
 func cycleSpellSlots(h *SpellListHeader) tea.Cmd {
