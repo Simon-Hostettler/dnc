@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	noteColHeight = 30
-	noteColWidth  = styles.ScreenWidth - 8
+	noteColHeight = 32
+	noteColWidth  = styles.ScreenWidth - 10
 )
 
 type NoteScreen struct {

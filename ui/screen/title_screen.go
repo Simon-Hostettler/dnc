@@ -21,18 +21,16 @@ type FocusableModel interface {
 	Blur()
 }
 
-var logo = styles.DefaultTextStyle.Padding(1).Render(
-	"______ _   _ _____\n" +
-		"|  _  \\ \\ | /  __ \\\n" +
-		"| | | |  \\| | /  \\/\n" +
-		"| | | | . ` | |\n" +
-		"| |/ /| |\\  | \\__/\\\n" +
-		"|___/ \\_| \\_/\\____/",
-)
+var logo = "______ _   _ _____\n" +
+	"|  _  \\ \\ | /  __ \\\n" +
+	"| | | |  \\| | /  \\/\n" +
+	"| | | | . ` | |\n" +
+	"| |/ /| |\\  | \\__/\\\n" +
+	"|___/ \\_| \\_/\\____/"
 
 var (
 	titleScreenWidth  = 50
-	titleScreenHeight = 12
+	titleScreenHeight = 13
 	inputWidth        = 18
 	inputLimit        = 64
 )
@@ -140,7 +138,7 @@ func (m *TitleScreen) View() tea.View {
 	)
 
 	return tea.NewView(lipgloss.JoinVertical(lipgloss.Center,
-		logo,
+		lipgloss.NewStyle().Padding(1).Render(logo),
 		styles.DefaultBorderStyle.
 			Width(titleScreenWidth).
 			Height(titleScreenHeight).

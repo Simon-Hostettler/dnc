@@ -21,8 +21,8 @@ import (
 var (
 	profileTopBarHeight = 6
 
-	profileColHeight    = 25
-	profileLeftColWidth = 30
+	profileColHeight    = 27
+	profileLeftColWidth = 32
 	profileMidColWidth  = 38
 
 	profileRightColWidth     = 28

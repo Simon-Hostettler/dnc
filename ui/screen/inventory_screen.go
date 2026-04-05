@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	itemColHeight = 30
-	itemColWidth  = styles.ScreenWidth - 8
+	itemColHeight = 32
+	itemColWidth  = styles.ScreenWidth - 10
 )
 
 type InventoryScreen struct {

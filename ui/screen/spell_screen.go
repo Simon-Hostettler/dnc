@@ -21,7 +21,7 @@ import (
 
 var (
 	spellColHeight       = 30
-	spellColWidth        = styles.ScreenWidth - 8
+	spellColWidth        = styles.ScreenWidth - 10
 	spellTopBarElemWidth = 28
 )
 

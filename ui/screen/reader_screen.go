@@ -3,6 +3,7 @@ package screen
 import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/ui/viewport"
@@ -50,7 +51,8 @@ func (s *ReaderScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (s *ReaderScreen) View() tea.View {
 	return tea.NewView(styles.DefaultBorderStyle.
 		Width(styles.SmallScreenWidth + 2).
-		Height(ReaderHeight).
+		Height(ReaderHeight + 2).
+		Align(lipgloss.Left).
 		Render(s.viewport.View().Content))
 }
 

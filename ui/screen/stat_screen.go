@@ -21,12 +21,12 @@ import (
 var (
 	statTopBarHeight = 6
 
-	statColHeight    = 25
-	statLeftColWidth = 30
-	statMidColWidth  = 28
+	statColHeight    = 27
+	statLeftColWidth = 32
+	statMidColWidth  = 30
 
-	statRightColWidth     = 38
-	statRightContentWidth = statRightColWidth - 6
+	statRightColWidth     = 40
+	statRightContentWidth = statRightColWidth - 8
 
 	statLongColWidth   = 20
 	statColWidth       = 16
@@ -287,7 +287,7 @@ func (s *StatScreen) View() tea.View {
 
 	combatInfo := s.combatInfo.View().Content
 
-	midBoxInnerSeparator := styles.MakeHorizontalSeparator(statMidColWidth-4, 1)
+	midBoxInnerSeparator := styles.MakeHorizontalSeparator(statMidColWidth-6, 1)
 
 	midColumn := styles.DefaultBorderStyle.
 		Width(statMidColWidth).

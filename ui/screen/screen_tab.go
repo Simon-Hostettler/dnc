@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	tabWidth  = 11
-	tabHeight = 3
+	tabWidth  = 13
+	tabHeight = 5
 )
 
 type ScreenTab struct {
