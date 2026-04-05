@@ -35,6 +35,19 @@ go env GOBIN GOPATH
 
 You can modify the key bindings stored at `os.UserConfigDir()/dnc/config.json`. Defaults can be found in `util.DefaultKeyMap()` or by pressing `ctrl+h`.
 
+## Quick actions
+
+These serve as shortcuts for certain actions. Press `:` to open the quick action palette. Use `tab` to autocomplete from suggestions.
+
+Available actions:
+
+| Action          | Description                             |
+| --------------- | --------------------------------------- |
+| `longrest`      | Resets HP, death saves, and spell slots |
+| `cast <1-9>`    | Uses a spell slot at the given level    |
+| `heal <amount>` | Restores hit points (capped at max)     |
+| `dmg <amount>`  | Reduces hit points (floored at 0)       |
+
 ## Code layout
 
 This repository is organized as a single Go module (`hostettler.dev/dnc`) with the following rough layout:
@@ -81,7 +94,11 @@ Migrations will be applied automatically at startup
 
 ## Testing
 
-Currently mostly smaller unit tests. Looking to implement larger integration tests using `teatest`.
+Unit tests plus view regression tests. Each UI component should register a rendered file to compare against to prevent unwanted layout changes (See `util/golden.go` and `ui/screen/view_regression_test.go` for an example). To update golden files after intentional view changes or to create one initially:
+
+```bash
+go test ./... -update
+```
 
 ## License
 
