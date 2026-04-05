@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/charmbracelet/bubbles/key"
+	"charm.land/bubbles/v2/key"
 )
 
 func TestKeyMapEncoding(t *testing.T) {

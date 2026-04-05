@@ -1,8 +1,9 @@
 package screen
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/ui/viewport"
@@ -36,7 +37,7 @@ func (s *ReaderScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, s.keymap.Escape) || key.Matches(msg, s.keymap.Show):
 			cmd = command.SwitchToPrevScreenCmd
@@ -47,11 +48,12 @@ func (s *ReaderScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, cmd
 }
 
-func (s *ReaderScreen) View() string {
-	return styles.DefaultBorderStyle.
+func (s *ReaderScreen) View() tea.View {
+	return tea.NewView(styles.DefaultBorderStyle.
 		Width(styles.SmallScreenWidth + 2).
-		Height(ReaderHeight).
-		Render(s.viewport.View())
+		Height(ReaderHeight + 2).
+		Align(lipgloss.Left).
+		Render(s.viewport.View().Content))
 }
 
 // to fulfill FocusableModel interface

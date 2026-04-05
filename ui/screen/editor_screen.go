@@ -1,9 +1,9 @@
 package screen
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/styles"
@@ -41,7 +41,7 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// editor in focus
 	if s.cursor >= 0 && s.cursor < len(s.editors) {
 		switch msg := msg.(type) {
-		case tea.KeyMsg:
+		case tea.KeyPressMsg:
 			if key.Matches(msg, s.keymap.Escape) && !util.IsLetterKey(msg) {
 				cmd = command.SwitchToPrevScreenCmd
 			} else {
@@ -54,7 +54,7 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	} else if s.cursor == len(s.editors) { // save button in focus
 		switch msg := msg.(type) {
-		case tea.KeyMsg:
+		case tea.KeyPressMsg:
 			switch {
 			case key.Matches(msg, s.keymap.Escape):
 				cmd = command.SwitchToPrevScreenCmd
@@ -105,7 +105,7 @@ func (s *EditorScreen) moveCursor(dir command.Direction) {
 	}
 }
 
-func (s *EditorScreen) View() string {
+func (s *EditorScreen) View() tea.View {
 	rows := []string{}
 	for _, e := range s.editors {
 		rows = append(rows, styles.ForceWidth(e.View(), styles.SmallScreenWidth-8))
@@ -122,9 +122,9 @@ func (s *EditorScreen) View() string {
 
 	separated = append(separated, horizontalSeparator, saveButton)
 
-	return styles.DefaultBorderStyle.
+	return tea.NewView(styles.DefaultBorderStyle.
 		Width(styles.SmallScreenWidth).
-		Render(lipgloss.JoinVertical(lipgloss.Center, separated...))
+		Render(lipgloss.JoinVertical(lipgloss.Center, separated...)))
 }
 
 func (s *EditorScreen) viewportEnd() int {

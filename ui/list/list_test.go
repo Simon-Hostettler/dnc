@@ -3,8 +3,8 @@ package list
 import (
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/util"
@@ -26,7 +26,7 @@ func TestSeparatorSkips(t *testing.T) {
 	list.Init()
 	list.Focus()
 
-	msg := tea.KeyMsg{Type: tea.KeyDown}
+	msg := tea.KeyPressMsg{Code: tea.KeyDown}
 	list.Update(msg)
 
 	if !(list.CursorPos() == 2) {
@@ -53,7 +53,7 @@ func TestVisibleIndexComputation(t *testing.T) {
 		}
 	})
 
-	msg := tea.KeyMsg{Type: tea.KeyDown}
+	msg := tea.KeyPressMsg{Code: tea.KeyDown}
 	list.Update(msg)
 
 	if !(list.Size() == 2) {
@@ -74,13 +74,13 @@ func TestViewPortConsistentHeight(t *testing.T) {
 	list.Init()
 	list.Focus()
 
-	view := list.View()
+	view := list.View().Content
 	if !(lipgloss.Height(view) == 10) {
 		t.Errorf("Viewport not rendering at expected height of 10. Instead %d", lipgloss.Height(view))
 	}
 
 	list.SetCursor(19)
-	view = list.View()
+	view = list.View().Content
 	if !(lipgloss.Height(view) == 10) {
 		t.Errorf("Viewport not rendering at expected height of 10. Instead %d", lipgloss.Height(view))
 	}
@@ -94,7 +94,7 @@ func TestListExits(t *testing.T) {
 	list.Init()
 	list.Focus()
 
-	msg := tea.KeyMsg{Type: tea.KeyUp}
+	msg := tea.KeyPressMsg{Code: tea.KeyUp}
 	_, cmd := list.Update(msg)
 	switch m := cmd().(type) {
 	case command.FocusNextElementMsg:
@@ -107,7 +107,7 @@ func TestListExits(t *testing.T) {
 
 	list.Focus()
 	list.SetCursor(1)
-	msg = tea.KeyMsg{Type: tea.KeyDown}
+	msg = tea.KeyPressMsg{Code: tea.KeyDown}
 	_, cmd = list.Update(msg)
 	switch m := cmd().(type) {
 	case command.FocusNextElementMsg:
@@ -138,7 +138,7 @@ func TestRenderedRowCountWithFilter(t *testing.T) {
 		}
 	})
 
-	view := list.View()
+	view := list.View().Content
 	if got, want := lipgloss.Height(view), 2; got != want {
 		t.Errorf("Rendered row count mismatch. Got %d, want %d", got, want)
 	}
@@ -162,7 +162,7 @@ func TestCursorDoesNotMoveIntoInvisibleTail(t *testing.T) {
 		}
 	})
 
-	msg := tea.KeyMsg{Type: tea.KeyDown}
+	msg := tea.KeyPressMsg{Code: tea.KeyDown}
 	_, cmd := list.Update(msg)
 
 	if list.CursorPos() != 0 {

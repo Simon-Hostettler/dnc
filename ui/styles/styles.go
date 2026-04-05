@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 )
 
 var (
-	SmallScreenWidth = 60
-	ScreenWidth      = 100
+	SmallScreenWidth = 62
+	ScreenWidth      = 102
 
 	HighlightColor  = lipgloss.Color("#7D56F4")
 	TextColor       = lipgloss.Color("#FAFAFA")

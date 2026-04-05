@@ -4,9 +4,9 @@ import (
 	"log/slog"
 	"strconv"
 
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/util"
@@ -53,7 +53,7 @@ func (s *IntEditor) Update(msg tea.Msg) tea.Cmd {
 	}
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, s.keymap.Up):
 			return command.FocusNextElementCmd(command.UpDirection)

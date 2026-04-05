@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/models"
 )

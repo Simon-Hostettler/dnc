@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"hostettler.dev/dnc/util"
 )
 
@@ -28,7 +28,7 @@ func TestRespectsDimensions(t *testing.T) {
 
 	setupViewport(viewport, content)
 
-	rendered := viewport.View()
+	rendered := viewport.View().Content
 	if !(lipgloss.Height(rendered) == 1) {
 		t.Errorf("Viewport rendered with unexpected height: %d", lipgloss.Height(rendered))
 	}
@@ -46,7 +46,7 @@ func TestCursorStaysInBounds(t *testing.T) {
 
 	setupViewport(viewport, content)
 
-	msg := tea.KeyMsg{Type: tea.KeyDown}
+	msg := tea.KeyPressMsg{Code: tea.KeyDown}
 
 	for range 4 {
 		viewport.Update(msg)
@@ -56,7 +56,7 @@ func TestCursorStaysInBounds(t *testing.T) {
 		t.Errorf("Viewport scrolled too far down. Cursor expected at %d, is %d", 2, viewport.cursor)
 	}
 
-	msg = tea.KeyMsg{Type: tea.KeyUp}
+	msg = tea.KeyPressMsg{Code: tea.KeyUp}
 
 	for range 4 {
 		viewport.Update(msg)
@@ -73,13 +73,13 @@ func TestOverflowIsReadable(t *testing.T) {
 
 	setupViewport(viewport, content)
 
-	msg := tea.KeyMsg{Type: tea.KeyDown}
+	msg := tea.KeyPressMsg{Code: tea.KeyDown}
 
 	var found bool
 	for range len(content) / 2 {
-		content, found = strings.CutPrefix(content, strings.TrimSpace(viewport.View()))
+		content, found = strings.CutPrefix(content, strings.TrimSpace(viewport.View().Content))
 		if !found {
-			t.Errorf("Viewport rendered something not part of the original content: %s", viewport.View())
+			t.Errorf("Viewport rendered something not part of the original content: %s", viewport.View().Content)
 		}
 		viewport.Update(msg)
 	}

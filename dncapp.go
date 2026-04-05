@@ -4,9 +4,9 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"hostettler.dev/dnc/command"
@@ -144,7 +144,7 @@ func (a *DnCApp) Init() tea.Cmd {
 func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, a.keymap.ForceQuit):
 			return a, tea.Quit
@@ -224,17 +224,17 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return a, cmd
 }
 
-func (a *DnCApp) View() string {
-	screenContent := a.screenInView.View()
+func (a *DnCApp) View() tea.View {
+	screenContent := a.screenInView.View().Content
 
 	pageContent := screenContent
 	if a.displayTabs() {
 		tabs := lipgloss.JoinVertical(lipgloss.Center,
-			a.statTab.View(),
-			a.profileTab.View(),
-			a.spellTab.View(),
-			a.inventoryTab.View(),
-			a.noteTab.View(),
+			a.statTab.View().Content,
+			a.profileTab.View().Content,
+			a.spellTab.View().Content,
+			a.inventoryTab.View().Content,
+			a.noteTab.View().Content,
 		)
 		pageContent = lipgloss.JoinHorizontal(lipgloss.Left, tabs, pageContent)
 	}
@@ -253,7 +253,9 @@ func (a *DnCApp) View() string {
 		PaddingTop(topPad).
 		Render(pageContent)
 
-	return s
+	v := tea.NewView(s)
+	v.AltScreen = true
+	return v
 }
 
 func (a *DnCApp) populateCharacterScreens(agg *repository.CharacterAggregate) tea.Cmd {

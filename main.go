@@ -5,7 +5,7 @@ import (
 	"log"
 	"log/slog"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"hostettler.dev/dnc/util"
 )
 
@@ -35,7 +35,7 @@ func main() {
 	}
 	defer app.Close()
 
-	p := tea.NewProgram(app, tea.WithAltScreen())
+	p := tea.NewProgram(app)
 
 	if _, err := p.Run(); err != nil {
 		slog.Error("program exited with error", "error", err)

@@ -1,8 +1,8 @@
 package textinput
 
 import (
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 )
 
 // lightweight wrapper that fulfills FocusableModel
@@ -22,7 +22,7 @@ func (t *TextInput) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return t, cmd
 }
 
-func (t *TextInput) View() string { return t.Model.View() }
+func (t *TextInput) View() tea.View { return tea.NewView(t.Model.View()) }
 
 func (t *TextInput) Focus() { t.Model.Focus() }
 

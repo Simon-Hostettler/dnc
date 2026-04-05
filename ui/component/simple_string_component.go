@@ -1,8 +1,8 @@
 package component
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/util"
@@ -28,7 +28,7 @@ func (s *SimpleStringComponent) Init() tea.Cmd {
 
 func (s *SimpleStringComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, s.keymap.Edit):
 			return s, editor.EditValueCmd([]editor.ValueEditor{s.editor})
@@ -37,12 +37,12 @@ func (s *SimpleStringComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, nil
 }
 
-func (s *SimpleStringComponent) View() string {
+func (s *SimpleStringComponent) View() tea.View {
 	prefix := ""
 	if s.renderName {
 		prefix = s.name + ": "
 	}
-	return styles.RenderItem(s.focus && s.highlightOnFocus, prefix+*s.content)
+	return tea.NewView(styles.RenderItem(s.focus && s.highlightOnFocus, prefix+*s.content))
 }
 
 func (s *SimpleStringComponent) Focus() {

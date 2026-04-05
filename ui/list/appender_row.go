@@ -1,8 +1,8 @@
 package list
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/editor"
@@ -33,7 +33,7 @@ func (r *AppenderRow) Init() tea.Cmd {
 
 func (r *AppenderRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, r.keymap.Select):
 			return r, command.AppendElementCmd(r.tag)
@@ -42,8 +42,8 @@ func (r *AppenderRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return r, nil
 }
 
-func (r *AppenderRow) View() string {
-	return "[ + ]"
+func (r *AppenderRow) View() tea.View {
+	return tea.NewView("[ + ]")
 }
 
 func (c *AppenderRow) Editors() []editor.ValueEditor {

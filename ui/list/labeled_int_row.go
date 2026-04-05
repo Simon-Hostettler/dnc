@@ -3,8 +3,8 @@ package list
 import (
 	"strconv"
 
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/styles"
@@ -50,7 +50,7 @@ func (r *LabeledIntRow) Init() tea.Cmd {
 
 func (r *LabeledIntRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, r.keymap.Edit):
 			return r, editor.EditValueCmd(r.Editors())
@@ -59,11 +59,11 @@ func (r *LabeledIntRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return r, nil
 }
 
-func (r *LabeledIntRow) View() string {
+func (r *LabeledIntRow) View() tea.View {
 	if r.config.JustifyValue {
-		return styles.RenderEdgeBound(r.config.LabelWidth, r.config.ValueWidth, r.label, r.config.ValuePrinter(*r.value))
+		return tea.NewView(styles.RenderEdgeBound(r.config.LabelWidth, r.config.ValueWidth, r.label, r.config.ValuePrinter(*r.value)))
 	} else {
-		return styles.RenderLeftBound(r.config.LabelWidth, r.label, r.config.ValuePrinter(*r.value))
+		return tea.NewView(styles.RenderLeftBound(r.config.LabelWidth, r.label, r.config.ValuePrinter(*r.value)))
 	}
 }
 
