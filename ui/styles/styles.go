@@ -36,7 +36,7 @@ var (
 					Align(lipgloss.Center)
 	DefaultBorderStyle = lipgloss.
 				NewStyle().
-				BorderStyle(lipgloss.NormalBorder()).
+				BorderStyle(RoundedBorder).
 				BorderForeground(SecondaryColor).
 				Align(lipgloss.Center).
 				Padding(1, 2)
@@ -51,8 +51,8 @@ var (
 		Right:       "│",
 		TopLeft:     "╭",
 		TopRight:    "╮",
-		BottomLeft:  "└",
-		BottomRight: "┘",
+		BottomLeft:  "╰",
+		BottomRight: "╯",
 	}
 
 	VerticalBorder = lipgloss.Border{
