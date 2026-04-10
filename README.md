@@ -59,9 +59,15 @@ ev 4d6kh3              → E = 12.2446
 dist 2d6               → mean: 7.00  std: 2.42
                           min:  2      max: 12
                           mode: 7      med: 7
+
+And much more:
+- 4d6kh3, 4d6dl1, 4d6kl3, 4d6dh1
+- 3(max(3, 1d6 + 1)) (three independent draws of inner expression, summed)
+- best(3, 1d20), worst(2, 1d20), adv(1d20), dis(1d20)
+- [1d20 + 7 >= 15] * (2d6 + 4) (indicator variable)
 ```
 
-Expressions can include probability gates: `P[expr cmp value]` evaluates to 1 if the condition holds and 0 otherwise, so multiplying by it models conditional damage. For example, `dist P[1d20 > 15] * 8d6` gives the distribution of damage dealt by an attack that hits on a roll above 15.
+`[expr cmp value]` models an indicator variable that evaluates to 1 if the condition holds and 0 otherwise, so multiplying by it models conditional damage. For example, `dist [1d20 > 15] * 8d6` gives the distribution of damage dealt by an attack that hits on a roll above 15.
 
 ## Code layout
 
