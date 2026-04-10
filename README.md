@@ -37,19 +37,19 @@ You can modify the key bindings stored at `os.UserConfigDir()/dnc/config.json`. 
 
 ## Quick actions
 
-These serve as shortcuts for certain actions. Press `:` to open the quick action palette. Use `tab` to autocomplete from suggestions.
+Press `:` to open the quick action palette. Use `tab` to autocomplete from suggestions.
 
 Available actions:
 
-| Action                    | Description                                              |
-| ------------------------- | -------------------------------------------------------- |
-| `longrest`                | Resets HP, death saves, and spell slots                  |
-| `cast <1-9>`              | Uses a spell slot at the given level                     |
-| `heal <amount>`           | Restores hit points (capped at max)                      |
-| `dmg <amount>`            | Reduces hit points (floored at 0)                        |
-| `prob <expr cmp value>`   | Probability that a dice expression satisfies a condition |
-| `ev <expression>`         | Expected value of a dice expression                      |
-| `dist <expression>`       | Distribution stats for a dice expression                 |
+| Action                  | Description                                              |
+| ----------------------- | -------------------------------------------------------- |
+| `longrest`              | Resets HP, death saves, and spell slots                  |
+| `cast <1-9>`            | Uses a spell slot at the given level                     |
+| `heal <amount>`         | Restores hit points (capped at max)                      |
+| `dmg <amount>`          | Reduces hit points (floored at 0)                        |
+| `prob <expr cmp value>` | Probability that a dice expression satisfies a condition |
+| `ev <expression>`       | Expected value of a dice expression                      |
+| `dist <expression>`     | Distribution stats for a dice expression                 |
 
 Dice expression syntax supports standard dice notation: `2d6`, `4d6kh3` (keep highest 3), `1d20 + 5`, etc. Examples:
 
@@ -60,6 +60,8 @@ dist 2d6               → mean: 7.00  std: 2.42
                           min:  2      max: 12
                           mode: 7      med: 7
 ```
+
+Expressions can include probability gates: `P[expr cmp value]` evaluates to 1 if the condition holds and 0 otherwise, so multiplying by it models conditional damage. For example, `dist P[1d20 > 15] * 8d6` gives the distribution of damage dealt by an attack that hits on a roll above 15.
 
 ## Code layout
 

@@ -13,7 +13,7 @@ Type "clear"
 Enter
 Type "./demo --demo"
 Enter
-Sleep 2
+Sleep 3
 Show
 
 Sleep 1.5
@@ -45,6 +45,13 @@ Down
 Sleep 0.5
 Enter
 Sleep 1.5
+Type ":"
+Sleep 0.25
+Type "dist P[1d20 > 15] * 8d6"
+Sleep 0.25
+Enter
+Sleep 2
+Escape
 Left
 Sleep 0.25
 Down
