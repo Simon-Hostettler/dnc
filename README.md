@@ -41,12 +41,25 @@ These serve as shortcuts for certain actions. Press `:` to open the quick action
 
 Available actions:
 
-| Action          | Description                             |
-| --------------- | --------------------------------------- |
-| `longrest`      | Resets HP, death saves, and spell slots |
-| `cast <1-9>`    | Uses a spell slot at the given level    |
-| `heal <amount>` | Restores hit points (capped at max)     |
-| `dmg <amount>`  | Reduces hit points (floored at 0)       |
+| Action                    | Description                                              |
+| ------------------------- | -------------------------------------------------------- |
+| `longrest`                | Resets HP, death saves, and spell slots                  |
+| `cast <1-9>`              | Uses a spell slot at the given level                     |
+| `heal <amount>`           | Restores hit points (capped at max)                      |
+| `dmg <amount>`            | Reduces hit points (floored at 0)                        |
+| `prob <expr cmp value>`   | Probability that a dice expression satisfies a condition |
+| `ev <expression>`         | Expected value of a dice expression                      |
+| `dist <expression>`       | Distribution stats for a dice expression                 |
+
+Dice expression syntax supports standard dice notation: `2d6`, `4d6kh3` (keep highest 3), `1d20 + 5`, etc. Examples:
+
+```
+prob 1d20 + 5 >= 15    → P = 0.5500
+ev 4d6kh3              → E = 12.2446
+dist 2d6               → mean: 7.00  std: 2.42
+                          min:  2      max: 12
+                          mode: 7      med: 7
+```
 
 ## Code layout
 
