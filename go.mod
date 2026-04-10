@@ -12,6 +12,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/mstrYoda/go-arctest v0.0.0-20250422073853-ff9fe79f31d7
+	hostettler.dev/dicestats v0.0.1
 )
 
 require (

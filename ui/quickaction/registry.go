@@ -12,6 +12,9 @@ func NewRegistry() *Registry {
 	r.Register(CastAction{})
 	r.Register(HealAction{})
 	r.Register(DmgAction{})
+	r.Register(ProbAction{})
+	r.Register(EvAction{})
+	r.Register(DistAction{})
 	return r
 }
 

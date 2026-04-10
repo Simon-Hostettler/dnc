@@ -22,6 +22,7 @@ type Palette struct {
 	cursor      int
 	active      bool
 	errMsg      string
+	resultMsg   string
 	agg         *repository.CharacterAggregate
 }
 
@@ -50,6 +51,7 @@ func (p *Palette) Open() {
 	p.input.Reset()
 	p.input.Focus()
 	p.errMsg = ""
+	p.resultMsg = ""
 	p.cursor = 0
 	p.suggestions = p.registry.All()
 }
@@ -86,6 +88,7 @@ func (p *Palette) Update(msg tea.Msg) tea.Cmd {
 
 	p.input, _ = p.input.Update(msg)
 	p.errMsg = ""
+	p.resultMsg = ""
 	p.updateSuggestions()
 	return nil
 }
@@ -100,13 +103,17 @@ func (p *Palette) execute() tea.Cmd {
 		p.errMsg = "no character loaded"
 		return nil
 	}
-	cmd, errMsg := action.Execute(p.agg, args)
-	if errMsg != "" {
-		p.errMsg = errMsg
+	res := action.Execute(p.agg, args)
+	if res.ErrMsg != "" {
+		p.errMsg = res.ErrMsg
+		return nil
+	}
+	if res.Result != "" {
+		p.resultMsg = res.Result
 		return nil
 	}
 	p.Close()
-	return cmd
+	return res.Cmd
 }
 
 func (p *Palette) autocomplete() {
@@ -144,6 +151,7 @@ var (
 	selectedStyle   = lipgloss.NewStyle().Foreground(styles.HighlightColor)
 	errorStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF5555"))
 	hintStyle       = styles.GrayTextStyle
+	resultStyle     = lipgloss.NewStyle().Foreground(styles.TextColor)
 )
 
 func (p *Palette) View() string {
@@ -157,6 +165,10 @@ func (p *Palette) View() string {
 		} else {
 			lines = append(lines, suggestionStyle.Render("  "+s.Name())+hintLabel(s))
 		}
+	}
+
+	if p.resultMsg != "" {
+		lines = append(lines, resultStyle.Render(p.resultMsg))
 	}
 
 	if p.errMsg != "" {

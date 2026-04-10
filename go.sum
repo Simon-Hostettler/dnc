@@ -139,3 +139,5 @@ gonum.org/v1/gonum v0.16.0 h1:5+ul4Swaf3ESvrOnidPp4GZbzf0mxVQpDCYUQE7OJfk=
 gonum.org/v1/gonum v0.16.0/go.mod h1:fef3am4MQ93R2HHpKnLk4/Tbh/s0+wqD5nfa6Pnwy4E=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
+hostettler.dev/dicestats v0.0.1 h1:ZuKOqj0k5cJUlQZ+bvwdy9q94HIwdB9dPMXJhmGmCpk=
+hostettler.dev/dicestats v0.0.1/go.mod h1:JUvijDQpEwzQYjMZWgrK5QTx6XKsJYI31ORMj6DncRc=
