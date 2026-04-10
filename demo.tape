@@ -47,7 +47,7 @@ Enter
 Sleep 1.5
 Type ":"
 Sleep 0.25
-Type "dist P[1d20 > 15] * 8d6"
+Type "dist [1d20 > 15] * 8d6"
 Sleep 0.25
 Enter
 Sleep 2
