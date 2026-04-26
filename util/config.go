@@ -140,6 +140,7 @@ type KeyMap struct {
 	ShowKeymap  key.Binding `json:"show_keymap"`
 	Cycle       key.Binding `json:"cycle"`
 	QuickAction key.Binding `json:"quick_action"`
+	TextSearch  key.Binding `json:"text_search"`
 }
 
 func DefaultKeyMap() KeyMap {
@@ -162,6 +163,7 @@ func DefaultKeyMap() KeyMap {
 		ShowKeymap:  key.NewBinding(key.WithKeys("ctrl+h")),
 		Cycle:       key.NewBinding(key.WithKeys("tab")),
 		QuickAction: key.NewBinding(key.WithKeys(":")),
+		TextSearch:  key.NewBinding(key.WithKeys("/")),
 	}
 }
 
