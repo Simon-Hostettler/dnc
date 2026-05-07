@@ -27,6 +27,7 @@ type NoteScreen struct {
 	keymap    util.KeyMap
 	character *repository.CharacterAggregate
 
+	focusGraph         FocusGraph
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
 
@@ -52,6 +53,7 @@ func (s *NoteScreen) Init() tea.Cmd {
 	s.populateNotes()
 
 	s.lastFocusedElement = s.searchField
+	s.wireFocusGraph()
 
 	return nil
 }
@@ -117,29 +119,28 @@ func (s *NoteScreen) focusOn(m FocusableModel) {
 	m.Focus()
 }
 
-func (s *NoteScreen) moveFocus(d command.Direction) tea.Cmd {
-	var cmd tea.Cmd
-	s.Blur()
+func (s *NoteScreen) wireFocusGraph() {
+	s.focusGraph = FocusGraph{
+		s.searchField: {
+			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
+			command.DownDirection: To(s.noteList),
+		},
+		s.noteList: {
+			command.UpDirection:   To(s.searchField),
+			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
+		},
+	}
+}
 
-	switch s.lastFocusedElement {
-	case s.searchField:
-		switch d {
-		case command.LeftDirection:
-			cmd = command.ReturnFocusToParentCmd
-		case command.DownDirection:
-			s.focusOn(s.noteList)
-		default:
-			s.focusOn(s.searchField)
-		}
-	case s.noteList:
-		switch d {
-		case command.UpDirection:
-			s.focusOn(s.searchField)
-		case command.LeftDirection:
-			cmd = command.ReturnFocusToParentCmd
-		default:
-			s.focusOn(s.noteList)
-		}
+func (s *NoteScreen) moveFocus(d command.Direction) tea.Cmd {
+	edge, ok := s.focusGraph[s.focusedElement][d]
+	if !ok {
+		return nil
+	}
+	target, cmd := edge()
+	if target != nil {
+		s.Blur()
+		s.focusOn(target)
 	}
 	return cmd
 }

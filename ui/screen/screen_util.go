@@ -8,6 +8,29 @@ import (
 	"hostettler.dev/dnc/util"
 )
 
+type FocusEdge func() (target FocusableModel, cmd tea.Cmd)
+
+type FocusGraph map[FocusableModel]map[command.Direction]FocusEdge
+
+func To(m FocusableModel) FocusEdge {
+	return func() (FocusableModel, tea.Cmd) { return m, nil }
+}
+
+func ToCond(pick func() FocusableModel) FocusEdge {
+	return func() (FocusableModel, tea.Cmd) { return pick(), nil }
+}
+
+func ToWith(m FocusableModel, sideEffect func()) FocusEdge {
+	return func() (FocusableModel, tea.Cmd) {
+		sideEffect()
+		return m, nil
+	}
+}
+
+func Emit(cmd tea.Cmd) FocusEdge {
+	return func() (FocusableModel, tea.Cmd) { return nil, cmd }
+}
+
 func RouteKey(focused FocusableModel,
 	msg tea.KeyPressMsg,
 	km util.KeyMap,

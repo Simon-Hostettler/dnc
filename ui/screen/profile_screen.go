@@ -34,6 +34,7 @@ var (
 type ProfileScreen struct {
 	keymap             util.KeyMap
 	agg                *repository.CharacterAggregate
+	focusGraph         FocusGraph
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
 
@@ -72,6 +73,7 @@ func (s *ProfileScreen) Init() tea.Cmd {
 	s.CreateFeatureRows()
 
 	s.lastFocusedElement = s.characterInfo
+	s.wireFocusGraph()
 
 	return tea.Batch(cmds...)
 }
@@ -121,74 +123,48 @@ func (s *ProfileScreen) focusOn(m FocusableModel) {
 	m.Focus()
 }
 
-func (s *ProfileScreen) moveFocus(d command.Direction) tea.Cmd {
-	var cmd tea.Cmd
-	s.Blur()
+func (s *ProfileScreen) wireFocusGraph() {
+	s.focusGraph = FocusGraph{
+		s.characterInfo: {
+			command.DownDirection:  To(s.features),
+			command.RightDirection: To(s.characterAppearance),
+			command.LeftDirection:  Emit(command.ReturnFocusToParentCmd),
+		},
+		s.characterAppearance: {
+			command.DownDirection: To(s.backstory),
+			command.LeftDirection: To(s.characterInfo),
+		},
+		s.features: {
+			command.UpDirection:    To(s.characterInfo),
+			command.RightDirection: To(s.backstory),
+			command.LeftDirection:  Emit(command.ReturnFocusToParentCmd),
+		},
+		s.backstory: {
+			command.UpDirection:    To(s.characterInfo),
+			command.RightDirection: To(s.personality),
+			command.LeftDirection:  ToWith(s.features, func() { s.features.SetCursor(0) }),
+		},
+		s.personality: {
+			command.UpDirection:   To(s.characterAppearance),
+			command.LeftDirection: To(s.backstory),
+			command.DownDirection: To(s.appearance),
+		},
+		s.appearance: {
+			command.UpDirection:   To(s.personality),
+			command.LeftDirection: To(s.backstory),
+		},
+	}
+}
 
-	switch s.lastFocusedElement {
-	case s.characterInfo:
-		switch d {
-		case command.DownDirection:
-			s.focusOn(s.features)
-		case command.RightDirection:
-			s.focusOn(s.characterAppearance)
-		case command.LeftDirection:
-			cmd = command.ReturnFocusToParentCmd
-		default:
-			s.focusOn(s.characterInfo)
-		}
-	case s.characterAppearance:
-		switch d {
-		case command.DownDirection:
-			s.focusOn(s.backstory)
-		case command.LeftDirection:
-			s.focusOn(s.characterInfo)
-		default:
-			s.focusOn(s.characterAppearance)
-		}
-	case s.features:
-		switch d {
-		case command.UpDirection:
-			s.focusOn(s.characterInfo)
-		case command.RightDirection:
-			s.focusOn(s.backstory)
-		case command.LeftDirection:
-			cmd = command.ReturnFocusToParentCmd
-		default:
-			s.focusOn(s.features)
-		}
-	case s.backstory:
-		switch d {
-		case command.UpDirection:
-			s.focusOn(s.characterInfo)
-		case command.RightDirection:
-			s.focusOn(s.personality)
-		case command.LeftDirection:
-			s.focusOn(s.features)
-			s.features.SetCursor(0)
-		default:
-			s.focusOn(s.backstory)
-		}
-	case s.personality:
-		switch d {
-		case command.UpDirection:
-			s.focusOn(s.characterAppearance)
-		case command.LeftDirection:
-			s.focusOn(s.backstory)
-		case command.DownDirection:
-			s.focusOn(s.appearance)
-		default:
-			s.focusOn(s.personality)
-		}
-	case s.appearance:
-		switch d {
-		case command.UpDirection:
-			s.focusOn(s.personality)
-		case command.LeftDirection:
-			s.focusOn(s.backstory)
-		default:
-			s.focusOn(s.appearance)
-		}
+func (s *ProfileScreen) moveFocus(d command.Direction) tea.Cmd {
+	edge, ok := s.focusGraph[s.focusedElement][d]
+	if !ok {
+		return nil
+	}
+	target, cmd := edge()
+	if target != nil {
+		s.Blur()
+		s.focusOn(target)
 	}
 	return cmd
 }

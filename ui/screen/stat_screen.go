@@ -37,6 +37,7 @@ var (
 type StatScreen struct {
 	keymap             util.KeyMap
 	agg                *repository.CharacterAggregate
+	focusGraph         FocusGraph
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
 
@@ -89,6 +90,7 @@ func (s *StatScreen) Init() tea.Cmd {
 	s.CreateSavingThrowRows()
 
 	s.lastFocusedElement = s.characterInfo
+	s.wireFocusGraph()
 
 	return tea.Batch(cmds...)
 }
@@ -140,101 +142,64 @@ func (s *StatScreen) focusOn(m FocusableModel) {
 	m.Focus()
 }
 
-func (s *StatScreen) moveFocus(d command.Direction) tea.Cmd {
-	var cmd tea.Cmd
-	s.Blur()
+func (s *StatScreen) wireFocusGraph() {
+	s.focusGraph = FocusGraph{
+		s.characterInfo: {
+			command.DownDirection:  To(s.skills),
+			command.RightDirection: To(s.abilities),
+			command.LeftDirection:  Emit(command.ReturnFocusToParentCmd),
+		},
+		s.abilities: {
+			command.DownDirection: To(s.actions),
+			command.LeftDirection: To(s.characterInfo),
+		},
+		s.skills: {
+			command.UpDirection:   To(s.characterInfo),
+			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
+			command.RightDirection: ToCond(func() FocusableModel {
+				if s.skills.CursorPos() < s.skills.Size()/2 {
+					return s.combatInfo
+				}
+				return s.savingThrows
+			}),
+		},
+		s.combatInfo: {
+			command.UpDirection:    To(s.characterInfo),
+			command.RightDirection: To(s.actions),
+			command.DownDirection:  To(s.savingThrows),
+			command.LeftDirection:  ToWith(s.skills, func() { s.skills.SetCursor(0) }),
+		},
+		s.savingThrows: {
+			command.UpDirection:    To(s.combatInfo),
+			command.RightDirection: To(s.attacks),
+			command.LeftDirection:  ToWith(s.skills, func() { s.skills.SetCursor(s.skills.Size() / 2) }),
+		},
+		s.actions: {
+			command.UpDirection:   To(s.abilities),
+			command.LeftDirection: To(s.combatInfo),
+			command.DownDirection: To(s.bonusActions),
+		},
+		s.bonusActions: {
+			command.UpDirection:   To(s.actions),
+			command.LeftDirection: To(s.combatInfo),
+			command.DownDirection: To(s.attacks),
+		},
+		s.attacks: {
+			command.UpDirection:   To(s.bonusActions),
+			command.LeftDirection: To(s.savingThrows),
+		},
+	}
+}
 
-	switch s.lastFocusedElement {
-	case s.characterInfo:
-		switch d {
-		case command.DownDirection:
-			s.focusOn(s.skills)
-		case command.RightDirection:
-			s.focusOn(s.abilities)
-		case command.LeftDirection:
-			cmd = command.ReturnFocusToParentCmd
-		default:
-			s.focusOn(s.characterInfo)
-		}
-	case s.abilities:
-		switch d {
-		case command.DownDirection:
-			s.focusOn(s.actions)
-		case command.LeftDirection:
-			s.focusOn(s.characterInfo)
-		default:
-			s.focusOn(s.abilities)
-		}
-	case s.skills:
-		switch d {
-		case command.UpDirection:
-			s.focusOn(s.characterInfo)
-		case command.RightDirection:
-			if s.skills.CursorPos() < s.skills.Size()/2 {
-				s.focusOn(s.combatInfo)
-			} else {
-				s.focusOn(s.savingThrows)
-			}
-		case command.LeftDirection:
-			cmd = command.ReturnFocusToParentCmd
-		default:
-			s.focusOn(s.skills)
-		}
-	case s.combatInfo:
-		switch d {
-		case command.UpDirection:
-			s.focusOn(s.characterInfo)
-		case command.RightDirection:
-			s.focusOn(s.actions)
-		case command.DownDirection:
-			s.focusOn(s.savingThrows)
-		case command.LeftDirection:
-			s.focusOn(s.skills)
-			s.skills.SetCursor(0)
-		}
-	case s.savingThrows:
-		switch d {
-		case command.UpDirection:
-			s.focusOn(s.combatInfo)
-		case command.RightDirection:
-			s.focusOn(s.attacks)
-		case command.LeftDirection:
-			s.focusOn(s.skills)
-			s.skills.SetCursor(s.skills.Size() / 2)
-		default:
-			s.focusOn(s.savingThrows)
-		}
-	case s.actions:
-		switch d {
-		case command.UpDirection:
-			s.focusOn(s.abilities)
-		case command.LeftDirection:
-			s.focusOn(s.combatInfo)
-		case command.DownDirection:
-			s.focusOn(s.bonusActions)
-		default:
-			s.focusOn(s.actions)
-		}
-	case s.bonusActions:
-		switch d {
-		case command.UpDirection:
-			s.focusOn(s.actions)
-		case command.LeftDirection:
-			s.focusOn(s.combatInfo)
-		case command.DownDirection:
-			s.focusOn(s.attacks)
-		default:
-			s.focusOn(s.bonusActions)
-		}
-	case s.attacks:
-		switch d {
-		case command.UpDirection:
-			s.focusOn(s.bonusActions)
-		case command.LeftDirection:
-			s.focusOn(s.savingThrows)
-		default:
-			s.focusOn(s.attacks)
-		}
+func (s *StatScreen) moveFocus(d command.Direction) tea.Cmd {
+	edge, ok := s.focusGraph[s.focusedElement][d]
+	if !ok {
+		return nil
+	}
+	target, cmd := edge()
+	if target != nil {
+		s.Blur()
+		s.focusOn(target)
 	}
 	return cmd
 }
