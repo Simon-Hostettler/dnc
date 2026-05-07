@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/google/uuid"
@@ -83,30 +82,7 @@ func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
 	case tea.KeyPressMsg:
-		switch s.focusedElement.(type) {
-		case *list.List:
-			switch {
-			case key.Matches(msg, s.keymap.Right):
-				cmd = s.moveFocus(command.RightDirection)
-			case key.Matches(msg, s.keymap.Left):
-				cmd = s.moveFocus(command.LeftDirection)
-			default:
-				_, cmd = s.focusedElement.Update(msg)
-			}
-		default:
-			switch {
-			case key.Matches(msg, s.keymap.Right):
-				cmd = s.moveFocus(command.RightDirection)
-			case key.Matches(msg, s.keymap.Left):
-				cmd = s.moveFocus(command.LeftDirection)
-			case key.Matches(msg, s.keymap.Up):
-				cmd = s.moveFocus(command.UpDirection)
-			case key.Matches(msg, s.keymap.Down):
-				cmd = s.moveFocus(command.DownDirection)
-			default:
-				_, cmd = s.focusedElement.Update(msg)
-			}
-		}
+		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.moveFocus)
 	}
 	return s, cmd
 }

@@ -93,28 +93,8 @@ func (s *NoteScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				term := s.searchField.Value()
 				s.noteList.Filter(searchFilter(term))
 			}
-		case *list.List:
-			switch {
-			case key.Matches(msg, s.keymap.Right):
-				cmd = s.moveFocus(command.RightDirection)
-			case key.Matches(msg, s.keymap.Left):
-				cmd = s.moveFocus(command.LeftDirection)
-			default:
-				_, cmd = s.focusedElement.Update(msg)
-			}
 		default:
-			switch {
-			case key.Matches(msg, s.keymap.Right):
-				cmd = s.moveFocus(command.RightDirection)
-			case key.Matches(msg, s.keymap.Left):
-				cmd = s.moveFocus(command.LeftDirection)
-			case key.Matches(msg, s.keymap.Up):
-				cmd = s.moveFocus(command.UpDirection)
-			case key.Matches(msg, s.keymap.Down):
-				cmd = s.moveFocus(command.DownDirection)
-			default:
-				_, cmd = s.focusedElement.Update(msg)
-			}
+			cmd = RouteKey(s.focusedElement, msg, s.keymap, s.moveFocus)
 		}
 	}
 	return s, cmd
