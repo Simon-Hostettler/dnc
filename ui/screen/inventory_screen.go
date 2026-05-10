@@ -30,11 +30,11 @@ type InventoryScreen struct {
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
 
-	copper   *component.SimpleIntComponent
-	silver   *component.SimpleIntComponent
-	electrum *component.SimpleIntComponent
-	gold     *component.SimpleIntComponent
-	platinum *component.SimpleIntComponent
+	copper   *component.SimpleComponent[int]
+	silver   *component.SimpleComponent[int]
+	electrum *component.SimpleComponent[int]
+	gold     *component.SimpleComponent[int]
+	platinum *component.SimpleComponent[int]
 	itemList *list.List
 }
 
@@ -179,15 +179,7 @@ func (s *InventoryScreen) CreateItemRows() {
 }
 
 func (s *InventoryScreen) getItemRow(id uuid.UUID) list.Row {
-	for _, r := range s.itemList.Content() {
-		switch r := r.(type) {
-		case *list.StructRow[models.ItemTO]:
-			if r.Value().ID == id {
-				return r
-			}
-		}
-	}
-	return nil
+	return list.FindStructRow(s.itemList.Content(), func(i *models.ItemTO) bool { return i.ID == id })
 }
 
 func deleteItemCallback(s *InventoryScreen, i *models.ItemTO) func() tea.Cmd {

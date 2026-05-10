@@ -32,9 +32,9 @@ type SpellScreen struct {
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
 
-	spellAbility  *component.SimpleStringComponent
-	spellSaveDC   *component.SimpleIntComponent
-	spellAtkBonus *component.SimpleIntComponent
+	spellAbility  *component.SimpleComponent[string]
+	spellSaveDC   *component.SimpleComponent[int]
+	spellAtkBonus *component.SimpleComponent[int]
 	spellList     *list.List
 }
 
@@ -186,15 +186,7 @@ func (s *SpellScreen) getSpellListByLevel(l int) []list.Row {
 }
 
 func (s *SpellScreen) getSpellRow(id uuid.UUID) list.Row {
-	for _, r := range s.spellList.Content() {
-		switch r := r.(type) {
-		case *list.StructRow[models.SpellTO]:
-			if r.Value().ID == id {
-				return r
-			}
-		}
-	}
-	return nil
+	return list.FindStructRow(s.spellList.Content(), func(sp *models.SpellTO) bool { return sp.ID == id })
 }
 
 func deleteSpellCallback(s *SpellScreen, sp *models.SpellTO) func() tea.Cmd {

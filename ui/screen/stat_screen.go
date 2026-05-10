@@ -47,8 +47,8 @@ type StatScreen struct {
 	savingThrows  *list.List
 	combatInfo    *list.List
 	attacks       *list.List
-	actions       *component.SimpleStringComponent
-	bonusActions  *component.SimpleStringComponent
+	actions       *component.SimpleComponent[string]
+	bonusActions  *component.SimpleComponent[string]
 }
 
 func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen {
@@ -369,15 +369,7 @@ func (s *StatScreen) deleteAttackCallback(a *models.AttackTO) func() tea.Cmd {
 }
 
 func (s *StatScreen) getAttackRow(id uuid.UUID) list.Row {
-	for _, r := range s.attacks.Content() {
-		switch r := r.(type) {
-		case *list.StructRow[models.AttackTO]:
-			if r.Value().ID == id {
-				return r
-			}
-		}
-	}
-	return nil
+	return list.FindStructRow(s.attacks.Content(), func(a *models.AttackTO) bool { return a.ID == id })
 }
 
 func (s *StatScreen) CreateSkillRows() {

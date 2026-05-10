@@ -46,7 +46,7 @@ func TestVisibleIndexComputation(t *testing.T) {
 
 	list.Filter(func(r Row) bool {
 		switch r.(type) {
-		case *LabeledStringRow:
+		case *LabeledRow[string]:
 			return false
 		default:
 			return true
@@ -131,7 +131,7 @@ func TestRenderedRowCountWithFilter(t *testing.T) {
 
 	list.Filter(func(r Row) bool {
 		switch r.(type) {
-		case *LabeledStringRow:
+		case *LabeledRow[string]:
 			return false
 		default:
 			return true
@@ -155,7 +155,7 @@ func TestCursorDoesNotMoveIntoInvisibleTail(t *testing.T) {
 
 	list.Filter(func(r Row) bool {
 		switch r.(type) {
-		case *LabeledStringRow:
+		case *LabeledRow[string]:
 			return false
 		default:
 			return true

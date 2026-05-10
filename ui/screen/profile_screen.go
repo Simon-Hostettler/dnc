@@ -67,6 +67,7 @@ func (s *ProfileScreen) Init() tea.Cmd {
 	cmds = append(cmds, s.features.Init())
 	cmds = append(cmds, s.backstory.Init())
 	cmds = append(cmds, s.appearance.Init())
+	cmds = append(cmds, s.personality.Init())
 
 	s.CreateCharacterInfoRows()
 	s.CreateCharacterAppearanceRows()
@@ -304,15 +305,7 @@ func (s *ProfileScreen) deleteFeatureCallback(f *models.FeatureTO) func() tea.Cm
 }
 
 func (s *ProfileScreen) getFeatureRow(id uuid.UUID) list.Row {
-	for _, r := range s.features.Content() {
-		switch r := r.(type) {
-		case *list.StructRow[models.FeatureTO]:
-			if r.Value().ID == id {
-				return r
-			}
-		}
-	}
-	return nil
+	return list.FindStructRow(s.features.Content(), func(f *models.FeatureTO) bool { return f.ID == id })
 }
 
 // screen specific types + utility functions

@@ -173,15 +173,7 @@ func (s *NoteScreen) CreateNoteRows() {
 }
 
 func (s *NoteScreen) getNoteRow(id uuid.UUID) list.Row {
-	for _, r := range s.noteList.Content() {
-		switch r := r.(type) {
-		case *list.StructRow[models.NoteTO]:
-			if r.Value().ID == id {
-				return r
-			}
-		}
-	}
-	return nil
+	return list.FindStructRow(s.noteList.Content(), func(n *models.NoteTO) bool { return n.ID == id })
 }
 
 func deleteNoteCallback(s *NoteScreen, n *models.NoteTO) func() tea.Cmd {
