@@ -27,6 +27,7 @@ type NoteScreen struct {
 	keymap    util.KeyMap
 	character *repository.CharacterAggregate
 
+	focusGraph         FocusGraph
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
 
@@ -52,6 +53,7 @@ func (s *NoteScreen) Init() tea.Cmd {
 	s.populateNotes()
 
 	s.lastFocusedElement = s.searchField
+	s.wireFocusGraph()
 
 	return nil
 }
@@ -93,28 +95,8 @@ func (s *NoteScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				term := s.searchField.Value()
 				s.noteList.Filter(searchFilter(term))
 			}
-		case *list.List:
-			switch {
-			case key.Matches(msg, s.keymap.Right):
-				cmd = s.moveFocus(command.RightDirection)
-			case key.Matches(msg, s.keymap.Left):
-				cmd = s.moveFocus(command.LeftDirection)
-			default:
-				_, cmd = s.focusedElement.Update(msg)
-			}
 		default:
-			switch {
-			case key.Matches(msg, s.keymap.Right):
-				cmd = s.moveFocus(command.RightDirection)
-			case key.Matches(msg, s.keymap.Left):
-				cmd = s.moveFocus(command.LeftDirection)
-			case key.Matches(msg, s.keymap.Up):
-				cmd = s.moveFocus(command.UpDirection)
-			case key.Matches(msg, s.keymap.Down):
-				cmd = s.moveFocus(command.DownDirection)
-			default:
-				_, cmd = s.focusedElement.Update(msg)
-			}
+			cmd = RouteKey(s.focusedElement, msg, s.keymap, s.moveFocus)
 		}
 	}
 	return s, cmd
@@ -137,29 +119,28 @@ func (s *NoteScreen) focusOn(m FocusableModel) {
 	m.Focus()
 }
 
-func (s *NoteScreen) moveFocus(d command.Direction) tea.Cmd {
-	var cmd tea.Cmd
-	s.Blur()
+func (s *NoteScreen) wireFocusGraph() {
+	s.focusGraph = FocusGraph{
+		s.searchField: {
+			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
+			command.DownDirection: To(s.noteList),
+		},
+		s.noteList: {
+			command.UpDirection:   To(s.searchField),
+			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
+		},
+	}
+}
 
-	switch s.lastFocusedElement {
-	case s.searchField:
-		switch d {
-		case command.LeftDirection:
-			cmd = command.ReturnFocusToParentCmd
-		case command.DownDirection:
-			s.focusOn(s.noteList)
-		default:
-			s.focusOn(s.searchField)
-		}
-	case s.noteList:
-		switch d {
-		case command.UpDirection:
-			s.focusOn(s.searchField)
-		case command.LeftDirection:
-			cmd = command.ReturnFocusToParentCmd
-		default:
-			s.focusOn(s.noteList)
-		}
+func (s *NoteScreen) moveFocus(d command.Direction) tea.Cmd {
+	edge, ok := s.focusGraph[s.focusedElement][d]
+	if !ok {
+		return nil
+	}
+	target, cmd := edge()
+	if target != nil {
+		s.Blur()
+		s.focusOn(target)
 	}
 	return cmd
 }
@@ -192,15 +173,7 @@ func (s *NoteScreen) CreateNoteRows() {
 }
 
 func (s *NoteScreen) getNoteRow(id uuid.UUID) list.Row {
-	for _, r := range s.noteList.Content() {
-		switch r := r.(type) {
-		case *list.StructRow[models.NoteTO]:
-			if r.Value().ID == id {
-				return r
-			}
-		}
-	}
-	return nil
+	return list.FindStructRow(s.noteList.Content(), func(n *models.NoteTO) bool { return n.ID == id })
 }
 
 func deleteNoteCallback(s *NoteScreen, n *models.NoteTO) func() tea.Cmd {

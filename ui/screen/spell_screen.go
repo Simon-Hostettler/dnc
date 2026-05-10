@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/google/uuid"
@@ -29,12 +28,13 @@ type SpellScreen struct {
 	keymap    util.KeyMap
 	character *repository.CharacterAggregate
 
+	focusGraph         FocusGraph
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
 
-	spellAbility  *component.SimpleStringComponent
-	spellSaveDC   *component.SimpleIntComponent
-	spellAtkBonus *component.SimpleIntComponent
+	spellAbility  *component.SimpleComponent[string]
+	spellSaveDC   *component.SimpleComponent[int]
+	spellAtkBonus *component.SimpleComponent[int]
 	spellList     *list.List
 }
 
@@ -57,6 +57,7 @@ func (s *SpellScreen) Init() tea.Cmd {
 	s.lastFocusedElement = s.spellAbility
 
 	s.populateSpells()
+	s.wireFocusGraph()
 
 	if len(cmds) > 0 {
 		return tea.Batch(cmds...)
@@ -80,30 +81,7 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
 	case tea.KeyPressMsg:
-		switch s.focusedElement.(type) {
-		case *list.List:
-			switch {
-			case key.Matches(msg, s.keymap.Right):
-				cmd = s.moveFocus(command.RightDirection)
-			case key.Matches(msg, s.keymap.Left):
-				cmd = s.moveFocus(command.LeftDirection)
-			default:
-				_, cmd = s.focusedElement.Update(msg)
-			}
-		default:
-			switch {
-			case key.Matches(msg, s.keymap.Right):
-				cmd = s.moveFocus(command.RightDirection)
-			case key.Matches(msg, s.keymap.Left):
-				cmd = s.moveFocus(command.LeftDirection)
-			case key.Matches(msg, s.keymap.Up):
-				cmd = s.moveFocus(command.UpDirection)
-			case key.Matches(msg, s.keymap.Down):
-				cmd = s.moveFocus(command.DownDirection)
-			default:
-				_, cmd = s.focusedElement.Update(msg)
-			}
-		}
+		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.moveFocus)
 	}
 	return s, cmd
 }
@@ -124,51 +102,38 @@ func (s *SpellScreen) focusOn(m FocusableModel) {
 	m.Focus()
 }
 
-func (s *SpellScreen) moveFocus(d command.Direction) tea.Cmd {
-	var cmd tea.Cmd
-	s.Blur()
+func (s *SpellScreen) wireFocusGraph() {
+	s.focusGraph = FocusGraph{
+		s.spellAbility: {
+			command.RightDirection: To(s.spellSaveDC),
+			command.LeftDirection:  Emit(command.ReturnFocusToParentCmd),
+			command.DownDirection:  To(s.spellList),
+		},
+		s.spellSaveDC: {
+			command.RightDirection: To(s.spellAtkBonus),
+			command.LeftDirection:  To(s.spellAbility),
+			command.DownDirection:  To(s.spellList),
+		},
+		s.spellAtkBonus: {
+			command.LeftDirection: To(s.spellSaveDC),
+			command.DownDirection: To(s.spellList),
+		},
+		s.spellList: {
+			command.UpDirection:   To(s.spellAbility),
+			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
+		},
+	}
+}
 
-	switch s.lastFocusedElement {
-	case s.spellAbility:
-		switch d {
-		case command.RightDirection:
-			s.focusOn(s.spellSaveDC)
-		case command.LeftDirection:
-			cmd = command.ReturnFocusToParentCmd
-		case command.DownDirection:
-			s.focusOn(s.spellList)
-		default:
-			s.focusOn(s.spellAbility)
-		}
-	case s.spellSaveDC:
-		switch d {
-		case command.RightDirection:
-			s.focusOn(s.spellAtkBonus)
-		case command.LeftDirection:
-			s.focusOn(s.spellAbility)
-		case command.DownDirection:
-			s.focusOn(s.spellList)
-		default:
-			s.focusOn(s.spellSaveDC)
-		}
-	case s.spellAtkBonus:
-		switch d {
-		case command.LeftDirection:
-			s.focusOn(s.spellSaveDC)
-		case command.DownDirection:
-			s.focusOn(s.spellList)
-		default:
-			s.focusOn(s.spellAtkBonus)
-		}
-	case s.spellList:
-		switch d {
-		case command.UpDirection:
-			s.focusOn(s.spellAbility)
-		case command.LeftDirection:
-			cmd = command.ReturnFocusToParentCmd
-		default:
-			s.focusOn(s.spellList)
-		}
+func (s *SpellScreen) moveFocus(d command.Direction) tea.Cmd {
+	edge, ok := s.focusGraph[s.focusedElement][d]
+	if !ok {
+		return nil
+	}
+	target, cmd := edge()
+	if target != nil {
+		s.Blur()
+		s.focusOn(target)
 	}
 	return cmd
 }
@@ -221,15 +186,7 @@ func (s *SpellScreen) getSpellListByLevel(l int) []list.Row {
 }
 
 func (s *SpellScreen) getSpellRow(id uuid.UUID) list.Row {
-	for _, r := range s.spellList.Content() {
-		switch r := r.(type) {
-		case *list.StructRow[models.SpellTO]:
-			if r.Value().ID == id {
-				return r
-			}
-		}
-	}
-	return nil
+	return list.FindStructRow(s.spellList.Content(), func(sp *models.SpellTO) bool { return sp.ID == id })
 }
 
 func deleteSpellCallback(s *SpellScreen, sp *models.SpellTO) func() tea.Cmd {

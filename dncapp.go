@@ -33,6 +33,7 @@ type DnCApp struct {
 	repository repository.CharacterRepository
 
 	selectedTab            *screen.ScreenTab
+	tabGraph               screen.FocusGraph
 	isScreenFocused        bool
 	isCharacterInitialized bool
 	statTab                *screen.ScreenTab
@@ -116,6 +117,7 @@ func (a *DnCApp) Init() tea.Cmd {
 	cmds := []tea.Cmd{}
 
 	a.selectedTab = a.statTab
+	a.wireTabGraph()
 	a.curScreenIdx = command.TitleScreenIndex
 	a.prevScreenIdx = command.TitleScreenIndex
 
@@ -343,40 +345,40 @@ func (a *DnCApp) displayTabs() bool {
 		a.screenInView != a.readerScreen
 }
 
-func (a *DnCApp) moveTab(d command.Direction) {
-	a.selectedTab.Blur()
-	switch a.selectedTab {
-	case a.statTab:
-		if d == command.DownDirection {
-			a.selectedTab = a.profileTab
-		}
-	case a.profileTab:
-		switch d {
-		case command.UpDirection:
-			a.selectedTab = a.statTab
-		case command.DownDirection:
-			a.selectedTab = a.spellTab
-		}
-	case a.spellTab:
-		switch d {
-		case command.UpDirection:
-			a.selectedTab = a.profileTab
-		case command.DownDirection:
-			a.selectedTab = a.inventoryTab
-		}
-	case a.inventoryTab:
-		switch d {
-		case command.UpDirection:
-			a.selectedTab = a.spellTab
-		case command.DownDirection:
-			a.selectedTab = a.noteTab
-		}
-	case a.noteTab:
-		if d == command.UpDirection {
-			a.selectedTab = a.inventoryTab
-		}
-
+func (a *DnCApp) wireTabGraph() {
+	a.tabGraph = screen.FocusGraph{
+		a.statTab: {
+			command.DownDirection: screen.To(a.profileTab),
+		},
+		a.profileTab: {
+			command.UpDirection:   screen.To(a.statTab),
+			command.DownDirection: screen.To(a.spellTab),
+		},
+		a.spellTab: {
+			command.UpDirection:   screen.To(a.profileTab),
+			command.DownDirection: screen.To(a.inventoryTab),
+		},
+		a.inventoryTab: {
+			command.UpDirection:   screen.To(a.spellTab),
+			command.DownDirection: screen.To(a.noteTab),
+		},
+		a.noteTab: {
+			command.UpDirection: screen.To(a.inventoryTab),
+		},
 	}
+}
+
+func (a *DnCApp) moveTab(d command.Direction) {
+	edge, ok := a.tabGraph[a.selectedTab][d]
+	if !ok {
+		return
+	}
+	target, _ := edge()
+	if target == nil {
+		return
+	}
+	a.selectedTab.Blur()
+	a.selectedTab = target.(*screen.ScreenTab)
 	a.selectedTab.Focus()
 }
 

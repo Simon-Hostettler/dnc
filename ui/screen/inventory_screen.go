@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/google/uuid"
@@ -27,14 +26,15 @@ type InventoryScreen struct {
 	keymap    util.KeyMap
 	character *repository.CharacterAggregate
 
+	focusGraph         FocusGraph
 	lastFocusedElement FocusableModel
 	focusedElement     FocusableModel
 
-	copper   *component.SimpleIntComponent
-	silver   *component.SimpleIntComponent
-	electrum *component.SimpleIntComponent
-	gold     *component.SimpleIntComponent
-	platinum *component.SimpleIntComponent
+	copper   *component.SimpleComponent[int]
+	silver   *component.SimpleComponent[int]
+	electrum *component.SimpleComponent[int]
+	gold     *component.SimpleComponent[int]
+	platinum *component.SimpleComponent[int]
 	itemList *list.List
 }
 
@@ -54,6 +54,7 @@ func (s *InventoryScreen) Init() tea.Cmd {
 	s.populateItems()
 
 	s.lastFocusedElement = s.copper
+	s.wireFocusGraph()
 
 	return nil
 }
@@ -83,30 +84,7 @@ func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
 	case tea.KeyPressMsg:
-		switch s.focusedElement.(type) {
-		case *list.List:
-			switch {
-			case key.Matches(msg, s.keymap.Right):
-				cmd = s.moveFocus(command.RightDirection)
-			case key.Matches(msg, s.keymap.Left):
-				cmd = s.moveFocus(command.LeftDirection)
-			default:
-				_, cmd = s.focusedElement.Update(msg)
-			}
-		default:
-			switch {
-			case key.Matches(msg, s.keymap.Right):
-				cmd = s.moveFocus(command.RightDirection)
-			case key.Matches(msg, s.keymap.Left):
-				cmd = s.moveFocus(command.LeftDirection)
-			case key.Matches(msg, s.keymap.Up):
-				cmd = s.moveFocus(command.UpDirection)
-			case key.Matches(msg, s.keymap.Down):
-				cmd = s.moveFocus(command.DownDirection)
-			default:
-				_, cmd = s.focusedElement.Update(msg)
-			}
-		}
+		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.moveFocus)
 	}
 	return s, cmd
 }
@@ -127,73 +105,48 @@ func (s *InventoryScreen) focusOn(m FocusableModel) {
 	m.Focus()
 }
 
-func (s *InventoryScreen) moveFocus(d command.Direction) tea.Cmd {
-	var cmd tea.Cmd
-	s.Blur()
+func (s *InventoryScreen) wireFocusGraph() {
+	s.focusGraph = FocusGraph{
+		s.copper: {
+			command.LeftDirection:  Emit(command.ReturnFocusToParentCmd),
+			command.RightDirection: To(s.silver),
+			command.DownDirection:  To(s.itemList),
+		},
+		s.silver: {
+			command.LeftDirection:  To(s.copper),
+			command.RightDirection: To(s.electrum),
+			command.DownDirection:  To(s.itemList),
+		},
+		s.electrum: {
+			command.LeftDirection:  To(s.silver),
+			command.RightDirection: To(s.gold),
+			command.DownDirection:  To(s.itemList),
+		},
+		s.gold: {
+			command.LeftDirection:  To(s.electrum),
+			command.RightDirection: To(s.platinum),
+			command.DownDirection:  To(s.itemList),
+		},
+		s.platinum: {
+			command.LeftDirection: To(s.gold),
+			command.DownDirection: To(s.itemList),
+		},
+		s.itemList: {
+			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
+			command.UpDirection:   To(s.electrum),
+		},
+	}
+}
 
-	switch s.lastFocusedElement {
-	case s.copper:
-		switch d {
-		case command.LeftDirection:
-			cmd = command.ReturnFocusToParentCmd
-		case command.RightDirection:
-			s.focusOn(s.silver)
-		case command.DownDirection:
-			s.focusOn(s.itemList)
-		default:
-			s.focusOn(s.copper)
-		}
-	case s.silver:
-		switch d {
-		case command.LeftDirection:
-			s.focusOn(s.copper)
-		case command.RightDirection:
-			s.focusOn(s.electrum)
-		case command.DownDirection:
-			s.focusOn(s.itemList)
-		default:
-			s.focusOn(s.silver)
-		}
-	case s.electrum:
-		switch d {
-		case command.LeftDirection:
-			s.focusOn(s.silver)
-		case command.RightDirection:
-			s.focusOn(s.gold)
-		case command.DownDirection:
-			s.focusOn(s.itemList)
-		default:
-			s.focusOn(s.electrum)
-		}
-	case s.gold:
-		switch d {
-		case command.LeftDirection:
-			s.focusOn(s.electrum)
-		case command.RightDirection:
-			s.focusOn(s.platinum)
-		case command.DownDirection:
-			s.focusOn(s.itemList)
-		default:
-			s.focusOn(s.gold)
-		}
-	case s.platinum:
-		switch d {
-		case command.LeftDirection:
-			s.focusOn(s.gold)
-		case command.DownDirection:
-			s.focusOn(s.itemList)
-		default:
-			s.focusOn(s.platinum)
-		}
-	case s.itemList:
-		switch d {
-		case command.LeftDirection:
-			cmd = command.ReturnFocusToParentCmd
-		case command.UpDirection:
-			s.focusOn(s.electrum)
-		default:
-			s.focusOn(s.itemList)
-		}
+func (s *InventoryScreen) moveFocus(d command.Direction) tea.Cmd {
+	edge, ok := s.focusGraph[s.focusedElement][d]
+	if !ok {
+		return nil
+	}
+	target, cmd := edge()
+	if target != nil {
+		s.Blur()
+		s.focusOn(target)
 	}
 	return cmd
 }
@@ -226,15 +179,7 @@ func (s *InventoryScreen) CreateItemRows() {
 }
 
 func (s *InventoryScreen) getItemRow(id uuid.UUID) list.Row {
-	for _, r := range s.itemList.Content() {
-		switch r := r.(type) {
-		case *list.StructRow[models.ItemTO]:
-			if r.Value().ID == id {
-				return r
-			}
-		}
-	}
-	return nil
+	return list.FindStructRow(s.itemList.Content(), func(i *models.ItemTO) bool { return i.ID == id })
 }
 
 func deleteItemCallback(s *InventoryScreen, i *models.ItemTO) func() tea.Cmd {

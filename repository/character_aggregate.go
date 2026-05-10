@@ -3,6 +3,7 @@ package repository
 import (
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/models"
+	"hostettler.dev/dnc/util"
 )
 
 // CharacterAggregate represents a character and all of its dependent rows.
@@ -52,53 +53,33 @@ func (c *CharacterAggregate) AddEmptyNote() uuid.UUID {
 }
 
 func (c *CharacterAggregate) DeleteAttack(id uuid.UUID) {
-	newAttacks := []models.AttackTO{}
-	for i := range c.Attacks {
-		if c.Attacks[i].ID != id {
-			newAttacks = append(newAttacks, c.Attacks[i])
-		}
-	}
-	c.Attacks = newAttacks
+	c.Attacks = util.Filter(c.Attacks, func(a models.AttackTO) bool {
+		return a.ID != id
+	})
 }
 
 func (c *CharacterAggregate) DeleteItem(id uuid.UUID) {
-	newItems := []models.ItemTO{}
-	for i := range c.Items {
-		if c.Items[i].ID != id {
-			newItems = append(newItems, c.Items[i])
-		}
-	}
-	c.Items = newItems
+	c.Items = util.Filter(c.Items, func(i models.ItemTO) bool {
+		return i.ID != id
+	})
 }
 
 func (c *CharacterAggregate) DeleteSpell(id uuid.UUID) {
-	newSpells := []models.SpellTO{}
-	for i := range c.Spells {
-		if c.Spells[i].ID != id {
-			newSpells = append(newSpells, c.Spells[i])
-		}
-	}
-	c.Spells = newSpells
+	c.Spells = util.Filter(c.Spells, func(s models.SpellTO) bool {
+		return s.ID != id
+	})
 }
 
 func (c *CharacterAggregate) DeleteFeature(id uuid.UUID) {
-	newFeatures := []models.FeatureTO{}
-	for i := range c.Features {
-		if c.Features[i].ID != id {
-			newFeatures = append(newFeatures, c.Features[i])
-		}
-	}
-	c.Features = newFeatures
+	c.Features = util.Filter(c.Features, func(f models.FeatureTO) bool {
+		return f.ID != id
+	})
 }
 
 func (c *CharacterAggregate) DeleteNote(id uuid.UUID) {
-	newNotes := []models.NoteTO{}
-	for i := range c.Notes {
-		if c.Notes[i].ID != id {
-			newNotes = append(newNotes, c.Notes[i])
-		}
-	}
-	c.Notes = newNotes
+	c.Notes = util.Filter(c.Notes, func(n models.NoteTO) bool {
+		return n.ID != id
+	})
 }
 
 func (c *CharacterAggregate) GetSpellsByLevel(l int) []*models.SpellTO {

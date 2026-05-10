@@ -90,3 +90,12 @@ func (r *StructRow[T]) Value() *T {
 func (r *StructRow[T]) Selectable() bool {
 	return true
 }
+
+func FindStructRow[T any](rows []Row, predicate func(*T) bool) Row {
+	for _, r := range rows {
+		if sr, ok := r.(*StructRow[T]); ok && predicate(sr.Value()) {
+			return sr
+		}
+	}
+	return nil
+}
