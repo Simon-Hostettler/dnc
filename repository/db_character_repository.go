@@ -195,17 +195,12 @@ func (r *DBCharacterRepository) Delete(ctx context.Context, id uuid.UUID) error 
 				return err
 			}
 		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	return r.withTx(ctx, func(tx *sqlx.Tx) error {
 		if _, err := tx.ExecContext(ctx, `DELETE FROM character WHERE id=?`, id); err != nil {
 			return err
 		}
 		return nil
 	})
+	return err
 }
 
 // Update persists the aggregate: character row plus all 1:1 and 1:N dependents.
