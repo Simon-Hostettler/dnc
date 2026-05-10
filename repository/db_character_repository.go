@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
 	"github.com/google/uuid"
@@ -54,52 +53,33 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
 			return err
 		}
 
-		if agg.Abilities != nil {
-			if err := upsertAbilities(ctx, tx, newID, agg.Abilities); err != nil {
-				return err
-			}
+		if err := upsertOne(ctx, tx, abilitiesTable, newID, agg.Abilities); err != nil {
+			return err
 		}
-		if agg.SavingThrows != nil {
-			if err := upsertSavingThrows(ctx, tx, newID, agg.SavingThrows); err != nil {
-				return err
-			}
+		if err := upsertOne(ctx, tx, savingThrowsTable, newID, agg.SavingThrows); err != nil {
+			return err
 		}
-		if agg.Wallet != nil {
-			if err := upsertWallet(ctx, tx, newID, agg.Wallet); err != nil {
-				return err
-			}
+		if err := upsertOne(ctx, tx, walletTable, newID, agg.Wallet); err != nil {
+			return err
 		}
-
-		if len(agg.Items) > 0 {
-			if err := replaceItems(ctx, tx, newID, agg.Items); err != nil {
-				return err
-			}
+		if err := replaceAll(ctx, tx, itemTable, newID, agg.Items); err != nil {
+			return err
 		}
-		if len(agg.Spells) > 0 {
-			if err := replaceSpells(ctx, tx, newID, agg.Spells); err != nil {
-				return err
-			}
+		if err := replaceAll(ctx, tx, spellTable, newID, agg.Spells); err != nil {
+			return err
 		}
-		if len(agg.Attacks) > 0 {
-			if err := replaceAttacks(ctx, tx, newID, agg.Attacks); err != nil {
-				return err
-			}
+		if err := replaceAll(ctx, tx, attackTable, newID, agg.Attacks); err != nil {
+			return err
 		}
-		if len(agg.Features) > 0 {
-			if err := replaceFeatures(ctx, tx, newID, agg.Features); err != nil {
-				return err
-			}
+		if err := replaceAll(ctx, tx, featureTable, newID, agg.Features); err != nil {
+			return err
 		}
-		if len(agg.Notes) > 0 {
-			if err := replaceNotes(ctx, tx, newID, agg.Notes); err != nil {
-				return err
-			}
+		if err := replaceAll(ctx, tx, noteTable, newID, agg.Notes); err != nil {
+			return err
 		}
 		skills := util.Map(agg.Skills, func(s models.CharacterSkillDetailTO) models.CharacterSkillTO { return s.ToCharacterSkillTO() })
-		if len(skills) > 0 {
-			if err := replaceSkills(ctx, tx, newID, skills); err != nil {
-				return err
-			}
+		if err := replaceAll(ctx, tx, skillTable, newID, skills); err != nil {
+			return err
 		}
 		agg.Character.ID = newID
 		return nil
@@ -137,10 +117,7 @@ func (r *DBCharacterRepository) CreateEmpty(ctx context.Context, name string) (u
 		})
 	}
 	e := r.withTx(ctx, func(tx *sqlx.Tx) error {
-		if err := replaceSkills(ctx, tx, newID, cSkills); err != nil {
-			return err
-		}
-		return nil
+		return replaceAll(ctx, tx, skillTable, newID, cSkills)
 	})
 	return newID, e
 }
@@ -151,42 +128,42 @@ func (r *DBCharacterRepository) GetByID(ctx context.Context, id uuid.UUID) (*Cha
 		return nil, err
 	}
 	agg := &CharacterAggregate{Character: &c}
-	if ab, err := getAbilities(ctx, r.db, id); err != nil {
+	if ab, err := getOne[models.AbilitiesTO](ctx, r.db, "abilities", id); err != nil {
 		return nil, err
 	} else {
 		agg.Abilities = ab
 	}
-	if st, err := getSavingThrows(ctx, r.db, id); err != nil {
+	if st, err := getOne[models.SavingThrowsTO](ctx, r.db, "saving_throws", id); err != nil {
 		return nil, err
 	} else {
 		agg.SavingThrows = st
 	}
-	if w, err := getWallet(ctx, r.db, id); err != nil {
+	if w, err := getOne[models.WalletTO](ctx, r.db, "wallet", id); err != nil {
 		return nil, err
 	} else {
 		agg.Wallet = w
 	}
-	if items, err := listItems(ctx, r.db, id); err != nil {
+	if items, err := selectAll(ctx, r.db, itemTable, id); err != nil {
 		return nil, err
 	} else {
 		agg.Items = items
 	}
-	if spells, err := listSpells(ctx, r.db, id); err != nil {
+	if spells, err := selectAll(ctx, r.db, spellTable, id); err != nil {
 		return nil, err
 	} else {
 		agg.Spells = spells
 	}
-	if atks, err := listAttacks(ctx, r.db, id); err != nil {
+	if atks, err := selectAll(ctx, r.db, attackTable, id); err != nil {
 		return nil, err
 	} else {
 		agg.Attacks = atks
 	}
-	if feats, err := listFeatures(ctx, r.db, id); err != nil {
+	if feats, err := selectAll(ctx, r.db, featureTable, id); err != nil {
 		return nil, err
 	} else {
 		agg.Features = feats
 	}
-	if notes, err := listNotes(ctx, r.db, id); err != nil {
+	if notes, err := selectAll(ctx, r.db, noteTable, id); err != nil {
 		return nil, err
 	} else {
 		agg.Notes = notes
@@ -208,33 +185,15 @@ func (r *DBCharacterRepository) ListSummary(ctx context.Context) ([]models.Chara
 }
 
 func (r *DBCharacterRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	childTables := []string{
+		"wallet", "abilities", "saving_throws",
+		"item", "spell", "attacks", "character_skill", "features", "notes",
+	}
 	err := r.withTx(ctx, func(tx *sqlx.Tx) error {
-		if _, err := tx.ExecContext(ctx, `DELETE FROM wallet WHERE character_id=?`, id); err != nil {
-			return err
-		}
-		if _, err := tx.ExecContext(ctx, `DELETE FROM abilities WHERE character_id=?`, id); err != nil {
-			return err
-		}
-		if _, err := tx.ExecContext(ctx, `DELETE FROM saving_throws WHERE character_id=?`, id); err != nil {
-			return err
-		}
-		if _, err := tx.ExecContext(ctx, `DELETE FROM item WHERE character_id=?`, id); err != nil {
-			return err
-		}
-		if _, err := tx.ExecContext(ctx, `DELETE FROM spell WHERE character_id=?`, id); err != nil {
-			return err
-		}
-		if _, err := tx.ExecContext(ctx, `DELETE FROM attacks WHERE character_id=?`, id); err != nil {
-			return err
-		}
-		if _, err := tx.ExecContext(ctx, `DELETE FROM character_skill WHERE character_id=?`, id); err != nil {
-			return err
-		}
-		if _, err := tx.ExecContext(ctx, `DELETE FROM features WHERE character_id=?`, id); err != nil {
-			return err
-		}
-		if _, err := tx.ExecContext(ctx, `DELETE FROM notes WHERE character_id=?`, id); err != nil {
-			return err
+		for _, name := range childTables {
+			if err := deleteByCharacter(ctx, tx, name, id); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -285,35 +244,32 @@ func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggreg
 			return err
 		}
 
-		// 1:1 tables
-		if err := upsertAbilities(ctx, tx, id, agg.Abilities); err != nil {
+		if err := upsertOne(ctx, tx, abilitiesTable, id, agg.Abilities); err != nil {
 			return err
 		}
-		if err := upsertSavingThrows(ctx, tx, id, agg.SavingThrows); err != nil {
+		if err := upsertOne(ctx, tx, savingThrowsTable, id, agg.SavingThrows); err != nil {
 			return err
 		}
-		if err := upsertWallet(ctx, tx, id, agg.Wallet); err != nil {
+		if err := upsertOne(ctx, tx, walletTable, id, agg.Wallet); err != nil {
 			return err
 		}
-
-		// 1:N tables (replace strategy)
-		if err := replaceItems(ctx, tx, id, agg.Items); err != nil {
+		if err := replaceAll(ctx, tx, itemTable, id, agg.Items); err != nil {
 			return err
 		}
-		if err := replaceSpells(ctx, tx, id, agg.Spells); err != nil {
+		if err := replaceAll(ctx, tx, spellTable, id, agg.Spells); err != nil {
 			return err
 		}
-		if err := replaceAttacks(ctx, tx, id, agg.Attacks); err != nil {
+		if err := replaceAll(ctx, tx, attackTable, id, agg.Attacks); err != nil {
 			return err
 		}
-		if err := replaceFeatures(ctx, tx, id, agg.Features); err != nil {
+		if err := replaceAll(ctx, tx, featureTable, id, agg.Features); err != nil {
 			return err
 		}
-		if err := replaceNotes(ctx, tx, id, agg.Notes); err != nil {
+		if err := replaceAll(ctx, tx, noteTable, id, agg.Notes); err != nil {
 			return err
 		}
 		skills := util.Map(agg.Skills, func(s models.CharacterSkillDetailTO) models.CharacterSkillTO { return s.ToCharacterSkillTO() })
-		if err := replaceSkills(ctx, tx, id, skills); err != nil {
+		if err := replaceAll(ctx, tx, skillTable, id, skills); err != nil {
 			return err
 		}
 		return nil
@@ -341,232 +297,6 @@ func ensureSpellSlots(c *models.CharacterTO) {
 	if c.SpellSlotsUsed == nil || len(c.SpellSlotsUsed) != 10 {
 		c.SpellSlotsUsed = make(models.IntList, 10)
 	}
-}
-
-func upsertAbilities(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, ab *models.AbilitiesTO) error {
-	if ab == nil {
-		return nil
-	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM abilities WHERE character_id=?`, characterID); err != nil {
-		return err
-	}
-	_, err := tx.ExecContext(ctx, `
-        INSERT INTO abilities (
-            character_id, strength, dexterity, constitution, intelligence, wisdom, charisma
-        ) VALUES (?,?,?,?,?,?,?)
-    `, characterID, ab.Strength, ab.Dexterity, ab.Constitution, ab.Intelligence, ab.Wisdom, ab.Charisma)
-	return err
-}
-
-func upsertSavingThrows(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, st *models.SavingThrowsTO) error {
-	if st == nil {
-		return nil
-	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM saving_throws WHERE character_id=?`, characterID); err != nil {
-		return err
-	}
-	_, err := tx.ExecContext(ctx, `
-        INSERT INTO saving_throws (
-            character_id, strength_proficiency, dexterity_proficiency, constitution_proficiency, intelligence_proficiency, wisdom_proficiency, charisma_proficiency
-        ) VALUES (?,?,?,?,?,?,?)
-    `, characterID, st.StrengthProficiency, st.DexterityProficiency, st.ConstitutionProficiency, st.IntelligenceProficiency, st.WisdomProficiency, st.CharismaProficiency)
-	return err
-}
-
-func upsertWallet(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, w *models.WalletTO) error {
-	if w == nil {
-		return nil
-	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM wallet WHERE character_id=?`, characterID); err != nil {
-		return err
-	}
-	_, err := tx.ExecContext(ctx, `
-        INSERT INTO wallet (
-            character_id, copper, silver, electrum, gold, platinum
-        ) VALUES (?,?,?,?,?,?)
-    `, characterID, w.Copper, w.Silver, w.Electrum, w.Gold, w.Platinum)
-	return err
-}
-
-func replaceItems(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, items []models.ItemTO) error {
-	if _, err := tx.ExecContext(ctx, `DELETE FROM item WHERE character_id=?`, characterID); err != nil {
-		return err
-	}
-	for _, it := range items {
-		if it.ID == uuid.Nil {
-			it.ID = uuid.New()
-		}
-		if _, err := tx.ExecContext(ctx, `
-            INSERT INTO item (id, character_id, name, equipped, attunement_slots, quantity, description)
-            VALUES (?,?,?,?,?,?,?)
-        `, it.ID, characterID, it.Name, it.Equipped, it.AttunementSlots, it.Quantity, it.Description); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func replaceSpells(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, spells []models.SpellTO) error {
-	if _, err := tx.ExecContext(ctx, `DELETE FROM spell WHERE character_id=?`, characterID); err != nil {
-		return err
-	}
-	for _, sp := range spells {
-		if sp.ID == uuid.Nil {
-			sp.ID = uuid.New()
-		}
-		if _, err := tx.ExecContext(ctx, `
-            INSERT INTO spell (id, character_id, name, school, level, prepared, spell_source, damage, casting_time, range, duration, components, description)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
-        `, sp.ID, characterID, sp.Name, sp.School, sp.Level, sp.Prepared, sp.SpellSource, sp.Damage, sp.CastingTime, sp.Range, sp.Duration, sp.Components, sp.Description); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func replaceAttacks(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, atks []models.AttackTO) error {
-	if _, err := tx.ExecContext(ctx, `DELETE FROM attacks WHERE character_id=?`, characterID); err != nil {
-		return err
-	}
-	for _, a := range atks {
-		if a.ID == uuid.Nil {
-			a.ID = uuid.New()
-		}
-		if _, err := tx.ExecContext(ctx, `
-            INSERT INTO attacks (id, character_id, name, bonus, damage, damage_type)
-            VALUES (?,?,?,?,?,?)
-        `, a.ID, characterID, a.Name, a.Bonus, a.Damage, a.DamageType); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func replaceFeatures(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, features []models.FeatureTO) error {
-	if _, err := tx.ExecContext(ctx, `DELETE FROM features WHERE character_id=?`, characterID); err != nil {
-		return err
-	}
-	for _, f := range features {
-		if f.ID == uuid.Nil {
-			f.ID = uuid.New()
-		}
-		if _, err := tx.ExecContext(ctx, `
-            INSERT INTO features (id, character_id, name, description)
-            VALUES (?,?,?,?)
-        `, f.ID, characterID, f.Name, f.Description); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func replaceNotes(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, notes []models.NoteTO) error {
-	if _, err := tx.ExecContext(ctx, `DELETE FROM notes WHERE character_id=?`, characterID); err != nil {
-		return err
-	}
-	for _, n := range notes {
-		if n.ID == uuid.Nil {
-			n.ID = uuid.New()
-		}
-		if _, err := tx.ExecContext(ctx, `
-            INSERT INTO notes (id, character_id, title, note)
-            VALUES (?,?,?,?)
-        `, n.ID, characterID, n.Title, n.Note); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func replaceSkills(ctx context.Context, tx *sqlx.Tx, characterID uuid.UUID, skills []models.CharacterSkillTO) error {
-	if _, err := tx.ExecContext(ctx, `DELETE FROM character_skill WHERE character_id=?`, characterID); err != nil {
-		return err
-	}
-	for _, s := range skills {
-		if s.ID == uuid.Nil {
-			s.ID = uuid.New()
-		}
-		if _, err := tx.ExecContext(ctx, `
-            INSERT INTO character_skill (id, character_id, skill_id, proficiency, custom_modifier)
-            VALUES (?,?,?,?,?)
-        `, s.ID, characterID, s.SkillID, s.Proficiency, s.CustomModifier); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func getAbilities(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) (*models.AbilitiesTO, error) {
-	var ab models.AbilitiesTO
-	if err := sqlx.GetContext(ctx, db, &ab, `SELECT * FROM abilities WHERE character_id=?`, id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &ab, nil
-}
-
-func getSavingThrows(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) (*models.SavingThrowsTO, error) {
-	var st models.SavingThrowsTO
-	if err := sqlx.GetContext(ctx, db, &st, `SELECT * FROM saving_throws WHERE character_id=?`, id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &st, nil
-}
-
-func getWallet(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) (*models.WalletTO, error) {
-	var w models.WalletTO
-	if err := sqlx.GetContext(ctx, db, &w, `SELECT * FROM wallet WHERE character_id=?`, id); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &w, nil
-}
-
-func listItems(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]models.ItemTO, error) {
-	var items []models.ItemTO
-	if err := sqlx.SelectContext(ctx, db, &items, `SELECT * FROM item WHERE character_id=? ORDER BY name ASC`, id); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-func listSpells(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]models.SpellTO, error) {
-	var spells []models.SpellTO
-	if err := sqlx.SelectContext(ctx, db, &spells, `SELECT * FROM spell WHERE character_id=? ORDER BY level ASC, name ASC`, id); err != nil {
-		return nil, err
-	}
-	return spells, nil
-}
-
-func listAttacks(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]models.AttackTO, error) {
-	var atks []models.AttackTO
-	if err := sqlx.SelectContext(ctx, db, &atks, `SELECT * FROM attacks WHERE character_id=? ORDER BY created_at ASC`, id); err != nil {
-		return nil, err
-	}
-	return atks, nil
-}
-
-func listFeatures(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]models.FeatureTO, error) {
-	var features []models.FeatureTO
-	if err := sqlx.SelectContext(ctx, db, &features, `SELECT * FROM features WHERE character_id=? ORDER BY name ASC`, id); err != nil {
-		return nil, err
-	}
-	return features, nil
-}
-
-func listNotes(ctx context.Context, db sqlx.QueryerContext, id uuid.UUID) ([]models.NoteTO, error) {
-	var notes []models.NoteTO
-	if err := sqlx.SelectContext(ctx, db, &notes, `SELECT * FROM notes WHERE character_id=? ORDER BY title ASC`, id); err != nil {
-		return nil, err
-	}
-	return notes, nil
 }
 
 func (r *DBCharacterRepository) ListSkillDefinitions(ctx context.Context) ([]models.SkillDefinitionTO, error) {
