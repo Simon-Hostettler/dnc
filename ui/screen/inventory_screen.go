@@ -48,7 +48,8 @@ func NewInventoryScreen(k util.KeyMap, c *repository.CharacterAggregate) *Invent
 		platinum:  component.NewSimpleIntComponent(k, "PP", &c.Wallet.Platinum, true, true),
 		itemList: list.NewList(k, list.LeftAlignedListStyle).
 			WithFixedWidth(itemColWidth).
-			WithViewport(itemColHeight - 2),
+			WithViewport(itemColHeight - 2).
+			WithSearch(),
 	}
 	s.itemRows = NewCollectionRows(k, s.itemList, "item",
 		func() []*models.ItemTO { return util.Pointers(s.character.Items) },
@@ -58,7 +59,8 @@ func NewInventoryScreen(k util.KeyMap, c *repository.CharacterAggregate) *Invent
 		func(item *models.ItemTO) *list.StructRow[models.ItemTO] {
 			return list.NewStructRow(s.keymap, item, renderItemInfoRow,
 				createItemEditors(s.keymap, item)).
-				WithReader(renderFullItemInfo)
+				WithReader(renderFullItemInfo).
+				WithSearchText(itemSearchText)
 		},
 	)
 	return s
@@ -160,6 +162,10 @@ func (s *InventoryScreen) RenderInventoryScreenTopBar() string {
 			separator,
 			styles.ForceWidth(s.platinum.View().Content, 15),
 		))
+}
+
+func itemSearchText(i *models.ItemTO) string {
+	return i.Name + " " + i.Description
 }
 
 func renderItemInfoRow(i *models.ItemTO) string {

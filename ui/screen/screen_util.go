@@ -77,15 +77,15 @@ func RouteKey(focused FocusableModel,
 	moveFocus func(command.Direction) tea.Cmd,
 ) tea.Cmd {
 	var cmd tea.Cmd
-	switch focused.(type) {
+	switch f := focused.(type) {
 	case *list.List:
 		switch {
-		case key.Matches(msg, km.Right):
+		case !f.SearchInputFocused() && key.Matches(msg, km.Right):
 			cmd = moveFocus(command.RightDirection)
-		case key.Matches(msg, km.Left):
+		case !f.SearchInputFocused() && key.Matches(msg, km.Left):
 			cmd = moveFocus(command.LeftDirection)
 		default:
-			_, cmd = focused.Update(msg)
+			_, cmd = f.Update(msg)
 		}
 	default:
 		switch {

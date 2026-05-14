@@ -18,6 +18,7 @@ type StructRow[T any] struct {
 	destructor  func() tea.Cmd
 	reader      func(*T) string
 	cycleAction func(*T) tea.Cmd
+	searchText  func(*T) string
 }
 
 func NewStructRow[T any](
@@ -47,6 +48,12 @@ func (r *StructRow[T]) WithReader(reader func(*T) string) *StructRow[T] {
 
 func (r *StructRow[T]) WithCycleAction(action func(*T) tea.Cmd) *StructRow[T] {
 	r.cycleAction = action
+	return r
+}
+
+// makes the row searchable
+func (r *StructRow[T]) WithSearchText(searchText func(*T) string) *StructRow[T] {
+	r.searchText = searchText
 	return r
 }
 
@@ -89,6 +96,16 @@ func (r *StructRow[T]) Value() *T {
 
 func (r *StructRow[T]) Selectable() bool {
 	return true
+}
+
+// FilterValue implements the Searchable interface. It returns an empty string
+// when no search text has been configured, so the row is excluded from results
+// while a search term is active.
+func (r *StructRow[T]) FilterValue() string {
+	if r.searchText == nil {
+		return ""
+	}
+	return r.searchText(r.value)
 }
 
 func FindStructRow[T any](rows []Row, predicate func(*T) bool) Row {

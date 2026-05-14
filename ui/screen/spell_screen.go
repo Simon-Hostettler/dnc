@@ -49,7 +49,8 @@ func NewSpellScreen(k util.KeyMap, c *repository.CharacterAggregate) *SpellScree
 			Selected: styles.ItemStyleSelected.Align(lipgloss.Left),
 		}).
 			WithFixedWidth(spellColWidth).
-			WithViewport(spellColHeight - 2),
+			WithViewport(spellColHeight - 2).
+			WithSearch(),
 	}
 	s.spellRows = NewCustomCollectionRows(s.spellList,
 		func(sp *models.SpellTO) uuid.UUID { return sp.ID },
@@ -148,7 +149,8 @@ func (s *SpellScreen) getSpellListByLevel(l int) []list.Row {
 			renderSpellInfoRow,
 			s.createSpellEditors(spell),
 		).WithDestructor(s.spellRows.DeleteCallback(spell.ID)).
-			WithReader(renderFullSpellInfo))
+			WithReader(renderFullSpellInfo).
+			WithSearchText(spellSearchText))
 	}
 	rows = append(rows, list.NewAppenderRow(s.keymap, fmt.Sprintf("spell:%d", l)))
 	rows = append(rows, list.NewSeparatorRow(" ", spellColWidth-6))
@@ -209,6 +211,10 @@ func cycleSpellSlots(h *SpellListHeader) tea.Cmd {
 func renderSpellHeaderRow(h *SpellListHeader) string {
 	return fmt.Sprintf("Level %d ∙ %s", h.level,
 		styles.PrettySpellSlots(*h.used, *h.slots))
+}
+
+func spellSearchText(s *models.SpellTO) string {
+	return s.Name + " " + s.School + " " + s.Description
 }
 
 func renderSpellInfoRow(s *models.SpellTO) string {

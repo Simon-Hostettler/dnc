@@ -102,6 +102,8 @@ Sleep 1
 Right
 Sleep 0.5
 
+Type "/"
+Sleep 0.5
 Type "Lorem Ipsum"
 Sleep 0.5
 Down
