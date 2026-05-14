@@ -34,61 +34,6 @@ const (
 	Temporary
 )
 
-var ProficiencySymbols []EnumMapping = []EnumMapping{
-	{Value: int(NoProficiency), Label: "○"},
-	{Value: int(Proficient), Label: "◐"},
-	{Value: int(Expertise), Label: "●"},
-}
-
-func (p Proficiency) ToSymbol() string {
-	for _, m := range ProficiencySymbols {
-		if int(p) == m.Value {
-			return m.Label
-		}
-	}
-	return ""
-}
-
-type EnumMapping struct {
-	Value int
-	Label string
-}
-
-var PreparedSymbols []EnumMapping = []EnumMapping{
-	{Value: 0, Label: "□"},
-	{Value: 1, Label: "■"},
-}
-
-var SpellSourceStrings []EnumMapping = []EnumMapping{
-	{Value: int(InSpellbook), Label: "In Spellbook"},
-	{Value: int(Temporary), Label: "Temporary"},
-}
-
-var SpellSourceSymbols []EnumMapping = []EnumMapping{
-	{Value: int(InSpellbook), Label: ""},
-	{Value: int(Temporary), Label: "⧖"},
-}
-
-var EquippedSymbols []EnumMapping = []EnumMapping{
-	{Value: int(NonEquippable), Label: "Not Equippable"},
-	{Value: int(NotEquipped), Label: "Not Equipped"},
-	{Value: int(Equipped), Label: "Equipped"},
-}
-
-var AttunementSymbols []EnumMapping = []EnumMapping{
-	{Value: 0, Label: "□□□"},
-	{Value: 1, Label: "■□□"},
-	{Value: 2, Label: "■■□"},
-	{Value: 3, Label: "■■■"},
-}
-
-var DeathSaveSymbols []EnumMapping = []EnumMapping{
-	{Value: 0, Label: "○○○"},
-	{Value: 1, Label: "●○○"},
-	{Value: 2, Label: "●●○"},
-	{Value: 3, Label: "●●●"},
-}
-
 func (c CharacterSkillDetailTO) ToCharacterSkillTO() CharacterSkillTO {
 	return CharacterSkillTO{
 		ID:             c.ID,

@@ -136,8 +136,8 @@ func (s *InventoryScreen) wireFocusGraph() {
 func createItemEditors(k util.KeyMap, item *models.ItemTO) []editor.ValueEditor {
 	return []editor.ValueEditor{
 		editor.NewStringEditor(k, "Name", &item.Name),
-		editor.NewEnumEditor(k, models.EquippedSymbols, "Equipped", &item.Equipped),
-		editor.NewEnumEditor(k, models.AttunementSymbols, "Attunement Slots", &item.AttunementSlots),
+		editor.NewEnumEditor(k, styles.EquippedSymbols, "Equipped", &item.Equipped),
+		editor.NewEnumEditor(k, styles.AttunementSymbols, "Attunement Slots", &item.AttunementSlots),
 		editor.NewIntEditor(k, "Quantity", &item.Quantity),
 		editor.NewTextEditor(k, "Description", &item.Description),
 	}

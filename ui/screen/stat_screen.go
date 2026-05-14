@@ -307,10 +307,10 @@ func (s *StatScreen) CreateCombatInfoRows() {
 				editor.NewStringEditor(s.keymap, "Hit Dice", &s.agg.Character.HitDice),
 			}),
 		list.NewLabeledIntRow(s.keymap, "DS Successes", &s.agg.Character.DeathSaveSuccesses,
-			editor.NewEnumEditor(s.keymap, models.DeathSaveSymbols, "DS Successes", &s.agg.Character.DeathSaveSuccesses)).
+			editor.NewEnumEditor(s.keymap, styles.DeathSaveSymbols, "DS Successes", &s.agg.Character.DeathSaveSuccesses)).
 			WithConfig(dsConfig),
 		list.NewLabeledIntRow(s.keymap, "DS Failures", &s.agg.Character.DeathSaveFailures,
-			editor.NewEnumEditor(s.keymap, models.DeathSaveSymbols, "DS Failures", &s.agg.Character.DeathSaveFailures)).
+			editor.NewEnumEditor(s.keymap, styles.DeathSaveSymbols, "DS Failures", &s.agg.Character.DeathSaveFailures)).
 			WithConfig(dsConfig),
 	}
 	s.combatInfo.WithRows(rows)
@@ -323,7 +323,7 @@ func (s *StatScreen) CreateSkillRows() {
 		skill := &s.agg.Skills[i]
 		row := list.NewStructRow(s.keymap, &SkillInfo{skill, s.agg.Abilities, &s.agg.Character.ProficiencyBonus}, renderSkillInfoRow,
 			[]editor.ValueEditor{
-				editor.NewEnumEditor(s.keymap, models.ProficiencySymbols, "Proficiency", &skill.Proficiency),
+				editor.NewEnumEditor(s.keymap, styles.ProficiencySymbols, "Proficiency", &skill.Proficiency),
 				editor.NewIntEditor(s.keymap, "Custom Modifier", &skill.CustomModifier),
 			})
 		rows = append(rows, row)
@@ -336,7 +336,7 @@ func (s *StatScreen) CreateSavingThrowRows() {
 	renderer := renderSavingThrowInfoRow(s.agg.Abilities, s.agg.Character.ProficiencyBonus)
 	newSavingThrowRow := func(field *int, name string) list.Row {
 		return list.NewStructRow(s.keymap, &SavingThrowInfo{field, name}, renderer,
-			[]editor.ValueEditor{editor.NewEnumEditor(s.keymap, models.ProficiencySymbols, "Proficiency", field)})
+			[]editor.ValueEditor{editor.NewEnumEditor(s.keymap, styles.ProficiencySymbols, "Proficiency", field)})
 	}
 	s.savingThrows.WithRows([]list.Row{
 		newSavingThrowRow(&s.agg.SavingThrows.StrengthProficiency, "Strength"),
@@ -381,7 +381,7 @@ func renderSavingThrowInfoRow(a *models.AbilitiesTO, profBonus int) func(*Saving
 			proficiency,
 			profBonus)
 
-		bullet := proficiency.ToSymbol()
+		bullet := styles.ToSymbol(proficiency)
 		return styles.RenderEdgeBound(statLongColWidth, statTinyColWidth, bullet+" "+s.ability, fmt.Sprintf("%+d", mod))
 	}
 }
@@ -398,7 +398,7 @@ func renderSkillInfoRow(s *SkillInfo) string {
 		s.abilities.ToScoreByName(s.skill.SkillAbility),
 		proficiency,
 		*s.profBonus) + s.skill.CustomModifier
-	bullet := proficiency.ToSymbol()
+	bullet := styles.ToSymbol(proficiency)
 	return styles.RenderEdgeBound(statLongColWidth, statTinyColWidth, bullet+" "+s.skill.SkillName, fmt.Sprintf("%+d", mod))
 }
 
@@ -408,5 +408,5 @@ func RenderAttack(a *models.AttackTO) string {
 
 func RenderDeathSaves(amount int) string {
 	amount = util.Clamp(amount, 0, 3)
-	return models.DeathSaveSymbols[amount].Label
+	return styles.DeathSaveSymbols[amount].Label
 }

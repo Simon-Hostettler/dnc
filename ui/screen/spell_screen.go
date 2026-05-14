@@ -159,8 +159,8 @@ func (s *SpellScreen) createSpellEditors(spell *models.SpellTO) []editor.ValueEd
 	return []editor.ValueEditor{
 		editor.NewStringEditor(s.keymap, "Name", &spell.Name),
 		editor.NewStringEditor(s.keymap, "School", &spell.School),
-		editor.NewEnumEditor(s.keymap, models.PreparedSymbols, "Prepared", &spell.Prepared),
-		editor.NewEnumEditor(s.keymap, models.SpellSourceStrings, "Spell Source", &spell.SpellSource),
+		editor.NewEnumEditor(s.keymap, styles.PreparedSymbols, "Prepared", &spell.Prepared),
+		editor.NewEnumEditor(s.keymap, styles.SpellSourceStrings, "Spell Source", &spell.SpellSource),
 		editor.NewStringEditor(s.keymap, "Damage", &spell.Damage),
 		editor.NewStringEditor(s.keymap, "Casting Time", &spell.CastingTime),
 		editor.NewStringEditor(s.keymap, "Range", &spell.Range),
@@ -212,7 +212,7 @@ func renderSpellHeaderRow(h *SpellListHeader) string {
 }
 
 func renderSpellInfoRow(s *models.SpellTO) string {
-	values := []string{s.Name, s.Damage, s.Components, s.Range, s.CastingTime, s.Duration, s.School, models.SpellSourceSymbols[s.SpellSource].Label}
+	values := []string{s.Name, s.Damage, s.Components, s.Range, s.CastingTime, s.Duration, s.School, styles.SpellSourceSymbols[s.SpellSource].Label}
 	values = util.Filter(values, func(s string) bool { return s != "" })
 	return styles.PrettyBoolCircle(util.I2b(s.Prepared)) + " " + strings.Join(values, " ∙ ")
 }
