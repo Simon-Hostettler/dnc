@@ -33,10 +33,12 @@ type InventoryScreen struct {
 	gold     *component.SimpleComponent[int]
 	platinum *component.SimpleComponent[int]
 	itemList *list.List
+
+	itemRows *CollectionRows[models.ItemTO]
 }
 
 func NewInventoryScreen(k util.KeyMap, c *repository.CharacterAggregate) *InventoryScreen {
-	return &InventoryScreen{
+	s := &InventoryScreen{
 		keymap:    k,
 		character: c,
 		copper:    component.NewSimpleIntComponent(k, "CP", &c.Wallet.Copper, true, true),
@@ -44,26 +46,31 @@ func NewInventoryScreen(k util.KeyMap, c *repository.CharacterAggregate) *Invent
 		electrum:  component.NewSimpleIntComponent(k, "EP", &c.Wallet.Electrum, true, true),
 		gold:      component.NewSimpleIntComponent(k, "GP", &c.Wallet.Gold, true, true),
 		platinum:  component.NewSimpleIntComponent(k, "PP", &c.Wallet.Platinum, true, true),
+		itemList: list.NewList(k, list.LeftAlignedListStyle).
+			WithFixedWidth(itemColWidth).
+			WithViewport(itemColHeight - 2),
 	}
+	s.itemRows = NewCollectionRows(k, s.itemList, "item",
+		func() []*models.ItemTO { return util.Pointers(s.character.Items) },
+		func(i *models.ItemTO) uuid.UUID { return i.ID },
+		s.character.AddEmptyItem,
+		s.character.DeleteItem,
+		func(item *models.ItemTO) *list.StructRow[models.ItemTO] {
+			return list.NewStructRow(s.keymap, item, renderItemInfoRow,
+				createItemEditors(s.keymap, item)).
+				WithReader(renderFullItemInfo)
+		},
+	)
+	return s
 }
 
 func (s *InventoryScreen) Init() tea.Cmd {
-	s.populateItems()
+	s.itemRows.Repopulate()
 
 	s.lastFocusedElement = s.copper
 	s.wireFocusGraph()
 
 	return nil
-}
-
-func (s *InventoryScreen) populateItems() {
-	if s.itemList == nil {
-		s.itemList = list.NewList(s.keymap,
-			list.LeftAlignedListStyle).
-			WithFixedWidth(itemColWidth).
-			WithViewport(itemColHeight - 2)
-	}
-	s.CreateItemRows()
 }
 
 func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -72,11 +79,7 @@ func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case command.AppendElementMsg:
 		if strings.Contains(msg.Tag, "item") {
-			item_id := s.character.AddEmptyItem()
-			s.populateItems()
-			cmd = editor.SwitchToEditorCmd(
-				s.getItemRow(item_id).Editors(),
-			)
+			cmd = s.itemRows.HandleAppend(msg.Tag)
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
@@ -127,32 +130,6 @@ func (s *InventoryScreen) wireFocusGraph() {
 			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
 			command.UpDirection:   To(s.electrum),
 		},
-	}
-}
-
-func (s *InventoryScreen) CreateItemRows() {
-	rows := []list.Row{}
-	for i := range s.character.Items {
-		item := &s.character.Items[i]
-		rows = append(rows, list.NewStructRow(s.keymap, item,
-			renderItemInfoRow,
-			createItemEditors(s.keymap, item),
-		).WithDestructor(deleteItemCallback(s, item)).
-			WithReader(renderFullItemInfo))
-	}
-	rows = append(rows, list.NewAppenderRow(s.keymap, "item"))
-	s.itemList.WithRows(rows)
-}
-
-func (s *InventoryScreen) getItemRow(id uuid.UUID) list.Row {
-	return list.FindStructRow(s.itemList.Content(), func(i *models.ItemTO) bool { return i.ID == id })
-}
-
-func deleteItemCallback(s *InventoryScreen, i *models.ItemTO) func() tea.Cmd {
-	return func() tea.Cmd {
-		s.character.DeleteItem(i.ID)
-		s.populateItems()
-		return command.WriteBackRequest
 	}
 }
 

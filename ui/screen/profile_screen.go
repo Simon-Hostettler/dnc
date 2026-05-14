@@ -42,6 +42,8 @@ type ProfileScreen struct {
 	backstory           *component.SimpleTextComponent
 	appearance          *component.SimpleTextComponent
 	personality         *component.SimpleTextComponent
+
+	featureRows *CollectionRows[models.FeatureTO]
 }
 
 func NewProfileScreen(km util.KeyMap, c *repository.CharacterAggregate) *ProfileScreen {
@@ -55,6 +57,18 @@ func NewProfileScreen(km util.KeyMap, c *repository.CharacterAggregate) *Profile
 		characterAppearance: list.NewListWithDefaults(km),
 		features:            list.NewListWithDefaults(km).WithTitle("Features & Traits"),
 	}
+	s.featureRows = NewCollectionRows(km, s.features, "feature",
+		func() []*models.FeatureTO { return util.Pointers(s.agg.Features) },
+		func(f *models.FeatureTO) uuid.UUID { return f.ID },
+		s.agg.AddEmptyFeature,
+		s.agg.DeleteFeature,
+		func(f *models.FeatureTO) *list.StructRow[models.FeatureTO] {
+			return list.NewStructRow(s.keymap, f, RenderFeature, []editor.ValueEditor{
+				editor.NewStringEditor(s.keymap, "Name", &f.Name),
+				editor.NewTextEditor(s.keymap, "Description", &f.Description),
+			}).WithReader(renderFullFeature)
+		},
+	)
 	return s
 }
 
@@ -69,7 +83,7 @@ func (s *ProfileScreen) Init() tea.Cmd {
 
 	s.CreateCharacterInfoRows()
 	s.CreateCharacterAppearanceRows()
-	s.CreateFeatureRows()
+	s.featureRows.Repopulate()
 
 	s.lastFocusedElement = s.characterInfo
 	s.wireFocusGraph()
@@ -83,11 +97,7 @@ func (s *ProfileScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case command.AppendElementMsg:
 		if msg.Tag == "feature" {
-			id := s.agg.AddEmptyFeature()
-			s.CreateFeatureRows()
-			cmd = editor.SwitchToEditorCmd(
-				s.getFeatureRow(id).Editors(),
-			)
+			cmd = s.featureRows.HandleAppend(msg.Tag)
 		} else {
 			_, cmd = s.focusedElement.Update(msg)
 		}
@@ -241,33 +251,6 @@ func (s *ProfileScreen) CreateCharacterAppearanceRows() {
 			editor.NewStringEditor(s.keymap, "Hair", &s.agg.Character.Hair)).WithConfig(rowCfg),
 	}
 	s.characterAppearance.WithRows(rows)
-}
-
-func (s *ProfileScreen) CreateFeatureRows() {
-	rows := []list.Row{}
-	for i := range s.agg.Features {
-		f := &s.agg.Features[i]
-		row := list.NewStructRow(s.keymap, f, RenderFeature, []editor.ValueEditor{
-			editor.NewStringEditor(s.keymap, "Name", &f.Name),
-			editor.NewTextEditor(s.keymap, "Description", &f.Description),
-		}).WithDestructor(s.deleteFeatureCallback(f)).
-			WithReader(renderFullFeature)
-		rows = append(rows, row)
-	}
-	rows = append(rows, list.NewAppenderRow(s.keymap, "feature"))
-	s.features.WithRows(rows)
-}
-
-func (s *ProfileScreen) deleteFeatureCallback(f *models.FeatureTO) func() tea.Cmd {
-	return func() tea.Cmd {
-		s.agg.DeleteFeature(f.ID)
-		s.CreateFeatureRows()
-		return command.WriteBackRequest
-	}
-}
-
-func (s *ProfileScreen) getFeatureRow(id uuid.UUID) list.Row {
-	return list.FindStructRow(s.features.Content(), func(f *models.FeatureTO) bool { return f.ID == id })
 }
 
 // screen specific types + utility functions

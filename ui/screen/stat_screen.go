@@ -47,6 +47,8 @@ type StatScreen struct {
 	attacks       *list.List
 	actions       *component.SimpleComponent[string]
 	bonusActions  *component.SimpleComponent[string]
+
+	attackRows *CollectionRows[models.AttackTO]
 }
 
 func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen {
@@ -66,6 +68,20 @@ func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen
 		attacks: list.NewListWithDefaults(km).
 			WithTitle("Attacks"),
 	}
+	s.attackRows = NewCollectionRows(km, s.attacks, "attack",
+		func() []*models.AttackTO { return util.Pointers(s.agg.Attacks) },
+		func(a *models.AttackTO) uuid.UUID { return a.ID },
+		s.agg.AddEmptyAttack,
+		s.agg.DeleteAttack,
+		func(a *models.AttackTO) *list.StructRow[models.AttackTO] {
+			return list.NewStructRow(s.keymap, a, RenderAttack, []editor.ValueEditor{
+				editor.NewStringEditor(s.keymap, "Name", &a.Name),
+				editor.NewIntEditor(s.keymap, "Bonus", &a.Bonus),
+				editor.NewStringEditor(s.keymap, "Damage", &a.Damage),
+				editor.NewStringEditor(s.keymap, "Damage Type", &a.DamageType),
+			})
+		},
+	)
 	return s
 }
 
@@ -84,7 +100,7 @@ func (s *StatScreen) Init() tea.Cmd {
 	s.CreateAbilityRows()
 	s.CreateSkillRows()
 	s.CreateCombatInfoRows()
-	s.CreateAttackRows()
+	s.attackRows.Repopulate()
 	s.CreateSavingThrowRows()
 
 	s.lastFocusedElement = s.characterInfo
@@ -99,11 +115,7 @@ func (s *StatScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case command.AppendElementMsg:
 		if msg.Tag == "attack" {
-			id := s.agg.AddEmptyAttack()
-			s.CreateAttackRows()
-			cmd = editor.SwitchToEditorCmd(
-				s.getAttackRow(id).Editors(),
-			)
+			cmd = s.attackRows.HandleAppend(msg.Tag)
 		} else {
 			_, cmd = s.focusedElement.Update(msg)
 		}
@@ -302,34 +314,6 @@ func (s *StatScreen) CreateCombatInfoRows() {
 			WithConfig(dsConfig),
 	}
 	s.combatInfo.WithRows(rows)
-}
-
-func (s *StatScreen) CreateAttackRows() {
-	rows := []list.Row{}
-	for i := range s.agg.Attacks {
-		a := &s.agg.Attacks[i]
-		row := list.NewStructRow(s.keymap, a, RenderAttack, []editor.ValueEditor{
-			editor.NewStringEditor(s.keymap, "Name", &a.Name),
-			editor.NewIntEditor(s.keymap, "Bonus", &a.Bonus),
-			editor.NewStringEditor(s.keymap, "Damage", &a.Damage),
-			editor.NewStringEditor(s.keymap, "Damage Type", &a.DamageType),
-		}).WithDestructor(s.deleteAttackCallback(a))
-		rows = append(rows, row)
-	}
-	rows = append(rows, list.NewAppenderRow(s.keymap, "attack"))
-	s.attacks.WithRows(rows)
-}
-
-func (s *StatScreen) deleteAttackCallback(a *models.AttackTO) func() tea.Cmd {
-	return func() tea.Cmd {
-		s.agg.DeleteAttack(a.ID)
-		s.CreateAttackRows()
-		return command.WriteBackRequest
-	}
-}
-
-func (s *StatScreen) getAttackRow(id uuid.UUID) list.Row {
-	return list.FindStructRow(s.attacks.Content(), func(a *models.AttackTO) bool { return a.ID == id })
 }
 
 func (s *StatScreen) CreateSkillRows() {
