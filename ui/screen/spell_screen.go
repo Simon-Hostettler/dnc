@@ -27,10 +27,7 @@ var (
 type SpellScreen struct {
 	keymap    util.KeyMap
 	character *repository.CharacterAggregate
-
-	focusGraph         FocusGraph
-	lastFocusedElement FocusableModel
-	focusedElement     FocusableModel
+	FocusManager
 
 	spellAbility  *component.SimpleComponent[string]
 	spellSaveDC   *component.SimpleComponent[int]
@@ -97,11 +94,6 @@ func (s *SpellScreen) View() tea.View {
 	return tea.NewView(lipgloss.JoinVertical(lipgloss.Left, topbar, content))
 }
 
-func (s *SpellScreen) focusOn(m FocusableModel) {
-	s.focusedElement = m
-	m.Focus()
-}
-
 func (s *SpellScreen) wireFocusGraph() {
 	s.focusGraph = FocusGraph{
 		s.spellAbility: {
@@ -123,32 +115,6 @@ func (s *SpellScreen) wireFocusGraph() {
 			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
 		},
 	}
-}
-
-func (s *SpellScreen) moveFocus(d command.Direction) tea.Cmd {
-	edge, ok := s.focusGraph[s.focusedElement][d]
-	if !ok {
-		return nil
-	}
-	target, cmd := edge()
-	if target != nil {
-		s.Blur()
-		s.focusOn(target)
-	}
-	return cmd
-}
-
-func (s *SpellScreen) Focus() {
-	s.focusOn(s.lastFocusedElement)
-}
-
-func (s *SpellScreen) Blur() {
-	if s.focusedElement != nil {
-		s.focusedElement.Blur()
-		s.lastFocusedElement = s.focusedElement
-	}
-
-	s.focusedElement = nil
 }
 
 func (s *SpellScreen) populateSpells() {

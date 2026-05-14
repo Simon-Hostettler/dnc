@@ -26,10 +26,7 @@ var (
 type NoteScreen struct {
 	keymap    util.KeyMap
 	character *repository.CharacterAggregate
-
-	focusGraph         FocusGraph
-	lastFocusedElement FocusableModel
-	focusedElement     FocusableModel
+	FocusManager
 
 	searchField *textinput.TextInput
 	noteList    *list.List
@@ -114,11 +111,6 @@ func (s *NoteScreen) View() tea.View {
 	return tea.NewView(lipgloss.JoinVertical(lipgloss.Left, topbar, content))
 }
 
-func (s *NoteScreen) focusOn(m FocusableModel) {
-	s.focusedElement = m
-	m.Focus()
-}
-
 func (s *NoteScreen) wireFocusGraph() {
 	s.focusGraph = FocusGraph{
 		s.searchField: {
@@ -130,32 +122,6 @@ func (s *NoteScreen) wireFocusGraph() {
 			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
 		},
 	}
-}
-
-func (s *NoteScreen) moveFocus(d command.Direction) tea.Cmd {
-	edge, ok := s.focusGraph[s.focusedElement][d]
-	if !ok {
-		return nil
-	}
-	target, cmd := edge()
-	if target != nil {
-		s.Blur()
-		s.focusOn(target)
-	}
-	return cmd
-}
-
-func (s *NoteScreen) Focus() {
-	s.focusOn(s.lastFocusedElement)
-}
-
-func (s *NoteScreen) Blur() {
-	if s.focusedElement != nil {
-		s.focusedElement.Blur()
-		s.lastFocusedElement = s.focusedElement
-	}
-
-	s.focusedElement = nil
 }
 
 func (s *NoteScreen) CreateNoteRows() {

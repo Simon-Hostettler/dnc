@@ -25,10 +25,7 @@ var (
 type InventoryScreen struct {
 	keymap    util.KeyMap
 	character *repository.CharacterAggregate
-
-	focusGraph         FocusGraph
-	lastFocusedElement FocusableModel
-	focusedElement     FocusableModel
+	FocusManager
 
 	copper   *component.SimpleComponent[int]
 	silver   *component.SimpleComponent[int]
@@ -100,11 +97,6 @@ func (s *InventoryScreen) View() tea.View {
 	return tea.NewView(lipgloss.JoinVertical(lipgloss.Left, topbar, content))
 }
 
-func (s *InventoryScreen) focusOn(m FocusableModel) {
-	s.focusedElement = m
-	m.Focus()
-}
-
 func (s *InventoryScreen) wireFocusGraph() {
 	s.focusGraph = FocusGraph{
 		s.copper: {
@@ -136,32 +128,6 @@ func (s *InventoryScreen) wireFocusGraph() {
 			command.UpDirection:   To(s.electrum),
 		},
 	}
-}
-
-func (s *InventoryScreen) moveFocus(d command.Direction) tea.Cmd {
-	edge, ok := s.focusGraph[s.focusedElement][d]
-	if !ok {
-		return nil
-	}
-	target, cmd := edge()
-	if target != nil {
-		s.Blur()
-		s.focusOn(target)
-	}
-	return cmd
-}
-
-func (s *InventoryScreen) Focus() {
-	s.focusOn(s.lastFocusedElement)
-}
-
-func (s *InventoryScreen) Blur() {
-	if s.focusedElement != nil {
-		s.focusedElement.Blur()
-		s.lastFocusedElement = s.focusedElement
-	}
-
-	s.focusedElement = nil
 }
 
 func (s *InventoryScreen) CreateItemRows() {

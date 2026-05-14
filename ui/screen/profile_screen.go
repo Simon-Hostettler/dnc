@@ -32,11 +32,9 @@ var (
 )
 
 type ProfileScreen struct {
-	keymap             util.KeyMap
-	agg                *repository.CharacterAggregate
-	focusGraph         FocusGraph
-	lastFocusedElement FocusableModel
-	focusedElement     FocusableModel
+	keymap util.KeyMap
+	agg    *repository.CharacterAggregate
+	FocusManager
 
 	characterInfo       *list.List
 	characterAppearance *list.List
@@ -101,29 +99,6 @@ func (s *ProfileScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, cmd
 }
 
-func (s *ProfileScreen) Focus() {
-	s.focusOn(s.lastFocusedElement)
-}
-
-func (s *ProfileScreen) Blur() {
-	// blur should be idempotent
-	if s.focusedElement != nil {
-		s.lastFocusedElement = s.focusedElement
-	}
-	s.focusedElement = nil
-	s.characterInfo.Blur()
-	s.characterAppearance.Blur()
-	s.features.Blur()
-	s.appearance.Blur()
-	s.backstory.Blur()
-	s.personality.Blur()
-}
-
-func (s *ProfileScreen) focusOn(m FocusableModel) {
-	s.focusedElement = m
-	m.Focus()
-}
-
 func (s *ProfileScreen) wireFocusGraph() {
 	s.focusGraph = FocusGraph{
 		s.characterInfo: {
@@ -155,19 +130,6 @@ func (s *ProfileScreen) wireFocusGraph() {
 			command.LeftDirection: To(s.backstory),
 		},
 	}
-}
-
-func (s *ProfileScreen) moveFocus(d command.Direction) tea.Cmd {
-	edge, ok := s.focusGraph[s.focusedElement][d]
-	if !ok {
-		return nil
-	}
-	target, cmd := edge()
-	if target != nil {
-		s.Blur()
-		s.focusOn(target)
-	}
-	return cmd
 }
 
 func (s *ProfileScreen) View() tea.View {

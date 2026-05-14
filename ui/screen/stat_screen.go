@@ -35,11 +35,9 @@ var (
 )
 
 type StatScreen struct {
-	keymap             util.KeyMap
-	agg                *repository.CharacterAggregate
-	focusGraph         FocusGraph
-	lastFocusedElement FocusableModel
-	focusedElement     FocusableModel
+	keymap util.KeyMap
+	agg    *repository.CharacterAggregate
+	FocusManager
 
 	characterInfo *list.List
 	abilities     *list.List
@@ -117,31 +115,6 @@ func (s *StatScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return s, cmd
 }
 
-func (s *StatScreen) Focus() {
-	s.focusOn(s.lastFocusedElement)
-}
-
-func (s *StatScreen) Blur() {
-	// blur should be idempotent
-	if s.focusedElement != nil {
-		s.lastFocusedElement = s.focusedElement
-	}
-	s.focusedElement = nil
-	s.characterInfo.Blur()
-	s.abilities.Blur()
-	s.skills.Blur()
-	s.savingThrows.Blur()
-	s.combatInfo.Blur()
-	s.attacks.Blur()
-	s.actions.Blur()
-	s.bonusActions.Blur()
-}
-
-func (s *StatScreen) focusOn(m FocusableModel) {
-	s.focusedElement = m
-	m.Focus()
-}
-
 func (s *StatScreen) wireFocusGraph() {
 	s.focusGraph = FocusGraph{
 		s.characterInfo: {
@@ -189,19 +162,6 @@ func (s *StatScreen) wireFocusGraph() {
 			command.LeftDirection: To(s.savingThrows),
 		},
 	}
-}
-
-func (s *StatScreen) moveFocus(d command.Direction) tea.Cmd {
-	edge, ok := s.focusGraph[s.focusedElement][d]
-	if !ok {
-		return nil
-	}
-	target, cmd := edge()
-	if target != nil {
-		s.Blur()
-		s.focusOn(target)
-	}
-	return cmd
 }
 
 func (s *StatScreen) View() tea.View {
