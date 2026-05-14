@@ -26,13 +26,12 @@ var (
 type NoteScreen struct {
 	keymap    util.KeyMap
 	character *repository.CharacterAggregate
-
-	focusGraph         FocusGraph
-	lastFocusedElement FocusableModel
-	focusedElement     FocusableModel
+	FocusManager
 
 	searchField *textinput.TextInput
 	noteList    *list.List
+
+	noteRows *CollectionRows[models.NoteTO]
 }
 
 func NewNoteScreen(k util.KeyMap, c *repository.CharacterAggregate) *NoteScreen {
@@ -42,30 +41,35 @@ func NewNoteScreen(k util.KeyMap, c *repository.CharacterAggregate) *NoteScreen 
 	sf.Placeholder = ""
 	sf.Prompt = ""
 
-	return &NoteScreen{
+	s := &NoteScreen{
 		keymap:      k,
 		character:   c,
 		searchField: textinput.New(sf),
+		noteList: list.NewList(k, list.LeftAlignedListStyle).
+			WithFixedWidth(noteColWidth).
+			WithViewport(noteColHeight - 2),
 	}
+	s.noteRows = NewCollectionRows(k, s.noteList, "note",
+		func() []*models.NoteTO { return util.Pointers(s.character.Notes) },
+		func(n *models.NoteTO) uuid.UUID { return n.ID },
+		s.character.AddEmptyNote,
+		s.character.DeleteNote,
+		func(note *models.NoteTO) *list.StructRow[models.NoteTO] {
+			return list.NewStructRow(s.keymap, note, renderNoteInfoRow,
+				createNoteEditors(s.keymap, note)).
+				WithReader(renderFullNoteInfo)
+		},
+	)
+	return s
 }
 
 func (s *NoteScreen) Init() tea.Cmd {
-	s.populateNotes()
+	s.noteRows.Repopulate()
 
 	s.lastFocusedElement = s.searchField
 	s.wireFocusGraph()
 
 	return nil
-}
-
-func (s *NoteScreen) populateNotes() {
-	if s.noteList == nil {
-		s.noteList = list.NewList(s.keymap,
-			list.LeftAlignedListStyle).
-			WithFixedWidth(noteColWidth).
-			WithViewport(noteColHeight - 2)
-	}
-	s.CreateNoteRows()
 }
 
 func (s *NoteScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -74,11 +78,7 @@ func (s *NoteScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case command.AppendElementMsg:
 		if strings.Contains(msg.Tag, "note") {
-			note_id := s.character.AddEmptyNote()
-			s.populateNotes()
-			cmd = editor.SwitchToEditorCmd(
-				s.getNoteRow(note_id).Editors(),
-			)
+			cmd = s.noteRows.HandleAppend(msg.Tag)
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
@@ -114,11 +114,6 @@ func (s *NoteScreen) View() tea.View {
 	return tea.NewView(lipgloss.JoinVertical(lipgloss.Left, topbar, content))
 }
 
-func (s *NoteScreen) focusOn(m FocusableModel) {
-	s.focusedElement = m
-	m.Focus()
-}
-
 func (s *NoteScreen) wireFocusGraph() {
 	s.focusGraph = FocusGraph{
 		s.searchField: {
@@ -129,58 +124,6 @@ func (s *NoteScreen) wireFocusGraph() {
 			command.UpDirection:   To(s.searchField),
 			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
 		},
-	}
-}
-
-func (s *NoteScreen) moveFocus(d command.Direction) tea.Cmd {
-	edge, ok := s.focusGraph[s.focusedElement][d]
-	if !ok {
-		return nil
-	}
-	target, cmd := edge()
-	if target != nil {
-		s.Blur()
-		s.focusOn(target)
-	}
-	return cmd
-}
-
-func (s *NoteScreen) Focus() {
-	s.focusOn(s.lastFocusedElement)
-}
-
-func (s *NoteScreen) Blur() {
-	if s.focusedElement != nil {
-		s.focusedElement.Blur()
-		s.lastFocusedElement = s.focusedElement
-	}
-
-	s.focusedElement = nil
-}
-
-func (s *NoteScreen) CreateNoteRows() {
-	rows := []list.Row{}
-	for i := range s.character.Notes {
-		note := &s.character.Notes[i]
-		rows = append(rows, list.NewStructRow(s.keymap, note,
-			renderNoteInfoRow,
-			createNoteEditors(s.keymap, note),
-		).WithDestructor(deleteNoteCallback(s, note)).
-			WithReader(renderFullNoteInfo))
-	}
-	rows = append(rows, list.NewAppenderRow(s.keymap, "note"))
-	s.noteList.WithRows(rows)
-}
-
-func (s *NoteScreen) getNoteRow(id uuid.UUID) list.Row {
-	return list.FindStructRow(s.noteList.Content(), func(n *models.NoteTO) bool { return n.ID == id })
-}
-
-func deleteNoteCallback(s *NoteScreen, n *models.NoteTO) func() tea.Cmd {
-	return func() tea.Cmd {
-		s.character.DeleteNote(n.ID)
-		s.populateNotes()
-		return command.WriteBackRequest
 	}
 }
 

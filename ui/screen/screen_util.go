@@ -12,6 +12,46 @@ type FocusEdge func() (target FocusableModel, cmd tea.Cmd)
 
 type FocusGraph map[FocusableModel]map[command.Direction]FocusEdge
 
+// FocusManager holds the focus state shared by every screen and is meant to be
+// embedded: its fields and methods promote into the embedding screen.
+type FocusManager struct {
+	focusGraph         FocusGraph
+	lastFocusedElement FocusableModel
+	focusedElement     FocusableModel
+}
+
+func (f *FocusManager) Focus() {
+	f.focusOn(f.lastFocusedElement)
+}
+
+func (f *FocusManager) focusOn(m FocusableModel) {
+	f.focusedElement = m
+	m.Focus()
+}
+
+// Blur is idempotent: only the focused element can be active, so blurring it
+// alone is sufficient.
+func (f *FocusManager) Blur() {
+	if f.focusedElement != nil {
+		f.focusedElement.Blur()
+		f.lastFocusedElement = f.focusedElement
+	}
+	f.focusedElement = nil
+}
+
+func (f *FocusManager) moveFocus(d command.Direction) tea.Cmd {
+	edge, ok := f.focusGraph[f.focusedElement][d]
+	if !ok {
+		return nil
+	}
+	target, cmd := edge()
+	if target != nil {
+		f.Blur()
+		f.focusOn(target)
+	}
+	return cmd
+}
+
 func To(m FocusableModel) FocusEdge {
 	return func() (FocusableModel, tea.Cmd) { return m, nil }
 }

@@ -27,25 +27,40 @@ var (
 type SpellScreen struct {
 	keymap    util.KeyMap
 	character *repository.CharacterAggregate
-
-	focusGraph         FocusGraph
-	lastFocusedElement FocusableModel
-	focusedElement     FocusableModel
+	FocusManager
 
 	spellAbility  *component.SimpleComponent[string]
 	spellSaveDC   *component.SimpleComponent[int]
 	spellAtkBonus *component.SimpleComponent[int]
 	spellList     *list.List
+
+	spellRows *CollectionRows[models.SpellTO]
 }
 
 func NewSpellScreen(k util.KeyMap, c *repository.CharacterAggregate) *SpellScreen {
-	return &SpellScreen{
+	s := &SpellScreen{
 		keymap:        k,
 		character:     c,
 		spellAbility:  component.NewSimpleStringComponent(k, "Spellcasting Ability", &c.Character.SpellcastingAbility, true, true),
 		spellSaveDC:   component.NewSimpleIntComponent(k, "Spell Save DC", &c.Character.SpellSaveDC, true, true),
 		spellAtkBonus: component.NewSimpleIntComponent(k, "Spell Attack Bonus", &c.Character.SpellAttackBonus, true, true),
+		spellList: list.NewList(k, list.ListStyles{
+			Row:      styles.ItemStyleDefault.Align(lipgloss.Left),
+			Selected: styles.ItemStyleSelected.Align(lipgloss.Left),
+		}).
+			WithFixedWidth(spellColWidth).
+			WithViewport(spellColHeight - 2),
 	}
+	s.spellRows = NewCustomCollectionRows(s.spellList,
+		func(sp *models.SpellTO) uuid.UUID { return sp.ID },
+		func(tag string) uuid.UUID {
+			l, _ := strconv.Atoi(strings.Split(tag, ":")[1])
+			return s.character.AddEmptySpell(l)
+		},
+		s.character.DeleteSpell,
+	)
+	s.spellRows.Repopulate = s.populateSpells
+	return s
 }
 
 func (s *SpellScreen) Init() tea.Cmd {
@@ -71,12 +86,7 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case command.AppendElementMsg:
 		if strings.Contains(msg.Tag, "spell:") {
-			l, _ := strconv.Atoi(strings.Split(msg.Tag, ":")[1])
-			spell_id := s.character.AddEmptySpell(l)
-			s.populateSpells()
-			cmd = editor.SwitchToEditorCmd(
-				s.getSpellRow(spell_id).Editors(),
-			)
+			cmd = s.spellRows.HandleAppend(msg.Tag)
 		}
 	case command.FocusNextElementMsg:
 		s.moveFocus(msg.Direction)
@@ -95,11 +105,6 @@ func (s *SpellScreen) View() tea.View {
 		Height(spellColHeight).
 		Render(renderedSpells)
 	return tea.NewView(lipgloss.JoinVertical(lipgloss.Left, topbar, content))
-}
-
-func (s *SpellScreen) focusOn(m FocusableModel) {
-	s.focusedElement = m
-	m.Focus()
 }
 
 func (s *SpellScreen) wireFocusGraph() {
@@ -125,42 +130,7 @@ func (s *SpellScreen) wireFocusGraph() {
 	}
 }
 
-func (s *SpellScreen) moveFocus(d command.Direction) tea.Cmd {
-	edge, ok := s.focusGraph[s.focusedElement][d]
-	if !ok {
-		return nil
-	}
-	target, cmd := edge()
-	if target != nil {
-		s.Blur()
-		s.focusOn(target)
-	}
-	return cmd
-}
-
-func (s *SpellScreen) Focus() {
-	s.focusOn(s.lastFocusedElement)
-}
-
-func (s *SpellScreen) Blur() {
-	if s.focusedElement != nil {
-		s.focusedElement.Blur()
-		s.lastFocusedElement = s.focusedElement
-	}
-
-	s.focusedElement = nil
-}
-
 func (s *SpellScreen) populateSpells() {
-	if s.spellList == nil {
-		s.spellList = list.NewList(s.keymap,
-			list.ListStyles{
-				Row:      styles.ItemStyleDefault.Align(lipgloss.Left),
-				Selected: styles.ItemStyleSelected.Align(lipgloss.Left),
-			}).
-			WithFixedWidth(spellColWidth).
-			WithViewport(spellColHeight - 2)
-	}
 	rows := []list.Row{}
 	for i := range 10 {
 		rows = append(rows, s.getSpellListByLevel(i)...)
@@ -177,7 +147,7 @@ func (s *SpellScreen) getSpellListByLevel(l int) []list.Row {
 		rows = append(rows, list.NewStructRow(s.keymap, spell,
 			renderSpellInfoRow,
 			s.createSpellEditors(spell),
-		).WithDestructor(deleteSpellCallback(s, spell)).
+		).WithDestructor(s.spellRows.DeleteCallback(spell.ID)).
 			WithReader(renderFullSpellInfo))
 	}
 	rows = append(rows, list.NewAppenderRow(s.keymap, fmt.Sprintf("spell:%d", l)))
@@ -185,24 +155,12 @@ func (s *SpellScreen) getSpellListByLevel(l int) []list.Row {
 	return rows
 }
 
-func (s *SpellScreen) getSpellRow(id uuid.UUID) list.Row {
-	return list.FindStructRow(s.spellList.Content(), func(sp *models.SpellTO) bool { return sp.ID == id })
-}
-
-func deleteSpellCallback(s *SpellScreen, sp *models.SpellTO) func() tea.Cmd {
-	return func() tea.Cmd {
-		s.character.DeleteSpell(sp.ID)
-		s.populateSpells()
-		return command.WriteBackRequest
-	}
-}
-
 func (s *SpellScreen) createSpellEditors(spell *models.SpellTO) []editor.ValueEditor {
 	return []editor.ValueEditor{
 		editor.NewStringEditor(s.keymap, "Name", &spell.Name),
 		editor.NewStringEditor(s.keymap, "School", &spell.School),
-		editor.NewEnumEditor(s.keymap, models.PreparedSymbols, "Prepared", &spell.Prepared),
-		editor.NewEnumEditor(s.keymap, models.SpellSourceStrings, "Spell Source", &spell.SpellSource),
+		editor.NewEnumEditor(s.keymap, styles.PreparedSymbols, "Prepared", &spell.Prepared),
+		editor.NewEnumEditor(s.keymap, styles.SpellSourceStrings, "Spell Source", &spell.SpellSource),
 		editor.NewStringEditor(s.keymap, "Damage", &spell.Damage),
 		editor.NewStringEditor(s.keymap, "Casting Time", &spell.CastingTime),
 		editor.NewStringEditor(s.keymap, "Range", &spell.Range),
@@ -254,7 +212,7 @@ func renderSpellHeaderRow(h *SpellListHeader) string {
 }
 
 func renderSpellInfoRow(s *models.SpellTO) string {
-	values := []string{s.Name, s.Damage, s.Components, s.Range, s.CastingTime, s.Duration, s.School, models.SpellSourceSymbols[s.SpellSource].Label}
+	values := []string{s.Name, s.Damage, s.Components, s.Range, s.CastingTime, s.Duration, s.School, styles.SpellSourceSymbols[s.SpellSource].Label}
 	values = util.Filter(values, func(s string) bool { return s != "" })
 	return styles.PrettyBoolCircle(util.I2b(s.Prepared)) + " " + strings.Join(values, " ∙ ")
 }

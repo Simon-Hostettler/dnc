@@ -37,6 +37,15 @@ func Map[T, V any](ts []T, fn func(T) V) []V {
 	return result
 }
 
+// Pointers returns a slice of pointers into the backing array of s.
+func Pointers[T any](s []T) []*T {
+	result := make([]*T, len(s))
+	for i := range s {
+		result[i] = &s[i]
+	}
+	return result
+}
+
 func Filter[T any](ts []T, fn func(T) bool) []T {
 	var result []T
 	for _, t := range ts {

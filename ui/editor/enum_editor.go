@@ -7,14 +7,13 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"hostettler.dev/dnc/command"
-	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/util"
 )
 
 type EnumEditor struct {
 	keymap      util.KeyMap
-	options     []models.EnumMapping
+	options     []styles.EnumMapping
 	label       string
 	value       reflect.Value
 	cursor      int
@@ -22,7 +21,7 @@ type EnumEditor struct {
 	focus       bool
 }
 
-func NewEnumEditor(keymap util.KeyMap, options []models.EnumMapping, label string, delegatorPointer interface{}) *EnumEditor {
+func NewEnumEditor(keymap util.KeyMap, options []styles.EnumMapping, label string, delegatorPointer interface{}) *EnumEditor {
 	e := EnumEditor{
 		options: options,
 	}

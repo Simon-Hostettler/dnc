@@ -35,11 +35,9 @@ var (
 )
 
 type StatScreen struct {
-	keymap             util.KeyMap
-	agg                *repository.CharacterAggregate
-	focusGraph         FocusGraph
-	lastFocusedElement FocusableModel
-	focusedElement     FocusableModel
+	keymap util.KeyMap
+	agg    *repository.CharacterAggregate
+	FocusManager
 
 	characterInfo *list.List
 	abilities     *list.List
@@ -49,6 +47,8 @@ type StatScreen struct {
 	attacks       *list.List
 	actions       *component.SimpleComponent[string]
 	bonusActions  *component.SimpleComponent[string]
+
+	attackRows *CollectionRows[models.AttackTO]
 }
 
 func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen {
@@ -68,6 +68,20 @@ func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen
 		attacks: list.NewListWithDefaults(km).
 			WithTitle("Attacks"),
 	}
+	s.attackRows = NewCollectionRows(km, s.attacks, "attack",
+		func() []*models.AttackTO { return util.Pointers(s.agg.Attacks) },
+		func(a *models.AttackTO) uuid.UUID { return a.ID },
+		s.agg.AddEmptyAttack,
+		s.agg.DeleteAttack,
+		func(a *models.AttackTO) *list.StructRow[models.AttackTO] {
+			return list.NewStructRow(s.keymap, a, RenderAttack, []editor.ValueEditor{
+				editor.NewStringEditor(s.keymap, "Name", &a.Name),
+				editor.NewIntEditor(s.keymap, "Bonus", &a.Bonus),
+				editor.NewStringEditor(s.keymap, "Damage", &a.Damage),
+				editor.NewStringEditor(s.keymap, "Damage Type", &a.DamageType),
+			})
+		},
+	)
 	return s
 }
 
@@ -86,7 +100,7 @@ func (s *StatScreen) Init() tea.Cmd {
 	s.CreateAbilityRows()
 	s.CreateSkillRows()
 	s.CreateCombatInfoRows()
-	s.CreateAttackRows()
+	s.attackRows.Repopulate()
 	s.CreateSavingThrowRows()
 
 	s.lastFocusedElement = s.characterInfo
@@ -101,11 +115,7 @@ func (s *StatScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case command.AppendElementMsg:
 		if msg.Tag == "attack" {
-			id := s.agg.AddEmptyAttack()
-			s.CreateAttackRows()
-			cmd = editor.SwitchToEditorCmd(
-				s.getAttackRow(id).Editors(),
-			)
+			cmd = s.attackRows.HandleAppend(msg.Tag)
 		} else {
 			_, cmd = s.focusedElement.Update(msg)
 		}
@@ -115,31 +125,6 @@ func (s *StatScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.moveFocus)
 	}
 	return s, cmd
-}
-
-func (s *StatScreen) Focus() {
-	s.focusOn(s.lastFocusedElement)
-}
-
-func (s *StatScreen) Blur() {
-	// blur should be idempotent
-	if s.focusedElement != nil {
-		s.lastFocusedElement = s.focusedElement
-	}
-	s.focusedElement = nil
-	s.characterInfo.Blur()
-	s.abilities.Blur()
-	s.skills.Blur()
-	s.savingThrows.Blur()
-	s.combatInfo.Blur()
-	s.attacks.Blur()
-	s.actions.Blur()
-	s.bonusActions.Blur()
-}
-
-func (s *StatScreen) focusOn(m FocusableModel) {
-	s.focusedElement = m
-	m.Focus()
 }
 
 func (s *StatScreen) wireFocusGraph() {
@@ -189,19 +174,6 @@ func (s *StatScreen) wireFocusGraph() {
 			command.LeftDirection: To(s.savingThrows),
 		},
 	}
-}
-
-func (s *StatScreen) moveFocus(d command.Direction) tea.Cmd {
-	edge, ok := s.focusGraph[s.focusedElement][d]
-	if !ok {
-		return nil
-	}
-	target, cmd := edge()
-	if target != nil {
-		s.Blur()
-		s.focusOn(target)
-	}
-	return cmd
 }
 
 func (s *StatScreen) View() tea.View {
@@ -335,41 +307,13 @@ func (s *StatScreen) CreateCombatInfoRows() {
 				editor.NewStringEditor(s.keymap, "Hit Dice", &s.agg.Character.HitDice),
 			}),
 		list.NewLabeledIntRow(s.keymap, "DS Successes", &s.agg.Character.DeathSaveSuccesses,
-			editor.NewEnumEditor(s.keymap, models.DeathSaveSymbols, "DS Successes", &s.agg.Character.DeathSaveSuccesses)).
+			editor.NewEnumEditor(s.keymap, styles.DeathSaveSymbols, "DS Successes", &s.agg.Character.DeathSaveSuccesses)).
 			WithConfig(dsConfig),
 		list.NewLabeledIntRow(s.keymap, "DS Failures", &s.agg.Character.DeathSaveFailures,
-			editor.NewEnumEditor(s.keymap, models.DeathSaveSymbols, "DS Failures", &s.agg.Character.DeathSaveFailures)).
+			editor.NewEnumEditor(s.keymap, styles.DeathSaveSymbols, "DS Failures", &s.agg.Character.DeathSaveFailures)).
 			WithConfig(dsConfig),
 	}
 	s.combatInfo.WithRows(rows)
-}
-
-func (s *StatScreen) CreateAttackRows() {
-	rows := []list.Row{}
-	for i := range s.agg.Attacks {
-		a := &s.agg.Attacks[i]
-		row := list.NewStructRow(s.keymap, a, RenderAttack, []editor.ValueEditor{
-			editor.NewStringEditor(s.keymap, "Name", &a.Name),
-			editor.NewIntEditor(s.keymap, "Bonus", &a.Bonus),
-			editor.NewStringEditor(s.keymap, "Damage", &a.Damage),
-			editor.NewStringEditor(s.keymap, "Damage Type", &a.DamageType),
-		}).WithDestructor(s.deleteAttackCallback(a))
-		rows = append(rows, row)
-	}
-	rows = append(rows, list.NewAppenderRow(s.keymap, "attack"))
-	s.attacks.WithRows(rows)
-}
-
-func (s *StatScreen) deleteAttackCallback(a *models.AttackTO) func() tea.Cmd {
-	return func() tea.Cmd {
-		s.agg.DeleteAttack(a.ID)
-		s.CreateAttackRows()
-		return command.WriteBackRequest
-	}
-}
-
-func (s *StatScreen) getAttackRow(id uuid.UUID) list.Row {
-	return list.FindStructRow(s.attacks.Content(), func(a *models.AttackTO) bool { return a.ID == id })
 }
 
 func (s *StatScreen) CreateSkillRows() {
@@ -379,7 +323,7 @@ func (s *StatScreen) CreateSkillRows() {
 		skill := &s.agg.Skills[i]
 		row := list.NewStructRow(s.keymap, &SkillInfo{skill, s.agg.Abilities, &s.agg.Character.ProficiencyBonus}, renderSkillInfoRow,
 			[]editor.ValueEditor{
-				editor.NewEnumEditor(s.keymap, models.ProficiencySymbols, "Proficiency", &skill.Proficiency),
+				editor.NewEnumEditor(s.keymap, styles.ProficiencySymbols, "Proficiency", &skill.Proficiency),
 				editor.NewIntEditor(s.keymap, "Custom Modifier", &skill.CustomModifier),
 			})
 		rows = append(rows, row)
@@ -392,7 +336,7 @@ func (s *StatScreen) CreateSavingThrowRows() {
 	renderer := renderSavingThrowInfoRow(s.agg.Abilities, s.agg.Character.ProficiencyBonus)
 	newSavingThrowRow := func(field *int, name string) list.Row {
 		return list.NewStructRow(s.keymap, &SavingThrowInfo{field, name}, renderer,
-			[]editor.ValueEditor{editor.NewEnumEditor(s.keymap, models.ProficiencySymbols, "Proficiency", field)})
+			[]editor.ValueEditor{editor.NewEnumEditor(s.keymap, styles.ProficiencySymbols, "Proficiency", field)})
 	}
 	s.savingThrows.WithRows([]list.Row{
 		newSavingThrowRow(&s.agg.SavingThrows.StrengthProficiency, "Strength"),
@@ -437,7 +381,7 @@ func renderSavingThrowInfoRow(a *models.AbilitiesTO, profBonus int) func(*Saving
 			proficiency,
 			profBonus)
 
-		bullet := proficiency.ToSymbol()
+		bullet := styles.ToSymbol(proficiency)
 		return styles.RenderEdgeBound(statLongColWidth, statTinyColWidth, bullet+" "+s.ability, fmt.Sprintf("%+d", mod))
 	}
 }
@@ -454,7 +398,7 @@ func renderSkillInfoRow(s *SkillInfo) string {
 		s.abilities.ToScoreByName(s.skill.SkillAbility),
 		proficiency,
 		*s.profBonus) + s.skill.CustomModifier
-	bullet := proficiency.ToSymbol()
+	bullet := styles.ToSymbol(proficiency)
 	return styles.RenderEdgeBound(statLongColWidth, statTinyColWidth, bullet+" "+s.skill.SkillName, fmt.Sprintf("%+d", mod))
 }
 
@@ -464,5 +408,5 @@ func RenderAttack(a *models.AttackTO) string {
 
 func RenderDeathSaves(amount int) string {
 	amount = util.Clamp(amount, 0, 3)
-	return models.DeathSaveSymbols[amount].Label
+	return styles.DeathSaveSymbols[amount].Label
 }

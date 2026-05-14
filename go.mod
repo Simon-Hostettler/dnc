@@ -12,6 +12,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/mstrYoda/go-arctest v0.0.0-20250422073853-ff9fe79f31d7
+	golang.org/x/tools v0.40.0
 	hostettler.dev/dicestats v0.0.2
 )
 
@@ -57,6 +58,5 @@ require (
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260109210033-bd525da824e2 // indirect
-	golang.org/x/tools v0.40.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 )
