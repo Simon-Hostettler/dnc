@@ -308,10 +308,10 @@ func (s *StatScreen) CreateCombatInfoRows() {
 			}),
 		list.NewLabeledIntRow(s.keymap, "DS Successes", &s.agg.Character.DeathSaveSuccesses,
 			editor.NewEnumEditor(s.keymap, styles.DeathSaveSymbols, "DS Successes", &s.agg.Character.DeathSaveSuccesses)).
-			WithConfig(dsConfig),
+			WithConfig(dsConfig).WithCycleAction(cycleDeathSaves),
 		list.NewLabeledIntRow(s.keymap, "DS Failures", &s.agg.Character.DeathSaveFailures,
 			editor.NewEnumEditor(s.keymap, styles.DeathSaveSymbols, "DS Failures", &s.agg.Character.DeathSaveFailures)).
-			WithConfig(dsConfig),
+			WithConfig(dsConfig).WithCycleAction(cycleDeathSaves),
 	}
 	s.combatInfo.WithRows(rows)
 }
@@ -409,4 +409,9 @@ func RenderAttack(a *models.AttackTO) string {
 func RenderDeathSaves(amount int) string {
 	amount = util.Clamp(amount, 0, 3)
 	return styles.DeathSaveSymbols[amount].Label
+}
+
+func cycleDeathSaves(saves *int) tea.Cmd {
+	*saves = (*saves + 1) % 4
+	return command.WriteBackRequest
 }

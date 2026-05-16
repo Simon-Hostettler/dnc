@@ -12,12 +12,13 @@ import (
 )
 
 type LabeledRow[T any] struct {
-	id     uuid.UUID
-	keymap util.KeyMap
-	config LabeledRowConfig[T]
-	label  string
-	value  *T
-	editor editor.ValueEditor
+	id          uuid.UUID
+	keymap      util.KeyMap
+	config      LabeledRowConfig[T]
+	label       string
+	value       *T
+	editor      editor.ValueEditor
+	cycleAction func(*T) tea.Cmd
 }
 
 type LabeledRowConfig[T any] struct {
@@ -73,6 +74,8 @@ func (r *LabeledRow[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, r.keymap.Edit):
 			return r, editor.EditValueCmd(r.Editors())
+		case key.Matches(msg, r.keymap.Cycle) && r.cycleAction != nil:
+			return r, r.cycleAction(r.value)
 		}
 	}
 	return r, nil
@@ -87,6 +90,11 @@ func (r *LabeledRow[T]) View() tea.View {
 
 func (r *LabeledRow[T]) Editors() []editor.ValueEditor {
 	return []editor.ValueEditor{r.editor}
+}
+
+func (r *LabeledRow[T]) WithCycleAction(action func(*T) tea.Cmd) *LabeledRow[T] {
+	r.cycleAction = action
+	return r
 }
 
 func (r *LabeledRow[T]) Selectable() bool {
