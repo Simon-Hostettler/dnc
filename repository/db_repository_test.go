@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"hostettler.dev/dnc/db"
@@ -70,7 +72,7 @@ func TestAllValuesPersist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not fetch the character: %s", err.Error())
 	}
-	if diff := cmp.Diff(testChar, *loaded, diffIgnoringTimestampsOption()); diff != "" {
+	if diff := cmp.Diff(testChar, *loaded, diffIgnoringTimestampsOption(), cmpopts.IgnoreUnexported(CharacterAggregate{})); diff != "" {
 		t.Errorf("Mismatch between stored and loaded values in character:\n%s", diff)
 	}
 	cancel() // just to be sure
@@ -240,7 +242,141 @@ func TestUpdateReplacesOneToManyAfterMutation(t *testing.T) {
 	// GetByID returns notes ordered by title ASC; match that before diffing.
 	sort.Slice(loaded.Notes, func(i, j int) bool { return loaded.Notes[i].Title < loaded.Notes[j].Title })
 
-	if diff := cmp.Diff(*loaded, *reloaded, diffIgnoringTimestampsOption()); diff != "" {
+	if diff := cmp.Diff(*loaded, *reloaded, diffIgnoringTimestampsOption(), cmpopts.IgnoreUnexported(CharacterAggregate{})); diff != "" {
 		t.Errorf("Mismatch between mutated and reloaded character:\n%s", diff)
 	}
+}
+
+// a save that only mutates the character row must not touch
+// created_at / updated_at on any child table.
+func TestUpdateCharacterOnlyPreservesChildTimestamps(t *testing.T) {
+	repo, handle := newTestRepo(t)
+	ctx := context.Background()
+
+	id, err := repo.CreateEmpty(ctx, "Bobby")
+	if err != nil {
+		t.Fatalf("Could not create character: %s", err.Error())
+	}
+	testChar := TestCharacter(id)
+	if err := repo.Update(ctx, &testChar); err != nil {
+		t.Fatalf("Could not populate character: %s", err.Error())
+	}
+
+	// Reload to capture the canonical baseline timestamps assigned by the DB.
+	loaded, err := repo.GetByID(ctx, id)
+	if err != nil {
+		t.Fatalf("Could not load character: %s", err.Error())
+	}
+	before := collectChildTimestamps(t, handle, id)
+	if len(before) == 0 {
+		t.Fatal("fixture left no child rows; assertion would be meaningless")
+	}
+
+	// Touch only the character row.
+	loaded.Character.CurrHitPoints = 3
+	if err := repo.Update(ctx, loaded); err != nil {
+		t.Fatalf("Could not update character: %s", err.Error())
+	}
+
+	after := collectChildTimestamps(t, handle, id)
+	if diff := cmp.Diff(before, after); diff != "" {
+		t.Errorf("child timestamps moved after a character-only update:\n%s", diff)
+	}
+}
+
+// mutating a single note must not bump the updated_at
+// of rows in unrelated child tables.
+func TestUpdateOnlyRewritesDirtySection(t *testing.T) {
+	repo, handle := newTestRepo(t)
+	ctx := context.Background()
+
+	id, err := repo.CreateEmpty(ctx, "Bobby")
+	if err != nil {
+		t.Fatalf("Could not create character: %s", err.Error())
+	}
+	testChar := TestCharacter(id)
+	if err := repo.Update(ctx, &testChar); err != nil {
+		t.Fatalf("Could not populate character: %s", err.Error())
+	}
+	loaded, err := repo.GetByID(ctx, id)
+	if err != nil {
+		t.Fatalf("Could not load character: %s", err.Error())
+	}
+
+	before := collectChildTimestamps(t, handle, id)
+	if len(loaded.Notes) == 0 {
+		t.Fatal("fixture has no notes; assertion would be meaningless")
+	}
+
+	loaded.Notes[0].Title = "Edited title"
+	if err := repo.Update(ctx, loaded); err != nil {
+		t.Fatalf("Could not update character: %s", err.Error())
+	}
+	after := collectChildTimestamps(t, handle, id)
+
+	for key, beforeTs := range before {
+		afterTs, ok := after[key]
+		if !ok {
+			t.Errorf("row %s disappeared after update", key)
+			continue
+		}
+		if key[:len("notes:")] == "notes:" {
+			// Notes section rewritten — created_at must be preserved for the
+			// unedited rows. The whole-section rewrite legitimately bumps
+			// updated_at across the section, which is the accepted tradeoff.
+			if afterTs.Created != beforeTs.Created {
+				t.Errorf("note %s lost its original created_at", key)
+			}
+			continue
+		}
+		if afterTs != beforeTs {
+			t.Errorf("untouched section row %s timestamps moved: before=%+v after=%+v", key, beforeTs, afterTs)
+		}
+	}
+}
+
+type rowTimestamps struct {
+	Created time.Time
+	Updated time.Time
+}
+
+// map of "<table>:<id>" -> (created_at, updated_at) for every child row
+func collectChildTimestamps(t *testing.T, h *sqlx.DB, charID uuid.UUID) map[string]rowTimestamps {
+	t.Helper()
+	out := map[string]rowTimestamps{}
+	// 1:N tables keyed by their own id.
+	perRow := []struct{ table, idCol string }{
+		{"item", "id"},
+		{"spell", "id"},
+		{"attacks", "id"},
+		{"features", "id"},
+		{"notes", "id"},
+		{"character_skill", "id"},
+	}
+	for _, p := range perRow {
+		rows, err := h.Queryx(fmt.Sprintf("SELECT %s::TEXT, created_at, updated_at FROM %s WHERE character_id=?", p.idCol, p.table), charID)
+		if err != nil {
+			t.Fatalf("query %s: %s", p.table, err.Error())
+		}
+		for rows.Next() {
+			var idStr string
+			var c, u time.Time
+			if err := rows.Scan(&idStr, &c, &u); err != nil {
+				rows.Close()
+				t.Fatalf("scan %s: %s", p.table, err.Error())
+			}
+			out[p.table+":"+idStr] = rowTimestamps{c, u}
+		}
+		rows.Close()
+	}
+	// 1:1 tables keyed by character_id.
+	for _, table := range []string{"abilities", "saving_throws", "wallet"} {
+		var c, u time.Time
+		err := h.QueryRow(fmt.Sprintf("SELECT created_at, updated_at FROM %s WHERE character_id=?", table), charID).Scan(&c, &u)
+		if err != nil {
+			t.Fatalf("query %s: %s", table, err.Error())
+		}
+		out[table+":"+charID.String()] = rowTimestamps{c, u}
+	}
+	return out
 }

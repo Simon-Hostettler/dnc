@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"reflect"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -84,6 +85,9 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
 		agg.Character.ID = newID
 		return nil
 	})
+	if err == nil {
+		agg.shadow = agg.Clone()
+	}
 	return newID, err
 }
 
@@ -173,6 +177,7 @@ func (r *DBCharacterRepository) GetByID(ctx context.Context, id uuid.UUID) (*Cha
 	} else {
 		agg.Skills = skills
 	}
+	agg.shadow = agg.Clone()
 	return agg, nil
 }
 
@@ -203,14 +208,16 @@ func (r *DBCharacterRepository) Delete(ctx context.Context, id uuid.UUID) error 
 	return err
 }
 
-// Update persists the aggregate: character row plus all 1:1 and 1:N dependents.
+// Update persists the aggregate. When a shadow snapshot is present
+// only sections that differ from the shadow are rewritten.
 func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggregate) error {
 	if agg == nil || agg.Character == nil {
 		return errors.New("Update: nil aggregate or character")
 	}
 	id := agg.Character.ID
-	return r.withTx(ctx, func(tx *sqlx.Tx) error {
-		// Update character row
+	skills := util.Map(agg.Skills, func(s models.CharacterSkillDetailTO) models.CharacterSkillTO { return s.ToCharacterSkillTO() })
+
+	err := r.withTx(ctx, func(tx *sqlx.Tx) error {
 		c := agg.Character
 		ensureSpellSlots(c)
 		query := `
@@ -239,36 +246,66 @@ func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggreg
 			return err
 		}
 
-		if err := upsertOne(ctx, tx, abilitiesTable, id, agg.Abilities); err != nil {
-			return err
+		shadow := agg.shadow
+		var shadowSkills []models.CharacterSkillTO
+		if shadow != nil {
+			shadowSkills = util.Map(shadow.Skills, func(s models.CharacterSkillDetailTO) models.CharacterSkillTO { return s.ToCharacterSkillTO() })
 		}
-		if err := upsertOne(ctx, tx, savingThrowsTable, id, agg.SavingThrows); err != nil {
-			return err
+
+		// Owned (1:1) sections.
+		if shadow == nil || !reflect.DeepEqual(agg.Abilities, shadow.Abilities) {
+			if err := upsertOne(ctx, tx, abilitiesTable, id, agg.Abilities); err != nil {
+				return err
+			}
 		}
-		if err := upsertOne(ctx, tx, walletTable, id, agg.Wallet); err != nil {
-			return err
+		if shadow == nil || !reflect.DeepEqual(agg.SavingThrows, shadow.SavingThrows) {
+			if err := upsertOne(ctx, tx, savingThrowsTable, id, agg.SavingThrows); err != nil {
+				return err
+			}
 		}
-		if err := replaceAll(ctx, tx, itemTable, id, agg.Items); err != nil {
-			return err
+		if shadow == nil || !reflect.DeepEqual(agg.Wallet, shadow.Wallet) {
+			if err := upsertOne(ctx, tx, walletTable, id, agg.Wallet); err != nil {
+				return err
+			}
 		}
-		if err := replaceAll(ctx, tx, spellTable, id, agg.Spells); err != nil {
-			return err
+
+		// Child (1:N) sections.
+		if shadow == nil || !reflect.DeepEqual(agg.Items, shadow.Items) {
+			if err := replaceAll(ctx, tx, itemTable, id, agg.Items); err != nil {
+				return err
+			}
 		}
-		if err := replaceAll(ctx, tx, attackTable, id, agg.Attacks); err != nil {
-			return err
+		if shadow == nil || !reflect.DeepEqual(agg.Spells, shadow.Spells) {
+			if err := replaceAll(ctx, tx, spellTable, id, agg.Spells); err != nil {
+				return err
+			}
 		}
-		if err := replaceAll(ctx, tx, featureTable, id, agg.Features); err != nil {
-			return err
+		if shadow == nil || !reflect.DeepEqual(agg.Attacks, shadow.Attacks) {
+			if err := replaceAll(ctx, tx, attackTable, id, agg.Attacks); err != nil {
+				return err
+			}
 		}
-		if err := replaceAll(ctx, tx, noteTable, id, agg.Notes); err != nil {
-			return err
+		if shadow == nil || !reflect.DeepEqual(agg.Features, shadow.Features) {
+			if err := replaceAll(ctx, tx, featureTable, id, agg.Features); err != nil {
+				return err
+			}
 		}
-		skills := util.Map(agg.Skills, func(s models.CharacterSkillDetailTO) models.CharacterSkillTO { return s.ToCharacterSkillTO() })
-		if err := replaceAll(ctx, tx, skillTable, id, skills); err != nil {
-			return err
+		if shadow == nil || !reflect.DeepEqual(agg.Notes, shadow.Notes) {
+			if err := replaceAll(ctx, tx, noteTable, id, agg.Notes); err != nil {
+				return err
+			}
+		}
+		if shadow == nil || !reflect.DeepEqual(skills, shadowSkills) {
+			if err := replaceAll(ctx, tx, skillTable, id, skills); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
+	if err == nil {
+		agg.shadow = agg.Clone()
+	}
+	return err
 }
 
 // Helpers

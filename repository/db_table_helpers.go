@@ -6,11 +6,19 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"hostettler.dev/dnc/models"
 )
+
+func nonZeroOr(t, fallback time.Time) time.Time {
+	if t.IsZero() {
+		return fallback
+	}
+	return t
+}
 
 // childTable describes a 1:N table keyed by its own id PK with a character_id FK.
 type childTable[T any] struct {
@@ -94,96 +102,105 @@ func getOne[T any](ctx context.Context, q sqlx.QueryerContext, table string, cha
 
 var itemTable = childTable[models.ItemTO]{
 	name:    "item",
-	columns: []string{"id", "character_id", "name", "equipped", "attunement_slots", "quantity", "description"},
+	columns: []string{"id", "character_id", "name", "equipped", "attunement_slots", "quantity", "description", "created_at", "updated_at"},
 	orderBy: "name ASC",
 	values: func(it *models.ItemTO, charID uuid.UUID) []any {
 		if it.ID == uuid.Nil {
 			it.ID = uuid.New()
 		}
-		return []any{it.ID, charID, it.Name, it.Equipped, it.AttunementSlots, it.Quantity, it.Description}
+		now := time.Now()
+		return []any{it.ID, charID, it.Name, it.Equipped, it.AttunementSlots, it.Quantity, it.Description, nonZeroOr(it.CreatedAt, now), now}
 	},
 }
 
 var spellTable = childTable[models.SpellTO]{
 	name:    "spell",
-	columns: []string{"id", "character_id", "name", "school", "level", "prepared", "concentration", "ritual", "spell_source", "damage", "casting_time", "range", "duration", "components", "description"},
+	columns: []string{"id", "character_id", "name", "school", "level", "prepared", "concentration", "ritual", "spell_source", "damage", "casting_time", "range", "duration", "components", "description", "created_at", "updated_at"},
 	orderBy: "level ASC, name ASC",
 	values: func(s *models.SpellTO, charID uuid.UUID) []any {
 		if s.ID == uuid.Nil {
 			s.ID = uuid.New()
 		}
-		return []any{s.ID, charID, s.Name, s.School, s.Level, s.Prepared, s.Concentration, s.Ritual, s.SpellSource, s.Damage, s.CastingTime, s.Range, s.Duration, s.Components, s.Description}
+		now := time.Now()
+		return []any{s.ID, charID, s.Name, s.School, s.Level, s.Prepared, s.Concentration, s.Ritual, s.SpellSource, s.Damage, s.CastingTime, s.Range, s.Duration, s.Components, s.Description, nonZeroOr(s.CreatedAt, now), now}
 	},
 }
 
 var attackTable = childTable[models.AttackTO]{
 	name:    "attacks",
-	columns: []string{"id", "character_id", "name", "bonus", "damage", "damage_type"},
+	columns: []string{"id", "character_id", "name", "bonus", "damage", "damage_type", "created_at", "updated_at"},
 	orderBy: "created_at ASC",
 	values: func(a *models.AttackTO, charID uuid.UUID) []any {
 		if a.ID == uuid.Nil {
 			a.ID = uuid.New()
 		}
-		return []any{a.ID, charID, a.Name, a.Bonus, a.Damage, a.DamageType}
+		now := time.Now()
+		return []any{a.ID, charID, a.Name, a.Bonus, a.Damage, a.DamageType, nonZeroOr(a.CreatedAt, now), now}
 	},
 }
 
 var featureTable = childTable[models.FeatureTO]{
 	name:    "features",
-	columns: []string{"id", "character_id", "name", "description"},
+	columns: []string{"id", "character_id", "name", "description", "created_at", "updated_at"},
 	orderBy: "name ASC",
 	values: func(f *models.FeatureTO, charID uuid.UUID) []any {
 		if f.ID == uuid.Nil {
 			f.ID = uuid.New()
 		}
-		return []any{f.ID, charID, f.Name, f.Description}
+		now := time.Now()
+		return []any{f.ID, charID, f.Name, f.Description, nonZeroOr(f.CreatedAt, now), now}
 	},
 }
 
 var noteTable = childTable[models.NoteTO]{
 	name:    "notes",
-	columns: []string{"id", "character_id", "title", "note"},
+	columns: []string{"id", "character_id", "title", "note", "created_at", "updated_at"},
 	orderBy: "title ASC",
 	values: func(n *models.NoteTO, charID uuid.UUID) []any {
 		if n.ID == uuid.Nil {
 			n.ID = uuid.New()
 		}
-		return []any{n.ID, charID, n.Title, n.Note}
+		now := time.Now()
+		return []any{n.ID, charID, n.Title, n.Note, nonZeroOr(n.CreatedAt, now), now}
 	},
 }
 
 var skillTable = childTable[models.CharacterSkillTO]{
 	name:    "character_skill",
-	columns: []string{"id", "character_id", "skill_id", "proficiency", "custom_modifier"},
+	columns: []string{"id", "character_id", "skill_id", "proficiency", "custom_modifier", "created_at", "updated_at"},
 	orderBy: "skill_id ASC",
 	values: func(s *models.CharacterSkillTO, charID uuid.UUID) []any {
 		if s.ID == uuid.Nil {
 			s.ID = uuid.New()
 		}
-		return []any{s.ID, charID, s.SkillID, s.Proficiency, s.CustomModifier}
+		now := time.Now()
+		return []any{s.ID, charID, s.SkillID, s.Proficiency, s.CustomModifier, nonZeroOr(s.CreatedAt, now), now}
 	},
 }
 
 var abilitiesTable = ownedTable[models.AbilitiesTO]{
 	name:    "abilities",
-	columns: []string{"character_id", "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"},
+	columns: []string{"character_id", "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma", "created_at", "updated_at"},
 	values: func(a models.AbilitiesTO, charID uuid.UUID) []any {
-		return []any{charID, a.Strength, a.Dexterity, a.Constitution, a.Intelligence, a.Wisdom, a.Charisma}
+		now := time.Now()
+		return []any{charID, a.Strength, a.Dexterity, a.Constitution, a.Intelligence, a.Wisdom, a.Charisma, nonZeroOr(a.CreatedAt, now), now}
 	},
 }
 
 var savingThrowsTable = ownedTable[models.SavingThrowsTO]{
 	name:    "saving_throws",
-	columns: []string{"character_id", "strength_proficiency", "dexterity_proficiency", "constitution_proficiency", "intelligence_proficiency", "wisdom_proficiency", "charisma_proficiency"},
+	columns: []string{"character_id", "strength_proficiency", "dexterity_proficiency", "constitution_proficiency", "intelligence_proficiency", "wisdom_proficiency", "charisma_proficiency", "created_at", "updated_at"},
 	values: func(s models.SavingThrowsTO, charID uuid.UUID) []any {
-		return []any{charID, s.StrengthProficiency, s.DexterityProficiency, s.ConstitutionProficiency, s.IntelligenceProficiency, s.WisdomProficiency, s.CharismaProficiency}
+		now := time.Now()
+		return []any{charID, s.StrengthProficiency, s.DexterityProficiency, s.ConstitutionProficiency, s.IntelligenceProficiency, s.WisdomProficiency, s.CharismaProficiency, nonZeroOr(s.CreatedAt, now), now}
 	},
 }
 
 var walletTable = ownedTable[models.WalletTO]{
 	name:    "wallet",
-	columns: []string{"character_id", "copper", "silver", "electrum", "gold", "platinum"},
+	columns: []string{"character_id", "copper", "silver", "electrum", "gold", "platinum", "created_at", "updated_at"},
 	values: func(w models.WalletTO, charID uuid.UUID) []any {
-		return []any{charID, w.Copper, w.Silver, w.Electrum, w.Gold, w.Platinum}
+		now := time.Now()
+		return []any{charID, w.Copper, w.Silver, w.Electrum, w.Gold, w.Platinum, nonZeroOr(w.CreatedAt, now), now}
 	},
 }

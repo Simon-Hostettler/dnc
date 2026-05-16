@@ -18,6 +18,45 @@ type CharacterAggregate struct {
 	Skills       []models.CharacterSkillDetailTO
 	Features     []models.FeatureTO
 	Notes        []models.NoteTO
+
+	// shadow is the last known persisted state. Set by the repository on
+	// load/create and refreshed after each successful Update. Compared
+	// section-by-section in Update so we only write tables that changed.
+	shadow *CharacterAggregate
+}
+
+// Clone returns a deep copy suitable for use as a shadow. The clone's own
+// shadow field is left nil — shadows do not nest.
+func (c *CharacterAggregate) Clone() *CharacterAggregate {
+	if c == nil {
+		return nil
+	}
+	cp := &CharacterAggregate{}
+	if c.Character != nil {
+		ch := *c.Character
+		ch.SpellSlots = append(models.IntList(nil), c.Character.SpellSlots...)
+		ch.SpellSlotsUsed = append(models.IntList(nil), c.Character.SpellSlotsUsed...)
+		cp.Character = &ch
+	}
+	if c.Abilities != nil {
+		a := *c.Abilities
+		cp.Abilities = &a
+	}
+	if c.SavingThrows != nil {
+		s := *c.SavingThrows
+		cp.SavingThrows = &s
+	}
+	if c.Wallet != nil {
+		w := *c.Wallet
+		cp.Wallet = &w
+	}
+	cp.Items = append([]models.ItemTO(nil), c.Items...)
+	cp.Spells = append([]models.SpellTO(nil), c.Spells...)
+	cp.Attacks = append([]models.AttackTO(nil), c.Attacks...)
+	cp.Skills = append([]models.CharacterSkillDetailTO(nil), c.Skills...)
+	cp.Features = append([]models.FeatureTO(nil), c.Features...)
+	cp.Notes = append([]models.NoteTO(nil), c.Notes...)
+	return cp
 }
 
 // Helper methods - Modify TOs not database, changes have to be written back (See command.WriteBackRequest)
