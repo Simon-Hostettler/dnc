@@ -114,6 +114,17 @@ Down
 Sleep 0.25
 Type " "
 Sleep 1.5
+Type "/"
+Sleep 0.5
+Type "in"
+Enter
+Sleep 0.5
+Type "n"
+Sleep 0.25
+Type "n"
+Sleep 0.25
+Type "n"
+Sleep 1
 Type " "
 Sleep 1
 
