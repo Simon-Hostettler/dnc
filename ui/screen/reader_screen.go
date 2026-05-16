@@ -17,7 +17,10 @@ var (
 	readerInnerWidth = styles.SmallScreenWidth - 2
 )
 
-var matchStyle = lipgloss.NewStyle().Background(styles.HighlightColor)
+var (
+	matchStyle          = lipgloss.NewStyle().Background(styles.HighlightColor)
+	secondaryMatchStyle = lipgloss.NewStyle().Background(styles.SecondaryColor)
+)
 
 type ReaderScreen struct {
 	keymap      util.KeyMap
@@ -107,7 +110,7 @@ func (s *ReaderScreen) View() tea.View {
 
 func (s *ReaderScreen) highlightText(match string) {
 	if match != "" {
-		s.viewport.SetHighlight(match, matchStyle, styles.DefaultTextStyle)
+		s.viewport.SetHighlight(match, matchStyle, secondaryMatchStyle, styles.DefaultTextStyle)
 	} else {
 		s.viewport.ClearHighlight()
 	}

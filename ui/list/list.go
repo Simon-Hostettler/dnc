@@ -360,9 +360,6 @@ func (t *List) View() tea.View {
 
 func (t *List) renderSearchBar() string {
 	style := t.Styles.Row
-	//if t.searchInput.Focused() {
-	//	style = t.Styles.Selected
-	//}
 	if t.fixedWidth != -1 {
 		style = style.Width(t.fixedWidth)
 	}

@@ -141,6 +141,8 @@ type KeyMap struct {
 	Cycle       key.Binding `json:"cycle"`
 	QuickAction key.Binding `json:"quick_action"`
 	TextSearch  key.Binding `json:"text_search"`
+	NextMatch   key.Binding `json:"next_match"`
+	PrevMatch   key.Binding `json:"prev_match"`
 }
 
 func DefaultKeyMap() KeyMap {
@@ -164,6 +166,8 @@ func DefaultKeyMap() KeyMap {
 		Cycle:       key.NewBinding(key.WithKeys("tab")),
 		QuickAction: key.NewBinding(key.WithKeys(":")),
 		TextSearch:  key.NewBinding(key.WithKeys("/")),
+		NextMatch:   key.NewBinding(key.WithKeys("n")),
+		PrevMatch:   key.NewBinding(key.WithKeys("N")),
 	}
 }
 

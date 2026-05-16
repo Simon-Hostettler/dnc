@@ -98,9 +98,6 @@ func (r *StructRow[T]) Selectable() bool {
 	return true
 }
 
-// FilterValue implements the Searchable interface. It returns an empty string
-// when no search text has been configured, so the row is excluded from results
-// while a search term is active.
 func (r *StructRow[T]) FilterValue() string {
 	if r.searchText == nil {
 		return ""
