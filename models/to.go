@@ -76,17 +76,19 @@ type SpellTO struct {
 	Name        string    `db:"name"`
 	School      string    `db:"school"`
 	Level       int       `db:"level"`
-	// Prepared is stored as 0/1 integer in DB for compactness.
-	Prepared    int       `db:"prepared"`
-	SpellSource int       `db:"spell_source"`
-	Damage      string    `db:"damage"`
-	CastingTime string    `db:"casting_time"`
-	Range       string    `db:"range"`
-	Duration    string    `db:"duration"`
-	Components  string    `db:"components"`
-	Description string    `db:"description"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
+	// Prepared, Concentration, and Ritual are stored as 0/1 integers in DB for compactness.
+	Prepared      int       `db:"prepared"`
+	Concentration int       `db:"concentration"`
+	Ritual        int       `db:"ritual"`
+	SpellSource   int       `db:"spell_source"`
+	Damage        string    `db:"damage"`
+	CastingTime   string    `db:"casting_time"`
+	Range         string    `db:"range"`
+	Duration      string    `db:"duration"`
+	Components    string    `db:"components"`
+	Description   string    `db:"description"`
+	CreatedAt     time.Time `db:"created_at"`
+	UpdatedAt     time.Time `db:"updated_at"`
 }
 
 // AttackTO maps to the `attacks` table.

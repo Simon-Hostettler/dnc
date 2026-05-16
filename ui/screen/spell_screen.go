@@ -162,6 +162,8 @@ func (s *SpellScreen) createSpellEditors(spell *models.SpellTO) []editor.ValueEd
 		editor.NewStringEditor(s.keymap, "Name", &spell.Name),
 		editor.NewStringEditor(s.keymap, "School", &spell.School),
 		editor.NewEnumEditor(s.keymap, styles.PreparedSymbols, "Prepared", &spell.Prepared),
+		editor.NewEnumEditor(s.keymap, styles.ConcentrationSymbols, "Concentration", &spell.Concentration),
+		editor.NewEnumEditor(s.keymap, styles.RitualSymbols, "Ritual", &spell.Ritual),
 		editor.NewEnumEditor(s.keymap, styles.SpellSourceStrings, "Spell Source", &spell.SpellSource),
 		editor.NewStringEditor(s.keymap, "Damage", &spell.Damage),
 		editor.NewStringEditor(s.keymap, "Casting Time", &spell.CastingTime),
@@ -219,6 +221,12 @@ func spellSearchText(s *models.SpellTO) string {
 
 func renderSpellInfoRow(s *models.SpellTO) string {
 	values := []string{s.Name, s.Damage, s.Components, s.Range, s.CastingTime, s.Duration, s.School, styles.SpellSourceSymbols[s.SpellSource].Label}
+	if util.I2b(s.Concentration) {
+		values = append(values, "C")
+	}
+	if util.I2b(s.Ritual) {
+		values = append(values, "R")
+	}
 	values = util.Filter(values, func(s string) bool { return s != "" })
 	return styles.PrettyBoolCircle(util.I2b(s.Prepared)) + " " + strings.Join(values, " ∙ ")
 }
@@ -230,6 +238,10 @@ func renderFullSpellInfo(s *models.SpellTO) string {
 			s.Name + " ∙  Level: " + strconv.Itoa(s.Level),
 			separator,
 			"School: " + s.School,
+			separator,
+			"Concentration: " + styles.PrettyBoolCircle(util.I2b(s.Concentration)),
+			separator,
+			"Ritual: " + styles.PrettyBoolCircle(util.I2b(s.Ritual)),
 			separator,
 			"Components: " + s.Components,
 			separator,

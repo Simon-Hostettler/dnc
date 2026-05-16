@@ -106,13 +106,13 @@ var itemTable = childTable[models.ItemTO]{
 
 var spellTable = childTable[models.SpellTO]{
 	name:    "spell",
-	columns: []string{"id", "character_id", "name", "school", "level", "prepared", "spell_source", "damage", "casting_time", "range", "duration", "components", "description"},
+	columns: []string{"id", "character_id", "name", "school", "level", "prepared", "concentration", "ritual", "spell_source", "damage", "casting_time", "range", "duration", "components", "description"},
 	orderBy: "level ASC, name ASC",
 	values: func(s *models.SpellTO, charID uuid.UUID) []any {
 		if s.ID == uuid.Nil {
 			s.ID = uuid.New()
 		}
-		return []any{s.ID, charID, s.Name, s.School, s.Level, s.Prepared, s.SpellSource, s.Damage, s.CastingTime, s.Range, s.Duration, s.Components, s.Description}
+		return []any{s.ID, charID, s.Name, s.School, s.Level, s.Prepared, s.Concentration, s.Ritual, s.SpellSource, s.Damage, s.CastingTime, s.Range, s.Duration, s.Components, s.Description}
 	},
 }
 

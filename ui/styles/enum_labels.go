@@ -27,6 +27,16 @@ var PreparedSymbols []EnumMapping = []EnumMapping{
 	{Value: 1, Label: "■"},
 }
 
+var ConcentrationSymbols []EnumMapping = []EnumMapping{
+	{Value: 0, Label: "□"},
+	{Value: 1, Label: "■"},
+}
+
+var RitualSymbols []EnumMapping = []EnumMapping{
+	{Value: 0, Label: "□"},
+	{Value: 1, Label: "■"},
+}
+
 var SpellSourceStrings []EnumMapping = []EnumMapping{
 	{Value: int(models.InSpellbook), Label: "In Spellbook"},
 	{Value: int(models.Temporary), Label: "Temporary"},
