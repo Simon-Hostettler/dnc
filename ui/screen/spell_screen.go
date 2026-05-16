@@ -232,31 +232,49 @@ func renderSpellInfoRow(s *models.SpellTO) string {
 }
 
 func renderFullSpellInfo(s *models.SpellTO) string {
-	separator := styles.MakeHorizontalSeparator(styles.SmallScreenWidth-4, 1)
-	content := strings.Join(
-		[]string{
-			s.Name + " ∙  Level: " + strconv.Itoa(s.Level),
-			separator,
-			"School: " + s.School,
-			separator,
-			"Concentration: " + styles.PrettyBoolCircle(util.I2b(s.Concentration)),
-			separator,
-			"Ritual: " + styles.PrettyBoolCircle(util.I2b(s.Ritual)),
-			separator,
-			"Components: " + s.Components,
-			separator,
-			"Range: " + s.Range,
-			separator,
-			"Damage: " + s.Damage,
-			separator,
-			"Casting time: " + s.CastingTime,
-			separator,
-			"Duration: " + s.Duration,
-			separator,
-			s.Description,
-		},
-		"\n")
+	innerWidth := styles.SmallScreenWidth - 4
+	colWidth := innerWidth / 2
+	separator := styles.MakeHorizontalSeparator(innerWidth, 0)
+
+	title := s.Name + " ∙ Level " + strconv.Itoa(s.Level)
+	if s.School != "" {
+		title += " ∙ " + s.School
+	}
+	if util.I2b(s.Concentration) {
+		title += " [C]"
+	}
+	if util.I2b(s.Ritual) {
+		title += " [R]"
+	}
+	titleRow := lipgloss.NewStyle().Width(innerWidth).Align(lipgloss.Left).Render(title)
+
+	pairs := []struct{ label, value string }{
+		{"Casting time", s.CastingTime},
+		{"Range", s.Range},
+		{"Duration", s.Duration},
+		{"Components", s.Components},
+		{"Damage", s.Damage},
+	}
+	pairs = util.Filter(pairs, func(p struct{ label, value string }) bool { return p.value != "" })
+
+	var gridRows []string
+	for i := 0; i < len(pairs); i += 2 {
+		left := styles.ForceWidth(pairs[i].label+": "+pairs[i].value, colWidth)
+		var right string
+		if i+1 < len(pairs) {
+			right = styles.ForceWidth(pairs[i+1].label+": "+pairs[i+1].value, colWidth)
+		}
+		gridRows = append(gridRows, lipgloss.JoinHorizontal(lipgloss.Top, left, right))
+	}
+	grid := strings.Join(gridRows, "\n")
+
+	sections := []string{titleRow, separator}
+	if grid != "" {
+		sections = append(sections, grid, separator)
+	}
+	sections = append(sections, s.Description)
+
 	return styles.DefaultTextStyle.
 		AlignHorizontal(lipgloss.Left).
-		Render(content)
+		Render(strings.Join(sections, "\n"))
 }
