@@ -245,7 +245,7 @@ func (t *List) Update(m tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := m.(type) {
 	case tea.KeyPressMsg:
-		if t.searchInputFocused() {
+		if t.SearchInputFocused() {
 			cmd = t.updateSearchInput(msg)
 		} else {
 			cmd = t.updateRows(msg)
@@ -317,12 +317,8 @@ func (t *List) applySearchFilter() {
 	t.Filter(SearchFilter(t.searchInput.Value()))
 }
 
-func (t *List) searchInputFocused() bool {
-	return t.searchActive && t.searchInput.Focused()
-}
-
 func (t *List) SearchInputFocused() bool {
-	return t.searchInputFocused()
+	return t.searchActive && t.searchInput.Focused()
 }
 
 // atTop reports whether there is no selectable row above the cursor.
@@ -402,7 +398,7 @@ func (t *List) RenderBody() string {
 	for i, el := range t.visible {
 		elStr := el.View().Content
 		var row string
-		if t.focus && i == t.cursor && !t.searchInputFocused() {
+		if t.focus && i == t.cursor && !t.SearchInputFocused() {
 			if t.fixedWidth != -1 {
 				row = t.Styles.Selected.Width(t.fixedWidth).Render(elStr)
 			} else {

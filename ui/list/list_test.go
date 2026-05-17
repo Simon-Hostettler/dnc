@@ -245,7 +245,7 @@ func TestSearchOpenFilterClose(t *testing.T) {
 
 	// TextSearch opens and focuses the bar without filtering yet.
 	l.Update(runeKey('/'))
-	if !l.searchActive || !l.searchInputFocused() {
+	if !l.searchActive || !l.SearchInputFocused() {
 		t.Fatal("'/' should open and focus the search bar")
 	}
 	if l.Size() != 3 {
@@ -299,7 +299,7 @@ func TestSearchFocusHandoff(t *testing.T) {
 	t.Run("Down moves focus from the input into the rows", func(t *testing.T) {
 		l := open()
 		l.Update(codeKey(tea.KeyDown))
-		if l.searchInputFocused() {
+		if l.SearchInputFocused() {
 			t.Error("Down should blur the search input")
 		}
 		if !l.searchActive {
@@ -326,7 +326,7 @@ func TestSearchFocusHandoff(t *testing.T) {
 		l := open()
 		l.Update(codeKey(tea.KeyDown)) // into the rows
 		l.Update(codeKey(tea.KeyUp))   // back up off the top row
-		if !l.searchInputFocused() {
+		if !l.SearchInputFocused() {
 			t.Error("Up from the top row should refocus the search input while searching")
 		}
 	})
