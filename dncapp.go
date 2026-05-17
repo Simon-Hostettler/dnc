@@ -7,7 +7,6 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/db"
@@ -72,9 +71,13 @@ func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
 	repo := repository.NewDBCharacterRepository(handle)
 
 	if cfg.Demo {
-		agg := repository.TestCharacter(uuid.New())
-		if _, err := repo.Create(ctx, &agg); err != nil {
+		if id, err := repo.CreateEmpty(ctx, "Bobby"); err != nil {
 			slog.Warn("demo mode: failed to create test character", "error", err)
+		} else {
+			agg := repository.TestCharacter(id)
+			if err := repo.Update(ctx, &agg); err != nil {
+				slog.Warn("demo mode: failed to populate test character", "error", err)
+			}
 		}
 	}
 

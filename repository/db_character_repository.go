@@ -20,7 +20,7 @@ func NewDBCharacterRepository(db *sqlx.DB) *DBCharacterRepository {
 	return &DBCharacterRepository{db: db}
 }
 
-func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggregate) (uuid.UUID, error) {
+func (r *DBCharacterRepository) create(ctx context.Context, agg *CharacterAggregate) (uuid.UUID, error) {
 	var newID uuid.UUID
 	err := r.withTx(ctx, func(tx *sqlx.Tx) error {
 		c := agg.Character
@@ -92,7 +92,18 @@ func (r *DBCharacterRepository) Create(ctx context.Context, agg *CharacterAggreg
 }
 
 func (r *DBCharacterRepository) CreateEmpty(ctx context.Context, name string) (uuid.UUID, error) {
-	cSkills := []models.CharacterSkillTO{}
+	skillDefs, err := r.ListSkillDefinitions(ctx)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	skills := make([]models.CharacterSkillDetailTO, 0, len(skillDefs))
+	for _, sd := range skillDefs {
+		skills = append(skills, models.CharacterSkillDetailTO{
+			SkillID:      sd.ID,
+			SkillName:    sd.Name,
+			SkillAbility: sd.Ability,
+		})
+	}
 	agg := CharacterAggregate{
 		Character:    &models.CharacterTO{Name: name},
 		Abilities:    &models.AbilitiesTO{},
@@ -101,29 +112,11 @@ func (r *DBCharacterRepository) CreateEmpty(ctx context.Context, name string) (u
 		Items:        []models.ItemTO{},
 		Spells:       []models.SpellTO{},
 		Attacks:      []models.AttackTO{},
-		Skills:       []models.CharacterSkillDetailTO{},
+		Skills:       skills,
 		Features:     []models.FeatureTO{},
 		Notes:        []models.NoteTO{},
 	}
-	newID, err := r.Create(ctx, &agg)
-	if err != nil {
-		return uuid.Nil, err
-	}
-	skillDefs, err := r.ListSkillDefinitions(ctx)
-	if err != nil {
-		return uuid.Nil, err
-	}
-	for _, sd := range skillDefs {
-		cSkills = append(cSkills, models.CharacterSkillTO{
-			ID:          uuid.New(),
-			CharacterID: newID,
-			SkillID:     sd.ID,
-		})
-	}
-	e := r.withTx(ctx, func(tx *sqlx.Tx) error {
-		return replaceAll(ctx, tx, skillTable, newID, cSkills)
-	})
-	return newID, e
+	return r.create(ctx, &agg)
 }
 
 func (r *DBCharacterRepository) GetByID(ctx context.Context, id uuid.UUID) (*CharacterAggregate, error) {
