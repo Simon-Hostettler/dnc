@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	noteColHeight = 38
+	noteColHeight = 37
 	noteColWidth  = styles.ScreenWidth - 10
 )
 
@@ -57,7 +57,6 @@ func NewNoteScreen(k util.KeyMap, c *repository.CharacterAggregate) *NoteScreen 
 func (s *NoteScreen) Init() tea.Cmd {
 	s.noteRows.Repopulate()
 
-	s.lastFocusedElement = s.noteList
 	s.wireFocusGraph()
 
 	return nil
@@ -72,9 +71,9 @@ func (s *NoteScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = s.noteRows.HandleAppend(msg.Tag)
 		}
 	case command.FocusNextElementMsg:
-		s.moveFocus(msg.Direction)
+		s.MoveFocus(msg.Direction)
 	case tea.KeyPressMsg:
-		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.moveFocus)
+		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.MoveFocus)
 	}
 	return s, cmd
 }
@@ -89,11 +88,11 @@ func (s *NoteScreen) View() tea.View {
 }
 
 func (s *NoteScreen) wireFocusGraph() {
-	s.focusGraph = FocusGraph{
+	s.Wire(FocusGraph{
 		s.noteList: {
 			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
 		},
-	}
+	}, s.noteList)
 }
 
 func createNoteEditors(k util.KeyMap, note *models.NoteTO) []editor.ValueEditor {

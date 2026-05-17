@@ -39,7 +39,7 @@ func (f *FocusManager) Blur() {
 	f.focusedElement = nil
 }
 
-func (f *FocusManager) moveFocus(d command.Direction) tea.Cmd {
+func (f *FocusManager) MoveFocus(d command.Direction) tea.Cmd {
 	edge, ok := f.focusGraph[f.focusedElement][d]
 	if !ok {
 		return nil
@@ -50,6 +50,14 @@ func (f *FocusManager) moveFocus(d command.Direction) tea.Cmd {
 		f.focusOn(target)
 	}
 	return cmd
+}
+
+func (f *FocusManager) Focused() FocusableModel { return f.focusedElement }
+
+// Wire installs the focus graph and the element that Focus() should resume on
+func (f *FocusManager) Wire(g FocusGraph, initial FocusableModel) {
+	f.focusGraph = g
+	f.lastFocusedElement = initial
 }
 
 func To(m FocusableModel) FocusEdge {

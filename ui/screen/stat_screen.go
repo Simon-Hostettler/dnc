@@ -103,7 +103,6 @@ func (s *StatScreen) Init() tea.Cmd {
 	s.attackRows.Repopulate()
 	s.CreateSavingThrowRows()
 
-	s.lastFocusedElement = s.characterInfo
 	s.wireFocusGraph()
 
 	return tea.Batch(cmds...)
@@ -120,15 +119,15 @@ func (s *StatScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			_, cmd = s.focusedElement.Update(msg)
 		}
 	case command.FocusNextElementMsg:
-		s.moveFocus(msg.Direction)
+		s.MoveFocus(msg.Direction)
 	case tea.KeyPressMsg:
-		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.moveFocus)
+		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.MoveFocus)
 	}
 	return s, cmd
 }
 
 func (s *StatScreen) wireFocusGraph() {
-	s.focusGraph = FocusGraph{
+	s.Wire(FocusGraph{
 		s.characterInfo: {
 			command.DownDirection:  To(s.skills),
 			command.RightDirection: To(s.abilities),
@@ -173,7 +172,7 @@ func (s *StatScreen) wireFocusGraph() {
 			command.UpDirection:   To(s.bonusActions),
 			command.LeftDirection: To(s.savingThrows),
 		},
-	}
+	}, s.characterInfo)
 }
 
 func (s *StatScreen) View() tea.View {

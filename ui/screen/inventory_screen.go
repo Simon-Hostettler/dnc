@@ -69,7 +69,6 @@ func NewInventoryScreen(k util.KeyMap, c *repository.CharacterAggregate) *Invent
 func (s *InventoryScreen) Init() tea.Cmd {
 	s.itemRows.Repopulate()
 
-	s.lastFocusedElement = s.copper
 	s.wireFocusGraph()
 
 	return nil
@@ -84,9 +83,9 @@ func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = s.itemRows.HandleAppend(msg.Tag)
 		}
 	case command.FocusNextElementMsg:
-		s.moveFocus(msg.Direction)
+		s.MoveFocus(msg.Direction)
 	case tea.KeyPressMsg:
-		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.moveFocus)
+		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.MoveFocus)
 	}
 	return s, cmd
 }
@@ -103,7 +102,7 @@ func (s *InventoryScreen) View() tea.View {
 }
 
 func (s *InventoryScreen) wireFocusGraph() {
-	s.focusGraph = FocusGraph{
+	s.Wire(FocusGraph{
 		s.copper: {
 			command.LeftDirection:  Emit(command.ReturnFocusToParentCmd),
 			command.RightDirection: To(s.silver),
@@ -132,7 +131,7 @@ func (s *InventoryScreen) wireFocusGraph() {
 			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
 			command.UpDirection:   To(s.electrum),
 		},
-	}
+	}, s.copper)
 }
 
 func createItemEditors(k util.KeyMap, item *models.ItemTO) []editor.ValueEditor {

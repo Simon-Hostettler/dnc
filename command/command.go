@@ -114,6 +114,12 @@ func ReturnFocusToParentCmd() tea.Msg {
 	return ReturnFocusToParentMsg{}
 }
 
+type FocusActiveScreenMsg struct{}
+
+func FocusActiveScreenCmd() tea.Msg {
+	return FocusActiveScreenMsg{}
+}
+
 type LaunchConfirmationDialogueMsg struct {
 	Callback func() tea.Cmd
 }

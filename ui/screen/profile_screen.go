@@ -85,7 +85,6 @@ func (s *ProfileScreen) Init() tea.Cmd {
 	s.CreateCharacterAppearanceRows()
 	s.featureRows.Repopulate()
 
-	s.lastFocusedElement = s.characterInfo
 	s.wireFocusGraph()
 
 	return tea.Batch(cmds...)
@@ -102,15 +101,15 @@ func (s *ProfileScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			_, cmd = s.focusedElement.Update(msg)
 		}
 	case command.FocusNextElementMsg:
-		s.moveFocus(msg.Direction)
+		s.MoveFocus(msg.Direction)
 	case tea.KeyPressMsg:
-		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.moveFocus)
+		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.MoveFocus)
 	}
 	return s, cmd
 }
 
 func (s *ProfileScreen) wireFocusGraph() {
-	s.focusGraph = FocusGraph{
+	s.Wire(FocusGraph{
 		s.characterInfo: {
 			command.DownDirection:  To(s.features),
 			command.RightDirection: To(s.characterAppearance),
@@ -139,7 +138,7 @@ func (s *ProfileScreen) wireFocusGraph() {
 			command.UpDirection:   To(s.personality),
 			command.LeftDirection: To(s.backstory),
 		},
-	}
+	}, s.characterInfo)
 }
 
 func (s *ProfileScreen) View() tea.View {

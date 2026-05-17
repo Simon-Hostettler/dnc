@@ -69,8 +69,6 @@ func (s *SpellScreen) Init() tea.Cmd {
 	cmds = append(cmds, s.spellAbility.Init())
 	cmds = append(cmds, s.spellSaveDC.Init())
 	cmds = append(cmds, s.spellAtkBonus.Init())
-	s.lastFocusedElement = s.spellAbility
-
 	s.populateSpells()
 	s.wireFocusGraph()
 
@@ -89,9 +87,9 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = s.spellRows.HandleAppend(msg.Tag)
 		}
 	case command.FocusNextElementMsg:
-		s.moveFocus(msg.Direction)
+		s.MoveFocus(msg.Direction)
 	case tea.KeyPressMsg:
-		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.moveFocus)
+		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.MoveFocus)
 	}
 	return s, cmd
 }
@@ -108,7 +106,7 @@ func (s *SpellScreen) View() tea.View {
 }
 
 func (s *SpellScreen) wireFocusGraph() {
-	s.focusGraph = FocusGraph{
+	s.Wire(FocusGraph{
 		s.spellAbility: {
 			command.RightDirection: To(s.spellSaveDC),
 			command.LeftDirection:  Emit(command.ReturnFocusToParentCmd),
@@ -127,7 +125,7 @@ func (s *SpellScreen) wireFocusGraph() {
 			command.UpDirection:   To(s.spellAbility),
 			command.LeftDirection: Emit(command.ReturnFocusToParentCmd),
 		},
-	}
+	}, s.spellAbility)
 }
 
 func (s *SpellScreen) populateSpells() {

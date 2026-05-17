@@ -21,6 +21,8 @@ import (
 var defaultPadding = 2
 
 type DnCApp struct {
+	screen.FocusManager
+
 	config     util.Config
 	keymap     util.KeyMap
 	width      int
@@ -31,29 +33,18 @@ type DnCApp struct {
 	cleanup    func()
 	repository repository.CharacterRepository
 
-	selectedTab            *screen.ScreenTab
-	tabGraph               screen.FocusGraph
-	isScreenFocused        bool
-	isCharacterInitialized bool
-	statTab                *screen.ScreenTab
-	profileTab             *screen.ScreenTab
-	spellTab               *screen.ScreenTab
-	inventoryTab           *screen.ScreenTab
-	noteTab                *screen.ScreenTab
+	statTab      *screen.ScreenTab
+	profileTab   *screen.ScreenTab
+	spellTab     *screen.ScreenTab
+	inventoryTab *screen.ScreenTab
+	noteTab      *screen.ScreenTab
 
 	character          *repository.CharacterAggregate
-	curScreenIdx       command.ScreenIndex
-	prevScreenIdx      command.ScreenIndex
-	screenInView       screen.FocusableModel
+	router             *screen.ScreenRouter
 	titleScreen        *screen.TitleScreen
 	editorScreen       *screen.EditorScreen
-	statScreen         *screen.StatScreen
-	profileScreen      *screen.ProfileScreen
-	spellScreen        *screen.SpellScreen
 	confirmationScreen *screen.ConfirmationScreen
-	inventoryScreen    *screen.InventoryScreen
 	readerScreen       *screen.ReaderScreen
-	noteScreen         *screen.NoteScreen
 	palette            *quickaction.Palette
 }
 
@@ -99,6 +90,7 @@ func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
 		confirmationScreen: screen.NewConfirmationScreen(km),
 		readerScreen:       screen.NewReaderScreen(km),
 		palette:            quickaction.NewPalette(km, quickaction.NewRegistry()),
+		router:             screen.NewScreenRouter(),
 	}
 
 	return app, nil
@@ -117,35 +109,18 @@ func (a *DnCApp) Close() {
 }
 
 func (a *DnCApp) Init() tea.Cmd {
-	cmds := []tea.Cmd{}
+	a.wireTabFocusGraph()
 
-	a.selectedTab = a.statTab
-	a.wireTabGraph()
-	a.curScreenIdx = command.TitleScreenIndex
-	a.prevScreenIdx = command.TitleScreenIndex
+	cmds := []tea.Cmd{
+		a.router.Register(command.TitleScreenIndex, a.titleScreen, false),
+		a.router.Register(command.EditScreenIndex, a.editorScreen, true),
+		a.router.Register(command.ConfirmationScreenIndex, a.confirmationScreen, true),
+		a.router.Register(command.ReaderScreenIndex, a.readerScreen, true),
+	}
 
-	if a.titleScreen != nil {
-		cmds = append(cmds, a.titleScreen.Init())
-		a.switchScreen(command.TitleScreenIndex)
-		a.screenInView.Focus()
-		a.isScreenFocused = true
-	}
-	if a.statScreen != nil {
-		cmds = append(cmds, a.statScreen.Init())
-	}
-	if a.editorScreen != nil {
-		cmds = append(cmds, a.editorScreen.Init())
-	}
-	if a.confirmationScreen != nil {
-		cmds = append(cmds, a.confirmationScreen.Init())
-	}
-	if a.readerScreen != nil {
-		cmds = append(cmds, a.readerScreen.Init())
-	}
-	if len(cmds) > 0 {
-		return tea.Batch(cmds...)
-	}
-	return nil
+	a.router.SwitchContent(command.TitleScreenIndex)
+	a.router.Focus()
+	return tea.Batch(cmds...)
 }
 
 func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -157,7 +132,7 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, tea.Quit
 		case a.palette.Active():
 			cmd = a.palette.Update(msg)
-		case key.Matches(msg, a.keymap.QuickAction) && a.isCharacterInitialized:
+		case key.Matches(msg, a.keymap.QuickAction) && a.router.IsCharacterReady():
 			a.palette.Open()
 		case key.Matches(msg, a.keymap.Screen1):
 			cmd = command.SwitchScreenCmd(command.StatScreenIndex)
@@ -170,32 +145,27 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, a.keymap.ShowKeymap):
 			cmd = command.LaunchReaderScreenCmd(a.renderKeymap())
 		default:
-			if a.isScreenFocused {
-				_, cmd = a.screenInView.Update(msg)
+			if a.router.IsFocused() {
+				_, cmd = a.router.Active().Update(msg)
 			} else {
-				switch {
-				case key.Matches(msg, a.keymap.Down):
-					a.moveTab(command.DownDirection)
-				case key.Matches(msg, a.keymap.Up):
-					a.moveTab(command.UpDirection)
-				case key.Matches(msg, a.keymap.Right):
-					a.isScreenFocused = true
-					a.screenInView.Focus()
-					a.selectedTab.Blur()
-				default:
-					_, cmd = a.selectedTab.Update(msg)
-				}
+				cmd = screen.RouteKey(a.Focused(), msg, a.keymap, a.MoveFocus)
 			}
 		}
 	case tea.WindowSizeMsg:
 		a.width = msg.Width
 		a.height = msg.Height
 	case command.ReturnFocusToParentMsg:
-		a.isScreenFocused = false
-		a.screenInView.Blur()
-		a.selectedTab.Focus()
+		a.router.Blur()
+		a.Focus()
+	case command.FocusActiveScreenMsg:
+		a.Blur()
+		a.router.Focus()
 	case command.SwitchScreenMsg:
-		a.switchScreen(msg.Screen)
+		if a.router.IsModal(msg.Screen) {
+			a.router.PushModal(msg.Screen)
+		} else {
+			a.router.SwitchContent(msg.Screen)
+		}
 	case command.LoadSummariesRequestMsg:
 		cmd = repository.LoadSummariesCommand(a.repository, a.ctx)
 	case repository.LoadSummariesMsg:
@@ -227,16 +197,16 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.readerScreen.StartRead(msg.Content)
 		cmd = command.SwitchScreenCmd(command.ReaderScreenIndex)
 	case command.SwitchToPrevScreenMsg:
-		a.switchScreen(a.prevScreenIdx)
+		a.router.PopModal()
 	default:
-		_, cmd = a.screenInView.Update(msg)
+		_, cmd = a.router.Active().Update(msg)
 	}
 
 	return a, cmd
 }
 
 func (a *DnCApp) View() tea.View {
-	screenContent := a.screenInView.View().Content
+	screenContent := a.router.Active().View().Content
 
 	pageContent := screenContent
 	if a.displayTabs() {
@@ -279,116 +249,52 @@ func (a *DnCApp) View() tea.View {
 }
 
 func (a *DnCApp) populateCharacterScreens(agg *repository.CharacterAggregate) tea.Cmd {
-	cmds := []tea.Cmd{}
 	a.character = agg
-	a.statScreen = screen.NewStatScreen(a.keymap, agg)
-	cmds = append(cmds, a.statScreen.Init())
-	a.profileScreen = screen.NewProfileScreen(a.keymap, agg)
-	cmds = append(cmds, a.profileScreen.Init())
-	a.spellScreen = screen.NewSpellScreen(a.keymap, agg)
-	cmds = append(cmds, a.spellScreen.Init())
-	a.inventoryScreen = screen.NewInventoryScreen(a.keymap, agg)
-	cmds = append(cmds, a.inventoryScreen.Init())
-	a.noteScreen = screen.NewNoteScreen(a.keymap, agg)
-	cmds = append(cmds, a.noteScreen.Init())
+
+	cmds := []tea.Cmd{
+		a.router.Register(command.StatScreenIndex, screen.NewStatScreen(a.keymap, agg), false),
+		a.router.Register(command.ProfileScreenIndex, screen.NewProfileScreen(a.keymap, agg), false),
+		a.router.Register(command.SpellScreenIndex, screen.NewSpellScreen(a.keymap, agg), false),
+		a.router.Register(command.InventoryScreenIndex, screen.NewInventoryScreen(a.keymap, agg), false),
+		a.router.Register(command.NoteScreenIndex, screen.NewNoteScreen(a.keymap, agg), false),
+	}
 
 	a.palette.SetCharacter(agg)
-	a.isCharacterInitialized = true
+	a.router.MarkCharacterReady()
 
-	if len(cmds) > 0 {
-		return tea.Batch(cmds...)
-	}
-	return nil
-}
-
-func (a *DnCApp) switchScreen(idx command.ScreenIndex) {
-	if a.screenInView != nil {
-		a.screenInView.Blur()
-	}
-	a.prevScreenIdx = a.curScreenIdx
-	switch idx {
-	case command.EditScreenIndex:
-		a.screenInView = a.editorScreen
-	case command.TitleScreenIndex:
-		a.screenInView = a.titleScreen
-	case command.ReaderScreenIndex:
-		a.screenInView = a.readerScreen
-	case command.ConfirmationScreenIndex:
-		a.screenInView = a.confirmationScreen
-	}
-	if a.isCharacterInitialized {
-		switch idx {
-		case command.StatScreenIndex:
-			a.screenInView = a.statScreen
-		case command.SpellScreenIndex:
-			a.screenInView = a.spellScreen
-		case command.InventoryScreenIndex:
-			a.screenInView = a.inventoryScreen
-		case command.ProfileScreenIndex:
-			a.screenInView = a.profileScreen
-		case command.NoteScreenIndex:
-			a.screenInView = a.noteScreen
-		}
-	} else {
-		idx = a.curScreenIdx
-	}
-
-	a.curScreenIdx = idx
-	if a.isScreenFocused {
-		a.screenInView.Focus()
-	}
+	return tea.Batch(cmds...)
 }
 
 func (a *DnCApp) displayTabs() bool {
-	return a.screenInView != a.editorScreen &&
-		a.screenInView != a.titleScreen &&
-		a.screenInView != a.confirmationScreen &&
-		a.screenInView != a.readerScreen
+	return !a.router.InModal() && a.router.ContentIndex() != command.TitleScreenIndex
 }
 
-func (a *DnCApp) wireTabGraph() {
-	a.tabGraph = screen.FocusGraph{
+func (a *DnCApp) wireTabFocusGraph() {
+	a.Wire(screen.FocusGraph{
 		a.statTab: {
-			command.DownDirection: screen.To(a.profileTab),
+			command.DownDirection:  screen.To(a.profileTab),
+			command.RightDirection: screen.Emit(command.FocusActiveScreenCmd),
 		},
 		a.profileTab: {
-			command.UpDirection:   screen.To(a.statTab),
-			command.DownDirection: screen.To(a.spellTab),
+			command.UpDirection:    screen.To(a.statTab),
+			command.DownDirection:  screen.To(a.spellTab),
+			command.RightDirection: screen.Emit(command.FocusActiveScreenCmd),
 		},
 		a.spellTab: {
-			command.UpDirection:   screen.To(a.profileTab),
-			command.DownDirection: screen.To(a.inventoryTab),
+			command.UpDirection:    screen.To(a.profileTab),
+			command.DownDirection:  screen.To(a.inventoryTab),
+			command.RightDirection: screen.Emit(command.FocusActiveScreenCmd),
 		},
 		a.inventoryTab: {
-			command.UpDirection:   screen.To(a.spellTab),
-			command.DownDirection: screen.To(a.noteTab),
+			command.UpDirection:    screen.To(a.spellTab),
+			command.DownDirection:  screen.To(a.noteTab),
+			command.RightDirection: screen.Emit(command.FocusActiveScreenCmd),
 		},
 		a.noteTab: {
-			command.UpDirection: screen.To(a.inventoryTab),
+			command.UpDirection:    screen.To(a.inventoryTab),
+			command.RightDirection: screen.Emit(command.FocusActiveScreenCmd),
 		},
-	}
-}
-
-func (a *DnCApp) moveTab(d command.Direction) {
-	edge, ok := a.tabGraph[a.selectedTab][d]
-	if !ok {
-		return
-	}
-	target, _ := edge()
-	if target == nil {
-		return
-	}
-	a.selectedTab.Blur()
-	a.selectedTab = target.(*screen.ScreenTab)
-	a.selectedTab.Focus()
-}
-
-func (a *DnCApp) Blur() {
-	a.statTab.Blur()
-	a.profileTab.Blur()
-	a.spellTab.Blur()
-	a.inventoryTab.Blur()
-	a.noteTab.Blur()
+	}, a.statTab)
 }
 
 func (a *DnCApp) renderKeymap() string {
