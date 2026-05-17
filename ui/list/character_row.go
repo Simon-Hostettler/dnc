@@ -3,7 +3,6 @@ package list
 import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
-	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/ui/editor"
@@ -11,17 +10,12 @@ import (
 )
 
 type CharacterRow struct {
-	id        uuid.UUID
 	keymap    util.KeyMap
 	character *models.CharacterSummary
 }
 
 func NewCharacterRow(keymap util.KeyMap, character *models.CharacterSummary) *CharacterRow {
-	return &CharacterRow{uuid.New(), keymap, character}
-}
-
-func (c *CharacterRow) Id() uuid.UUID {
-	return c.id
+	return &CharacterRow{keymap, character}
 }
 
 func (c *CharacterRow) Init() tea.Cmd {

@@ -3,7 +3,6 @@ package list
 import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
-	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/util"
@@ -14,17 +13,12 @@ The appender will simply send out an AppendElementCmd,
 the implementation is the client's responsibility.
 */
 type AppenderRow struct {
-	id     uuid.UUID
 	keymap util.KeyMap
 	tag    string
 }
 
 func NewAppenderRow(keymap util.KeyMap, tag string) *AppenderRow {
-	return &AppenderRow{uuid.New(), keymap, tag}
-}
-
-func (r *AppenderRow) Id() uuid.UUID {
-	return r.id
+	return &AppenderRow{keymap, tag}
 }
 
 func (r *AppenderRow) Init() tea.Cmd {

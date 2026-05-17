@@ -7,7 +7,6 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/styles"
@@ -23,7 +22,6 @@ const searchBarHeight = 1
 var searchEscapeKey = key.NewBinding(key.WithKeys("esc"))
 
 type Row interface {
-	Id() uuid.UUID
 	Init() tea.Cmd
 	Update(tea.Msg) (tea.Model, tea.Cmd)
 	View() tea.View

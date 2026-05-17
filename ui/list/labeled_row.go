@@ -5,14 +5,12 @@ import (
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
-	"github.com/google/uuid"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/styles"
 	"hostettler.dev/dnc/util"
 )
 
 type LabeledRow[T any] struct {
-	id          uuid.UUID
 	keymap      util.KeyMap
 	config      LabeledRowConfig[T]
 	label       string
@@ -35,7 +33,6 @@ type (
 
 func newLabeledRow[T any](keymap util.KeyMap, label string, value *T, ed editor.ValueEditor, printer func(T) string) *LabeledRow[T] {
 	return &LabeledRow[T]{
-		id:     uuid.New(),
 		keymap: keymap,
 		config: LabeledRowConfig[T]{ValuePrinter: printer, JustifyValue: true, LabelWidth: DefaultColWidth, ValueWidth: DefaultColWidth},
 		label:  label,
@@ -58,10 +55,6 @@ func (r *LabeledRow[T]) WithConfig(c LabeledRowConfig[T]) *LabeledRow[T] {
 	}
 	r.config = c
 	return r
-}
-
-func (r *LabeledRow[T]) Id() uuid.UUID {
-	return r.id
 }
 
 func (r *LabeledRow[T]) Init() tea.Cmd {

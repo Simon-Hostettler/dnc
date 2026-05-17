@@ -4,22 +4,16 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/google/uuid"
 	"hostettler.dev/dnc/ui/editor"
 )
 
 type SeparatorRow struct {
-	id     uuid.UUID
 	symbol string
 	width  int
 }
 
 func NewSeparatorRow(symbol string, width int) *SeparatorRow {
-	return &SeparatorRow{uuid.New(), symbol, width}
-}
-
-func (r *SeparatorRow) Id() uuid.UUID {
-	return r.id
+	return &SeparatorRow{symbol, width}
 }
 
 func (r *SeparatorRow) Init() tea.Cmd {

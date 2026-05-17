@@ -3,14 +3,12 @@ package list
 import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
-	"github.com/google/uuid"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/util"
 )
 
 type StructRow[T any] struct {
-	id          uuid.UUID
 	keymap      util.KeyMap
 	value       *T
 	renderer    func(*T) string
@@ -28,7 +26,6 @@ func NewStructRow[T any](
 	editors []editor.ValueEditor,
 ) *StructRow[T] {
 	return &StructRow[T]{
-		id:       uuid.New(),
 		keymap:   keymap,
 		value:    value,
 		renderer: renderer,
@@ -55,10 +52,6 @@ func (r *StructRow[T]) WithCycleAction(action func(*T) tea.Cmd) *StructRow[T] {
 func (r *StructRow[T]) WithSearchText(searchText func(*T) string) *StructRow[T] {
 	r.searchText = searchText
 	return r
-}
-
-func (r *StructRow[T]) Id() uuid.UUID {
-	return r.id
 }
 
 func (r *StructRow[T]) Init() tea.Cmd {
