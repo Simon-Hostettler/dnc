@@ -137,7 +137,9 @@ func (s *InventoryScreen) wireFocusGraph() {
 func createItemEditors(k util.KeyMap, item *models.ItemTO) []editor.ValueEditor {
 	return []editor.ValueEditor{
 		editor.NewStringEditor(k, "Name", &item.Name),
-		editor.NewEnumEditor(k, styles.EquippedSymbols, "Equipped", &item.Equipped),
+		editor.NewEnumEditor(k, styles.IsEquippableSymbols, "Equippable", &item.IsEquippable),
+		editor.NewEnumEditor(k, styles.EquippedSymbols, "Equipped", &item.Equipped).
+			WithDisabledWhen(func() bool { return item.IsEquippable == 0 }),
 		editor.NewEnumEditor(k, styles.AttunementSymbols, "Attunement Slots", &item.AttunementSlots),
 		editor.NewIntEditor(k, "Quantity", &item.Quantity),
 		editor.NewTextEditor(k, "Description", &item.Description),
@@ -175,11 +177,15 @@ func renderItemInfoRow(i *models.ItemTO) string {
 
 func renderFullItemInfo(i *models.ItemTO) string {
 	separator := styles.MakeHorizontalSeparator(styles.SmallScreenWidth-4, 1)
+	equippedValue := "Not Equippable"
+	if i.IsEquippable == 1 {
+		equippedValue = drawItemPrefix(i)
+	}
 	content := strings.Join(
 		[]string{
 			i.Name,
 			separator,
-			"Equipped: " + drawItemPrefix(i),
+			"Equipped: " + equippedValue,
 			separator,
 			"Attunement slots required: " + styles.PrettyAttunementSlots(i.AttunementSlots),
 			separator,
@@ -194,15 +200,11 @@ func renderFullItemInfo(i *models.ItemTO) string {
 }
 
 func drawItemPrefix(i *models.ItemTO) string {
-	s := ""
-	switch i.Equipped {
-	case models.Equipped:
-		s = "■"
-	case models.NotEquipped:
-		s = "□"
-	default:
-		s = strconv.Itoa(i.Quantity)
-
+	if i.IsEquippable == 0 {
+		return strconv.Itoa(i.Quantity)
 	}
-	return s
+	if i.Equipped == 1 {
+		return "■"
+	}
+	return "□"
 }

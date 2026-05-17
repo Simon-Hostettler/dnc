@@ -11,14 +11,6 @@ type CharacterSummary struct {
 	Name string
 }
 
-type Equippable int
-
-const (
-	NonEquippable Equippable = iota
-	NotEquipped
-	Equipped
-)
-
 type Proficiency int
 
 const (

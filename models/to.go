@@ -46,15 +46,16 @@ type CharacterTO struct {
 
 // ItemTO maps to the `item` table.
 type ItemTO struct {
-	ID              uuid.UUID  `db:"id"`
-	CharacterID     uuid.UUID  `db:"character_id"`
-	Name            string     `db:"name"`
-	Equipped        Equippable `db:"equipped"`
-	AttunementSlots int        `db:"attunement_slots"`
-	Quantity        int        `db:"quantity"`
-	Description     string     `db:"description"`
-	CreatedAt       time.Time  `db:"created_at"`
-	UpdatedAt       time.Time  `db:"updated_at"`
+	ID              uuid.UUID `db:"id"`
+	CharacterID     uuid.UUID `db:"character_id"`
+	Name            string    `db:"name"`
+	IsEquippable    int       `db:"is_equippable"`
+	Equipped        int       `db:"equipped"`
+	AttunementSlots int       `db:"attunement_slots"`
+	Quantity        int       `db:"quantity"`
+	Description     string    `db:"description"`
+	CreatedAt       time.Time `db:"created_at"`
+	UpdatedAt       time.Time `db:"updated_at"`
 }
 
 // WalletTO maps to the `wallet` table.

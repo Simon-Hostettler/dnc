@@ -102,14 +102,14 @@ func getOne[T any](ctx context.Context, q sqlx.QueryerContext, table string, cha
 
 var itemTable = childTable[models.ItemTO]{
 	name:    "item",
-	columns: []string{"id", "character_id", "name", "equipped", "attunement_slots", "quantity", "description", "created_at", "updated_at"},
+	columns: []string{"id", "character_id", "name", "is_equippable", "equipped", "attunement_slots", "quantity", "description", "created_at", "updated_at"},
 	orderBy: "name ASC",
 	values: func(it *models.ItemTO, charID uuid.UUID) []any {
 		if it.ID == uuid.Nil {
 			it.ID = uuid.New()
 		}
 		now := time.Now()
-		return []any{it.ID, charID, it.Name, it.Equipped, it.AttunementSlots, it.Quantity, it.Description, nonZeroOr(it.CreatedAt, now), now}
+		return []any{it.ID, charID, it.Name, it.IsEquippable, it.Equipped, it.AttunementSlots, it.Quantity, it.Description, nonZeroOr(it.CreatedAt, now), now}
 	},
 }
 

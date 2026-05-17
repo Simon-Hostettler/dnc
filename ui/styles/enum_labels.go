@@ -47,10 +47,14 @@ var SpellSourceSymbols []EnumMapping = []EnumMapping{
 	{Value: int(models.Temporary), Label: "⧖"},
 }
 
+var IsEquippableSymbols []EnumMapping = []EnumMapping{
+	{Value: 0, Label: "Not Equippable"},
+	{Value: 1, Label: "Equippable"},
+}
+
 var EquippedSymbols []EnumMapping = []EnumMapping{
-	{Value: int(models.NonEquippable), Label: "Not Equippable"},
-	{Value: int(models.NotEquipped), Label: "Not Equipped"},
-	{Value: int(models.Equipped), Label: "Equipped"},
+	{Value: 0, Label: "□"},
+	{Value: 1, Label: "■"},
 }
 
 var AttunementSymbols []EnumMapping = []EnumMapping{

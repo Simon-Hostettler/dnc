@@ -12,13 +12,23 @@ import (
 )
 
 type EnumEditor struct {
-	keymap      util.KeyMap
-	options     []styles.EnumMapping
-	label       string
-	value       reflect.Value
-	cursor      int
-	initialized bool
-	focus       bool
+	keymap       util.KeyMap
+	options      []styles.EnumMapping
+	label        string
+	value        reflect.Value
+	cursor       int
+	initialized  bool
+	focus        bool
+	disabledWhen func() bool
+}
+
+func (e *EnumEditor) WithDisabledWhen(predicate func() bool) *EnumEditor {
+	e.disabledWhen = predicate
+	return e
+}
+
+func (e *EnumEditor) Disabled() bool {
+	return e.disabledWhen != nil && e.disabledWhen()
 }
 
 func NewEnumEditor(keymap util.KeyMap, options []styles.EnumMapping, label string, delegatorPointer interface{}) *EnumEditor {
@@ -63,12 +73,13 @@ func (e *EnumEditor) Update(msg tea.Msg) tea.Cmd {
 	}
 
 	var cmd tea.Cmd
+	disabled := e.Disabled()
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, e.keymap.Left):
+		case !disabled && key.Matches(msg, e.keymap.Left):
 			e.cursor = (e.cursor - 1 + len(e.options)) % len(e.options)
-		case key.Matches(msg, e.keymap.Right, e.keymap.Select):
+		case !disabled && key.Matches(msg, e.keymap.Right, e.keymap.Select):
 			e.cursor = (e.cursor + 1) % len(e.options)
 		case key.Matches(msg, e.keymap.Up):
 			cmd = command.FocusNextElementCmd(command.UpDirection)
@@ -87,10 +98,17 @@ func (e *EnumEditor) View() string {
 	}
 	current := e.options[e.cursor]
 	box := fmt.Sprintf("[ %s ]", current.Label)
+	if e.Disabled() {
+		return styles.GrayTextStyle.Render(e.label+":") + " " + styles.GrayTextStyle.Render(box)
+	}
 	return styles.RenderItem(e.focus, e.label+":") + " " + styles.ItemStyleDefault.Render(box)
 }
 
 func (e *EnumEditor) Save() tea.Cmd {
+	if e.Disabled() {
+		e.value.Elem().SetInt(int64(e.options[0].Value))
+		return nil
+	}
 	e.value.Elem().SetInt(int64(e.options[e.cursor].Value))
 	return nil
 }

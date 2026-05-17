@@ -32,6 +32,7 @@ func (s *EditorScreen) StartEdit(editors []editor.ValueEditor) {
 	if len(s.editors) > 0 {
 		s.cursor = 0
 		s.vpCursor = 0
+		s.skipDisabled(command.DownDirection)
 		s.focusCurrentRow()
 	}
 }
@@ -81,6 +82,7 @@ func (s *EditorScreen) moveCursor(dir command.Direction) {
 		if s.cursor > 0 {
 			s.blurCurrentRow()
 			s.cursor--
+			s.skipDisabled(dir)
 			s.focusCurrentRow()
 			if s.cursor < s.vpCursor {
 				s.vpCursor = s.cursor
@@ -94,15 +96,39 @@ func (s *EditorScreen) moveCursor(dir command.Direction) {
 		s.blurCurrentRow()
 		if s.cursor == len(s.editors) {
 			s.cursor = 0
+			s.skipDisabled(dir)
 			s.vpCursor = 0
 		} else {
 			s.cursor++
+			s.skipDisabled(dir)
 			if s.vpCursor+numEditorsVisible <= s.cursor && s.cursor <= len(s.editors) {
 				s.vpCursor++
 			}
 		}
 		s.focusCurrentRow()
 	}
+}
+
+func (s *EditorScreen) skipDisabled(dir command.Direction) {
+	for s.cursor >= 0 && s.cursor < len(s.editors) && isDisabled(s.editors[s.cursor]) {
+		switch dir {
+		case command.UpDirection:
+			if s.cursor == 0 {
+				s.cursor = len(s.editors)
+				return
+			}
+			s.cursor--
+		case command.DownDirection:
+			s.cursor++
+		}
+	}
+}
+
+func isDisabled(e editor.ValueEditor) bool {
+	if d, ok := e.(interface{ Disabled() bool }); ok {
+		return d.Disabled()
+	}
+	return false
 }
 
 func (s *EditorScreen) View() tea.View {
