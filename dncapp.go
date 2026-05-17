@@ -142,7 +142,6 @@ func (a *DnCApp) Init() tea.Cmd {
 	if a.readerScreen != nil {
 		cmds = append(cmds, a.readerScreen.Init())
 	}
-	cmds = util.DropNil(cmds)
 	if len(cmds) > 0 {
 		return tea.Batch(cmds...)
 	}
@@ -296,7 +295,6 @@ func (a *DnCApp) populateCharacterScreens(agg *repository.CharacterAggregate) te
 	a.palette.SetCharacter(agg)
 	a.isCharacterInitialized = true
 
-	cmds = util.DropNil(cmds)
 	if len(cmds) > 0 {
 		return tea.Batch(cmds...)
 	}
