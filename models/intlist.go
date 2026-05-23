@@ -2,71 +2,40 @@ package models
 
 import (
 	"database/sql/driver"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 )
 
-// IntList is a []int that implements sql.Scanner (and optionally driver.Valuer) to handle DuckDB LIST columns.
+// IntList is a []int that implements sql.Scanner and driver.Valuer for
+// DuckDB LIST<INTEGER> columns.
 type IntList []int
 
-// Scan implements sql.Scanner for DuckDB LIST to Go []int.
+// Scan implements sql.Scanner. The DuckDB driver delivers LIST<INTEGER>
+// values as []any whose elements are int32; (see repository/intlist_scan_db_test.go)
 func (il *IntList) Scan(src any) error {
 	if src == nil {
 		*il = nil
 		return nil
 	}
-	switch v := src.(type) {
-	case []interface{}:
-		out := make([]int, 0, len(v))
-		for _, e := range v {
-			switch t := e.(type) {
-			case int64:
-				out = append(out, int(t))
-			case int32:
-				out = append(out, int(t))
-			case float64:
-				out = append(out, int(t))
-			case []byte:
-				// fallback: parse numeric string
-				n, err := strconv.Atoi(string(t))
-				if err != nil {
-					return err
-				}
-				out = append(out, n)
-			case string:
-				n, err := strconv.Atoi(t)
-				if err != nil {
-					return err
-				}
-				out = append(out, n)
-			default:
-				return fmt.Errorf("IntList.Scan: unsupported element type %T", e)
-			}
-		}
-		*il = out
-		return nil
-	case string:
-		parsed, err := parseBracketedIntList(v)
-		if err != nil {
-			return err
-		}
-		*il = parsed
-		return nil
-	case []byte:
-		parsed, err := parseBracketedIntList(string(v))
-		if err != nil {
-			return err
-		}
-		*il = parsed
-		return nil
-	default:
+	v, ok := src.([]any)
+	if !ok {
 		return fmt.Errorf("IntList.Scan: unsupported source type %T", src)
 	}
+	out := make([]int, 0, len(v))
+	for _, e := range v {
+		n, ok := e.(int32)
+		if !ok {
+			return fmt.Errorf("IntList.Scan: unsupported element type %T", e)
+		}
+		out = append(out, int(n))
+	}
+	*il = out
+	return nil
 }
 
-// Value implements driver.Valuer; we return a string literal which we don't currently use for inserts (we build literals ourselves), but keep for completeness.
+// Value implements driver.Valuer. We return a bracketed literal; DuckDB
+// implicitly casts the VARCHAR back to LIST<INTEGER> during parameter binding.
 func (il IntList) Value() (driver.Value, error) {
 	var b strings.Builder
 	b.WriteByte('[')
@@ -78,32 +47,4 @@ func (il IntList) Value() (driver.Value, error) {
 	}
 	b.WriteByte(']')
 	return b.String(), nil
-}
-
-func parseBracketedIntList(s string) ([]int, error) {
-	ss := strings.TrimSpace(s)
-	if ss == "" || ss == "[]" {
-		return []int{}, nil
-	}
-	if !strings.HasPrefix(ss, "[") || !strings.HasSuffix(ss, "]") {
-		return nil, errors.New("invalid list literal")
-	}
-	inner := strings.TrimSpace(ss[1 : len(ss)-1])
-	if inner == "" {
-		return []int{}, nil
-	}
-	parts := strings.Split(inner, ",")
-	out := make([]int, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p == "" {
-			continue
-		}
-		n, err := strconv.Atoi(p)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, n)
-	}
-	return out, nil
 }
