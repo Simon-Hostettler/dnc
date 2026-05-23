@@ -86,7 +86,7 @@ func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
 		inventoryTab:       screen.NewScreenTab(km, "Inventory", command.InventoryScreenIndex, false),
 		noteTab:            screen.NewScreenTab(km, "Notes", command.NoteScreenIndex, false),
 		titleScreen:        screen.NewTitleScreen(km),
-		editorScreen:       screen.NewEditorScreen(km, []editor.ValueEditor{}),
+		editorScreen:       screen.NewEditorScreen(km),
 		confirmationScreen: screen.NewConfirmationScreen(km),
 		readerScreen:       screen.NewReaderScreen(km),
 		palette:            quickaction.NewPalette(km, quickaction.NewRegistry()),

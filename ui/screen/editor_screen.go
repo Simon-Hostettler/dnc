@@ -13,116 +13,187 @@ import (
 var numEditorsVisible = 6
 
 type EditorScreen struct {
-	keymap   util.KeyMap
-	cursor   int
-	vpCursor int
-	editors  []editor.ValueEditor
+	keymap util.KeyMap
+	FocusManager
+
+	nodes []*editorNode
+	save  *saveButton
+	vpTop int
 }
 
-func NewEditorScreen(keymap util.KeyMap, editors []editor.ValueEditor) *EditorScreen {
-	return &EditorScreen{keymap, 0, 0, editors}
+func NewEditorScreen(keymap util.KeyMap) *EditorScreen {
+	return &EditorScreen{
+		keymap: keymap,
+		save:   &saveButton{keymap: keymap},
+	}
 }
 
-func (s *EditorScreen) Init() tea.Cmd {
-	return nil
-}
+func (s *EditorScreen) Init() tea.Cmd { return nil }
 
 func (s *EditorScreen) StartEdit(editors []editor.ValueEditor) {
-	s.editors = editors
-	if len(s.editors) > 0 {
-		s.cursor = 0
-		s.vpCursor = 0
-		s.skipDisabled(command.DownDirection)
-		s.focusCurrentRow()
+	s.nodes = make([]*editorNode, len(editors))
+	for i, e := range editors {
+		s.nodes[i] = &editorNode{editor: e}
 	}
+	s.save.onSave = s.buildSaveCmd()
+	s.vpTop = 0
+
+	initial := s.firstEnabled()
+	if initial == nil {
+		initial = FocusableModel(s.save)
+	}
+	s.Wire(s.graph(), initial)
+	s.Focus()
+	s.adjustViewport()
 }
 
 func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	// editor in focus
-	if s.cursor >= 0 && s.cursor < len(s.editors) {
-		switch msg := msg.(type) {
-		case tea.KeyPressMsg:
-			if key.Matches(msg, s.keymap.Escape) && !util.IsLetterKey(msg) {
-				cmd = command.SwitchToPrevScreenCmd
-			} else {
-				cmd = s.editors[s.cursor].Update(msg)
-			}
-		case command.FocusNextElementMsg:
-			s.moveCursor(msg.Direction)
-		default:
-			cmd = s.editors[s.cursor].Update(msg)
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		if key.Matches(msg, s.keymap.Escape) && !util.IsLetterKey(msg) {
+			return s, command.SwitchToPrevScreenCmd
 		}
-	} else if s.cursor == len(s.editors) { // save button in focus
-		switch msg := msg.(type) {
-		case tea.KeyPressMsg:
-			switch {
-			case key.Matches(msg, s.keymap.Escape):
-				cmd = command.SwitchToPrevScreenCmd
-			case key.Matches(msg, s.keymap.Up):
-				s.moveCursor(command.UpDirection)
-			case key.Matches(msg, s.keymap.Down):
-				s.moveCursor(command.DownDirection)
-			case key.Matches(msg, s.keymap.Enter):
-				cmds := []tea.Cmd{}
-				for _, e := range s.editors {
-					cmds = append(cmds, e.Save())
-				}
-				saveCmds := tea.Batch(cmds...)
-				cmd = tea.Sequence(saveCmds, command.SwitchToPrevScreenCmd, command.WriteBackRequest)
-			}
+		if focused := s.Focused(); focused != nil {
+			_, cmd := focused.Update(msg)
+			return s, cmd
+		}
+	case command.FocusNextElementMsg:
+		cmd := s.MoveFocus(msg.Direction)
+		s.adjustViewport()
+		return s, cmd
+	default:
+		if focused := s.Focused(); focused != nil {
+			_, cmd := focused.Update(msg)
+			return s, cmd
 		}
 	}
-	return s, cmd
+	return s, nil
 }
 
-func (s *EditorScreen) moveCursor(dir command.Direction) {
-	switch dir {
-	case command.UpDirection:
-		if s.cursor > 0 {
-			s.blurCurrentRow()
-			s.cursor--
-			s.skipDisabled(dir)
-			s.focusCurrentRow()
-			if s.cursor < s.vpCursor {
-				s.vpCursor = s.cursor
-			}
-		} else if s.cursor == 0 {
-			s.blurCurrentRow()
-			s.cursor = len(s.editors)
-			s.vpCursor = max(0, s.cursor-numEditorsVisible)
+func (s *EditorScreen) View() tea.View {
+	rows := []string{}
+	for _, n := range s.nodes {
+		rows = append(rows, styles.ForceWidth(n.editor.View(), styles.SmallScreenWidth-8))
+	}
+
+	horizontalSeparator := styles.MakeHorizontalSeparator(styles.SmallScreenWidth-8, 1)
+
+	end := min(len(rows), s.vpTop+numEditorsVisible)
+	separated := []string{}
+	if s.vpTop < end {
+		separated = append(separated, rows[s.vpTop])
+		for _, row := range rows[s.vpTop+1 : end] {
+			separated = append(separated, horizontalSeparator, row)
 		}
-	case command.DownDirection:
-		s.blurCurrentRow()
-		if s.cursor == len(s.editors) {
-			s.cursor = 0
-			s.skipDisabled(dir)
-			s.vpCursor = 0
-		} else {
-			s.cursor++
-			s.skipDisabled(dir)
-			if s.vpCursor+numEditorsVisible <= s.cursor && s.cursor <= len(s.editors) {
-				s.vpCursor++
-			}
+	}
+	separated = append(separated, horizontalSeparator, s.save.render())
+
+	return tea.NewView(styles.DefaultBorderStyle.
+		Width(styles.SmallScreenWidth).
+		Render(lipgloss.JoinVertical(lipgloss.Center, separated...)))
+}
+
+func (s *EditorScreen) buildSaveCmd() func() tea.Cmd {
+	return func() tea.Cmd {
+		cmds := make([]tea.Cmd, 0, len(s.nodes))
+		for _, n := range s.nodes {
+			cmds = append(cmds, n.editor.Save())
 		}
-		s.focusCurrentRow()
+		return tea.Sequence(tea.Batch(cmds...), command.SwitchToPrevScreenCmd, command.WriteBackRequest)
 	}
 }
 
-func (s *EditorScreen) skipDisabled(dir command.Direction) {
-	for s.cursor >= 0 && s.cursor < len(s.editors) && isDisabled(s.editors[s.cursor]) {
-		switch dir {
-		case command.UpDirection:
-			if s.cursor == 0 {
-				s.cursor = len(s.editors)
-				return
-			}
-			s.cursor--
-		case command.DownDirection:
-			s.cursor++
+func (s *EditorScreen) graph() FocusGraph {
+	g := FocusGraph{}
+	for i, n := range s.nodes {
+		g[n] = map[command.Direction]FocusEdge{
+			command.UpDirection:   ToCond(func() FocusableModel { return s.prevEnabled(i) }),
+			command.DownDirection: ToCond(func() FocusableModel { return s.nextEnabled(i) }),
 		}
 	}
+	g[s.save] = map[command.Direction]FocusEdge{
+		command.UpDirection:   ToCond(func() FocusableModel { return s.lastEnabled() }),
+		command.DownDirection: ToCond(func() FocusableModel { return s.firstEnabled() }),
+	}
+	return g
 }
+
+func (s *EditorScreen) nextEnabled(from int) FocusableModel {
+	for i := from + 1; i < len(s.nodes); i++ {
+		if !s.nodes[i].Disabled() {
+			return s.nodes[i]
+		}
+	}
+	return s.save
+}
+
+func (s *EditorScreen) prevEnabled(from int) FocusableModel {
+	for i := from - 1; i >= 0; i-- {
+		if !s.nodes[i].Disabled() {
+			return s.nodes[i]
+		}
+	}
+	return s.save
+}
+
+func (s *EditorScreen) firstEnabled() FocusableModel {
+	for _, n := range s.nodes {
+		if !n.Disabled() {
+			return n
+		}
+	}
+	return nil
+}
+
+func (s *EditorScreen) lastEnabled() FocusableModel {
+	for i := len(s.nodes) - 1; i >= 0; i-- {
+		if !s.nodes[i].Disabled() {
+			return s.nodes[i]
+		}
+	}
+	return nil
+}
+
+func (s *EditorScreen) focusedIndex() int {
+	focused := s.Focused()
+	for i, n := range s.nodes {
+		if n == focused {
+			return i
+		}
+	}
+	return -1
+}
+
+func (s *EditorScreen) adjustViewport() {
+	idx := s.focusedIndex()
+	switch {
+	case idx < 0:
+		s.vpTop = max(0, len(s.nodes)-numEditorsVisible)
+	case idx < s.vpTop:
+		s.vpTop = idx
+	case idx >= s.vpTop+numEditorsVisible:
+		s.vpTop = idx - numEditorsVisible + 1
+	}
+}
+
+// adapts a ValueEditor to the FocusableModel interface
+type editorNode struct {
+	editor editor.ValueEditor
+}
+
+func (n *editorNode) Init() tea.Cmd { return nil }
+
+func (n *editorNode) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return n, n.editor.Update(msg)
+}
+
+func (n *editorNode) View() tea.View { return tea.NewView(n.editor.View()) }
+
+func (n *editorNode) Focus() { n.editor.Focus() }
+
+func (n *editorNode) Blur() { n.editor.Blur() }
+
+func (n *editorNode) Disabled() bool { return isDisabled(n.editor) }
 
 func isDisabled(e editor.ValueEditor) bool {
 	if d, ok := e.(interface{ Disabled() bool }); ok {
@@ -131,45 +202,36 @@ func isDisabled(e editor.ValueEditor) bool {
 	return false
 }
 
-func (s *EditorScreen) View() tea.View {
-	rows := []string{}
-	for _, e := range s.editors {
-		rows = append(rows, styles.ForceWidth(e.View(), styles.SmallScreenWidth-8))
-	}
-	saveButton := styles.RenderItem(s.cursor == len(s.editors), "[ Save ]")
-
-	horizontalSeparator := styles.MakeHorizontalSeparator(styles.SmallScreenWidth-8, 1)
-
-	separated := []string{rows[s.vpCursor]}
-
-	for _, row := range rows[s.vpCursor+1 : s.viewportEnd()] {
-		separated = append(separated, horizontalSeparator, row)
-	}
-
-	separated = append(separated, horizontalSeparator, saveButton)
-
-	return tea.NewView(styles.DefaultBorderStyle.
-		Width(styles.SmallScreenWidth).
-		Render(lipgloss.JoinVertical(lipgloss.Center, separated...)))
+type saveButton struct {
+	keymap  util.KeyMap
+	focused bool
+	onSave  func() tea.Cmd
 }
 
-func (s *EditorScreen) viewportEnd() int {
-	return min(len(s.editors), s.vpCursor+numEditorsVisible)
-}
+func (b *saveButton) Init() tea.Cmd { return nil }
 
-func (s *EditorScreen) blurCurrentRow() {
-	if s.cursor != len(s.editors) {
-		s.editors[s.cursor].Blur()
+func (b *saveButton) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	keyMsg, ok := msg.(tea.KeyPressMsg)
+	if !ok {
+		return b, nil
 	}
-}
-
-func (s *EditorScreen) focusCurrentRow() {
-	if s.cursor != len(s.editors) {
-		s.editors[s.cursor].Focus()
+	switch {
+	case key.Matches(keyMsg, b.keymap.Enter):
+		if b.onSave != nil {
+			return b, b.onSave()
+		}
+	case key.Matches(keyMsg, b.keymap.Up):
+		return b, command.FocusNextElementCmd(command.UpDirection)
+	case key.Matches(keyMsg, b.keymap.Down):
+		return b, command.FocusNextElementCmd(command.DownDirection)
 	}
+	return b, nil
 }
 
-// to fulfill FocusableModel interface
-func (s *EditorScreen) Focus() {}
+func (b *saveButton) View() tea.View { return tea.NewView(b.render()) }
 
-func (s *EditorScreen) Blur() {}
+func (b *saveButton) render() string { return styles.RenderItem(b.focused, "[ Save ]") }
+
+func (b *saveButton) Focus() { b.focused = true }
+
+func (b *saveButton) Blur() { b.focused = false }
