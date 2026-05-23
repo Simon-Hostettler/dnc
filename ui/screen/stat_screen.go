@@ -32,6 +32,8 @@ var (
 	statMediumColWidth = 12
 	statShortColWidth  = 8
 	statTinyColWidth   = 3
+
+	statActionHeight = 5
 )
 
 type StatScreen struct {
@@ -45,8 +47,8 @@ type StatScreen struct {
 	savingThrows  *list.List
 	combatInfo    *list.List
 	attacks       *list.List
-	actions       *component.SimpleComponent[string]
-	bonusActions  *component.SimpleComponent[string]
+	actions       *component.SimpleTextComponent
+	bonusActions  *component.SimpleTextComponent
 
 	attackRows *CollectionRows[models.AttackTO]
 }
@@ -55,8 +57,8 @@ func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen
 	s := &StatScreen{
 		keymap:        km,
 		agg:           c,
-		actions:       component.NewSimpleStringComponent(km, "Actions", &c.Character.Actions, false, false),
-		bonusActions:  component.NewSimpleStringComponent(km, "Bonus Actions", &c.Character.BonusActions, false, false),
+		actions:       component.NewSimpleTextComponent(km, "Actions", &c.Character.Actions, statActionHeight, statRightContentWidth),
+		bonusActions:  component.NewSimpleTextComponent(km, "Bonus Actions", &c.Character.BonusActions, statActionHeight, statRightContentWidth),
 		characterInfo: list.NewListWithDefaults(km),
 		abilities:     list.NewListWithDefaults(km),
 		skills: list.NewListWithDefaults(km).
@@ -66,7 +68,7 @@ func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen
 		combatInfo: list.NewListWithDefaults(km).
 			WithTitle("Combat"),
 		attacks: list.NewListWithDefaults(km).
-			WithTitle("Attacks"),
+			WithTitle("Attacks").WithViewport(4),
 	}
 	s.attackRows = NewCollectionRows(km, s.attacks, "attack",
 		func() []*models.AttackTO { return util.Pointers(s.agg.Attacks) },

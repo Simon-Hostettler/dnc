@@ -343,6 +343,9 @@ func (t *List) View() tea.View {
 	var body string
 	if t.viewport {
 		body = strings.Join(t.toLines()[t.vpCursor:t.viewportEnd()], "\n")
+		if t.title != "" {
+			body = lipgloss.JoinVertical(lipgloss.Center, t.renderTitle(), body)
+		}
 	} else {
 		body = t.RenderFullContent()
 	}
@@ -361,7 +364,7 @@ func (t *List) renderSearchBar() string {
 }
 
 func (t *List) toLines() []string {
-	return strings.Split(t.RenderFullContent(), "\n")
+	return strings.Split(t.RenderBody(), "\n")
 }
 
 func (t *List) viewportEnd() int {
@@ -379,15 +382,16 @@ func (t *List) inRange(idx int) bool {
 func (t *List) RenderFullContent() string {
 	body := t.RenderBody()
 	if t.title != "" {
-		var title string
-		if t.focus {
-			title = t.Styles.Selected.Render(t.title) + "\n"
-		} else {
-			title = t.Styles.Row.Render(t.title) + "\n"
-		}
-		body = lipgloss.JoinVertical(lipgloss.Center, title, body)
+		body = lipgloss.JoinVertical(lipgloss.Center, t.renderTitle(), body)
 	}
 	return body
+}
+
+func (t *List) renderTitle() string {
+	if t.focus {
+		return t.Styles.Selected.Render(t.title) + "\n"
+	}
+	return t.Styles.Row.Render(t.title) + "\n"
 }
 
 func (t *List) RenderBody() string {
