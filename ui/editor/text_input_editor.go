@@ -1,7 +1,6 @@
 package editor
 
 import (
-	"fmt"
 	"log/slog"
 	"strconv"
 
@@ -14,42 +13,39 @@ import (
 )
 
 type TextInputEditor[T any] struct {
-	keymap      util.KeyMap
-	label       string
-	value       *T
-	textInput   textinput.Model
-	initialized bool
-	focus       bool
-	parse       func(string) (T, error)
-	format      func(T) string
+	keymap    util.KeyMap
+	label     string
+	value     *T
+	textInput textinput.Model
+	focus     bool
+	parse     func(string) (T, error)
+	format    func(T) string
 }
 
-func (s *TextInputEditor[T]) Init(keymap util.KeyMap, label string, delegatorPointer interface{}) {
-	ptr, ok := delegatorPointer.(*T)
-	if !ok {
-		var zero T
-		panic(fmt.Sprintf("Value passed is not a pointer to %T", zero))
-	}
-	s.keymap = keymap
-	s.value = ptr
-
+func newTextInputEditor[T any](
+	keymap util.KeyMap,
+	label string,
+	value *T,
+	parse func(string) (T, error),
+	format func(T) string,
+) *TextInputEditor[T] {
 	ti := textinput.New()
 	ti.Prompt = ""
-
-	if ptr != nil {
-		ti.SetValue(s.format(*ptr))
+	if value != nil {
+		ti.SetValue(format(*value))
 	}
 
-	s.textInput = ti
-	s.label = label
-	s.initialized = true
+	return &TextInputEditor[T]{
+		keymap:    keymap,
+		label:     label,
+		value:     value,
+		textInput: ti,
+		parse:     parse,
+		format:    format,
+	}
 }
 
 func (s *TextInputEditor[T]) Update(msg tea.Msg) tea.Cmd {
-	if !s.initialized {
-		return nil
-	}
-
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
@@ -66,9 +62,6 @@ func (s *TextInputEditor[T]) Update(msg tea.Msg) tea.Cmd {
 }
 
 func (s *TextInputEditor[T]) View() string {
-	if !s.initialized {
-		return ""
-	}
 	return styles.RenderItem(s.focus, s.label+":") + " " + styles.ItemStyleDefault.Render(s.textInput.View())
 }
 
@@ -94,20 +87,14 @@ func (e *TextInputEditor[T]) Blur() {
 	e.focus = false
 }
 
-func NewIntEditor(keymap util.KeyMap, label string, delegatorPointer interface{}) *TextInputEditor[int] {
-	e := &TextInputEditor[int]{
-		parse:  strconv.Atoi,
-		format: strconv.Itoa,
-	}
-	e.Init(keymap, label, delegatorPointer)
-	return e
+func NewIntEditor(keymap util.KeyMap, label string, value *int) *TextInputEditor[int] {
+	return newTextInputEditor(keymap, label, value, strconv.Atoi, strconv.Itoa)
 }
 
-func NewStringEditor(keymap util.KeyMap, label string, delegatorPointer interface{}) *TextInputEditor[string] {
-	e := &TextInputEditor[string]{
-		parse:  func(s string) (string, error) { return s, nil },
-		format: func(s string) string { return s },
-	}
-	e.Init(keymap, label, delegatorPointer)
-	return e
+func NewStringEditor(keymap util.KeyMap, label string, value *string) *TextInputEditor[string] {
+	return newTextInputEditor(
+		keymap, label, value,
+		func(s string) (string, error) { return s, nil },
+		func(s string) string { return s },
+	)
 }

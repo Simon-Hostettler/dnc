@@ -2,7 +2,6 @@ package editor
 
 import (
 	"fmt"
-	"reflect"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
@@ -11,67 +10,51 @@ import (
 	"hostettler.dev/dnc/util"
 )
 
-type EnumEditor struct {
+type IntLike interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64
+}
+
+type EnumEditor[T IntLike] struct {
 	keymap       util.KeyMap
 	options      []styles.EnumMapping
 	label        string
-	value        reflect.Value
+	value        *T
 	cursor       int
-	initialized  bool
 	focus        bool
 	disabledWhen func() bool
 }
 
-func (e *EnumEditor) WithDisabledWhen(predicate func() bool) *EnumEditor {
+func (e *EnumEditor[T]) WithDisabledWhen(predicate func() bool) *EnumEditor[T] {
 	e.disabledWhen = predicate
 	return e
 }
 
-func (e *EnumEditor) Disabled() bool {
+func (e *EnumEditor[T]) Disabled() bool {
 	return e.disabledWhen != nil && e.disabledWhen()
 }
 
-func NewEnumEditor(keymap util.KeyMap, options []styles.EnumMapping, label string, delegatorPointer interface{}) *EnumEditor {
-	e := EnumEditor{
+func NewEnumEditor[T IntLike](keymap util.KeyMap, options []styles.EnumMapping, label string, value *T) *EnumEditor[T] {
+	e := &EnumEditor[T]{
+		keymap:  keymap,
 		options: options,
-	}
-	e.Init(keymap, label, delegatorPointer)
-	return &e
-}
-
-func (e *EnumEditor) Init(keymap util.KeyMap, label string, delegatorPointer interface{}) {
-	e.keymap = keymap
-
-	ptrValue := reflect.ValueOf(delegatorPointer)
-	if ptrValue.Kind() != reflect.Ptr || !ptrValue.Elem().IsValid() {
-		panic("Value passed is not a valid pointer")
+		label:   label,
+		value:   value,
 	}
 
-	elem := ptrValue.Elem()
-	kind := elem.Kind()
-	if kind < reflect.Int || kind > reflect.Int64 {
-		panic(fmt.Sprintf("Value passed is not a pointer to int-like, got: %s", kind))
-	}
-
-	e.value = ptrValue
-
-	currentValue := int(elem.Int())
-	for i, opt := range e.options {
-		if opt.Value == currentValue {
-			e.cursor = i
-			break
+	if value != nil {
+		current := int(*value)
+		for i, opt := range options {
+			if opt.Value == current {
+				e.cursor = i
+				break
+			}
 		}
 	}
 
-	e.label = label
-	e.initialized = true
+	return e
 }
 
-func (e *EnumEditor) Update(msg tea.Msg) tea.Cmd {
-	if !e.initialized {
-		return nil
-	}
-
+func (e *EnumEditor[T]) Update(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 	disabled := e.Disabled()
 	switch msg := msg.(type) {
@@ -92,8 +75,8 @@ func (e *EnumEditor) Update(msg tea.Msg) tea.Cmd {
 	return cmd
 }
 
-func (e *EnumEditor) View() string {
-	if !e.initialized || len(e.options) == 0 {
+func (e *EnumEditor[T]) View() string {
+	if len(e.options) == 0 {
 		return ""
 	}
 	current := e.options[e.cursor]
@@ -104,19 +87,22 @@ func (e *EnumEditor) View() string {
 	return styles.RenderItem(e.focus, e.label+":") + " " + styles.ItemStyleDefault.Render(box)
 }
 
-func (e *EnumEditor) Save() tea.Cmd {
-	if e.Disabled() {
-		e.value.Elem().SetInt(int64(e.options[0].Value))
+func (e *EnumEditor[T]) Save() tea.Cmd {
+	if e.value == nil {
 		return nil
 	}
-	e.value.Elem().SetInt(int64(e.options[e.cursor].Value))
+	if e.Disabled() {
+		*e.value = T(e.options[0].Value)
+		return nil
+	}
+	*e.value = T(e.options[e.cursor].Value)
 	return nil
 }
 
-func (e *EnumEditor) Focus() {
+func (e *EnumEditor[T]) Focus() {
 	e.focus = true
 }
 
-func (e *EnumEditor) Blur() {
+func (e *EnumEditor[T]) Blur() {
 	e.focus = false
 }

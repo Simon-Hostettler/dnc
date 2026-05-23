@@ -11,50 +11,33 @@ import (
 )
 
 type TextEditor struct {
-	keymap      util.KeyMap
-	label       string
-	value       *string
-	textArea    textarea.Model
-	initialized bool
-	focus       bool
+	keymap   util.KeyMap
+	label    string
+	value    *string
+	textArea textarea.Model
+	focus    bool
 }
 
-func NewTextEditor(keymap util.KeyMap, label string, delegatorPointer interface{}) *TextEditor {
-	s := TextEditor{}
-	s.Init(keymap, label, delegatorPointer)
-	return &s
-}
-
-func (e *TextEditor) Init(keymap util.KeyMap, label string, delegatorPointer interface{}) {
-	ptr, ok := delegatorPointer.(*string)
-	if !ok {
-		panic("Value passed is not a pointer to string")
-	}
-	e.keymap = keymap
-	e.value = ptr
-
+func NewTextEditor(keymap util.KeyMap, label string, value *string) *TextEditor {
 	ta := textarea.New()
 	ta.SetWidth(styles.SmallScreenWidth - 4)
 	ta.SetHeight(8)
 	ta.ShowLineNumbers = false
 	ta.Prompt = ""
-
-	if ptr != nil {
-		ta.SetValue(*ptr)
+	if value != nil {
+		ta.SetValue(*value)
 	}
-
 	ta.CursorStart()
 
-	e.textArea = ta
-	e.label = label
-	e.initialized = true
+	return &TextEditor{
+		keymap:   keymap,
+		label:    label,
+		value:    value,
+		textArea: ta,
+	}
 }
 
 func (e *TextEditor) Update(msg tea.Msg) tea.Cmd {
-	if !e.initialized {
-		return nil
-	}
-
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
@@ -75,9 +58,6 @@ func (e *TextEditor) Update(msg tea.Msg) tea.Cmd {
 }
 
 func (e *TextEditor) View() string {
-	if !e.initialized {
-		return ""
-	}
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		styles.RenderItem(e.focus, e.label+":"),
