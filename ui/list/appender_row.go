@@ -24,11 +24,16 @@ func (r *AppenderRow) Init() tea.Cmd {
 
 func (r *AppenderRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if k, ok := msg.(tea.KeyPressMsg); ok && key.Matches(k, r.keymap.Select) {
-		if r.onAppend != nil {
-			return r, r.onAppend()
-		}
+		return r, r.Trigger()
 	}
 	return r, nil
+}
+
+func (r *AppenderRow) Trigger() tea.Cmd {
+	if r.onAppend == nil {
+		return nil
+	}
+	return r.onAppend()
 }
 
 func (r *AppenderRow) View() tea.View {

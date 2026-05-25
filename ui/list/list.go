@@ -58,14 +58,15 @@ type List struct {
 	KeyMap util.KeyMap
 	Styles ListStyles
 
-	focus        bool
-	title        string
-	sections     []Section
-	sectionStyle SectionStyle
-	content      []Row
-	visible      []Row
-	cursor       int
-	fixedWidth   int
+	focus          bool
+	title          string
+	sections       []Section
+	sectionStyle   SectionStyle
+	content        []Row
+	visible        []Row
+	visibleSection []int
+	cursor         int
+	fixedWidth     int
 
 	viewport bool
 	vpHeight int
@@ -283,6 +284,8 @@ func (t *List) updateRows(msg tea.KeyPressMsg) tea.Cmd {
 		}
 		t.focus = false
 		return nil
+	case !t.searchActive && key.Matches(msg, t.KeyMap.Append):
+		return t.triggerAppender()
 	default:
 		if t.cursor < len(t.visible) {
 			_, cmd := t.visible[t.cursor].Update(msg)
@@ -290,6 +293,21 @@ func (t *List) updateRows(msg tea.KeyPressMsg) tea.Cmd {
 		}
 		return nil
 	}
+}
+
+func (t *List) triggerAppender() tea.Cmd {
+	if t.cursor < 0 || t.cursor >= len(t.visibleSection) {
+		return nil
+	}
+	secIdx := t.visibleSection[t.cursor]
+	if secIdx < 0 || secIdx >= len(t.sections) {
+		return nil
+	}
+	ap := t.sections[secIdx].Appender
+	if ap == nil {
+		return nil
+	}
+	return ap.Trigger()
 }
 
 func (t *List) openSearch() tea.Cmd {
@@ -329,16 +347,17 @@ func (t *List) focusFirstRow() {
 }
 
 func (t *List) refresh() {
-	t.content = t.flatten(nil, true)
+	var contentSection []int
+	t.content, contentSection = t.flatten(nil, true)
 	term := strings.TrimSpace(t.searchInput.Value())
 	if t.searchActive && term != "" {
-		t.visible = t.flatten(SearchFilter(term), false)
+		t.visible, t.visibleSection = t.flatten(SearchFilter(term), false)
 	} else {
-		t.visible = t.content
+		t.visible, t.visibleSection = t.content, contentSection
 	}
 }
 
-func (t *List) flatten(keep func(Row) bool, includeAppenders bool) []Row {
+func (t *List) flatten(keep func(Row) bool, includeAppenders bool) ([]Row, []int) {
 	style := t.sectionStyle
 	width := style.SeparatorWidth
 	if width <= 0 {
@@ -346,12 +365,13 @@ func (t *List) flatten(keep func(Row) bool, includeAppenders bool) []Row {
 	}
 
 	type kept struct {
-		header   Row
-		items    []Row
-		appender *AppenderRow
+		sectionIdx int
+		header     Row
+		items      []Row
+		appender   *AppenderRow
 	}
 	survivors := make([]kept, 0, len(t.sections))
-	for _, sec := range t.sections {
+	for i, sec := range t.sections {
 		var items []Row
 		if keep == nil {
 			items = sec.Items
@@ -365,7 +385,7 @@ func (t *List) flatten(keep func(Row) bool, includeAppenders bool) []Row {
 				continue
 			}
 		}
-		k := kept{header: sec.Header, items: items}
+		k := kept{sectionIdx: i, header: sec.Header, items: items}
 		if includeAppenders {
 			k.appender = sec.Appender
 		}
@@ -373,22 +393,30 @@ func (t *List) flatten(keep func(Row) bool, includeAppenders bool) []Row {
 	}
 
 	rows := []Row{}
+	sectionOf := []int{}
 	for i, s := range survivors {
 		if s.header != nil {
 			rows = append(rows, s.header)
+			sectionOf = append(sectionOf, s.sectionIdx)
 			if style.HeaderSeparator != "" && width > 0 {
 				rows = append(rows, NewSeparatorRow(style.HeaderSeparator, width))
+				sectionOf = append(sectionOf, s.sectionIdx)
 			}
 		}
-		rows = append(rows, s.items...)
+		for _, item := range s.items {
+			rows = append(rows, item)
+			sectionOf = append(sectionOf, s.sectionIdx)
+		}
 		if s.appender != nil {
 			rows = append(rows, s.appender)
+			sectionOf = append(sectionOf, s.sectionIdx)
 		}
 		if i < len(survivors)-1 && style.SectionGap != "" && width > 0 {
 			rows = append(rows, NewSeparatorRow(style.SectionGap, width))
+			sectionOf = append(sectionOf, -1)
 		}
 	}
-	return rows
+	return rows, sectionOf
 }
 
 func (t *List) View() tea.View {

@@ -143,6 +143,7 @@ type KeyMap struct {
 	TextSearch  key.Binding `json:"text_search"`
 	NextMatch   key.Binding `json:"next_match"`
 	PrevMatch   key.Binding `json:"prev_match"`
+	Append      key.Binding `json:"append"`
 }
 
 func DefaultKeyMap() KeyMap {
@@ -168,6 +169,7 @@ func DefaultKeyMap() KeyMap {
 		TextSearch:  key.NewBinding(key.WithKeys("/")),
 		NextMatch:   key.NewBinding(key.WithKeys("n")),
 		PrevMatch:   key.NewBinding(key.WithKeys("N")),
+		Append:      key.NewBinding(key.WithKeys("a")),
 	}
 }
 
