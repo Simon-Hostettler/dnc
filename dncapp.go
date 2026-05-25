@@ -132,7 +132,7 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, tea.Quit
 		case a.palette.Active():
 			cmd = a.palette.Update(msg)
-		case key.Matches(msg, a.keymap.QuickAction) && a.router.IsCharacterReady():
+		case key.Matches(msg, a.keymap.QuickAction) && a.router.IsCharacterReady() && !a.router.InModal():
 			a.palette.Open()
 		case key.Matches(msg, a.keymap.Screen1):
 			cmd = command.SwitchScreenCmd(command.StatScreenIndex)
