@@ -147,7 +147,8 @@ func (s *SpellScreen) getSpellListByLevel(l int) []list.Row {
 			s.createSpellEditors(spell),
 		).WithDestructor(s.spellRows.DeleteCallback(spell.ID)).
 			WithReader(renderFullSpellInfo).
-			WithSearchText(spellSearchText))
+			WithSearchText(spellSearchText).
+			WithCycleAction(toggleSpellPrepared))
 	}
 	rows = append(rows, list.NewAppenderRow(s.keymap, fmt.Sprintf("spell:%d", l)))
 	rows = append(rows, list.NewSeparatorRow(" ", spellColWidth-6))
@@ -214,6 +215,11 @@ func renderSpellHeaderRow(h *SpellListHeader) string {
 
 func spellSearchText(s *models.SpellTO) string {
 	return s.Name + " " + s.School + " " + s.Description
+}
+
+func toggleSpellPrepared(spell *models.SpellTO) tea.Cmd {
+	spell.Prepared = 1 - spell.Prepared
+	return command.WriteBackRequest
 }
 
 func renderSpellInfoRow(s *models.SpellTO) string {
