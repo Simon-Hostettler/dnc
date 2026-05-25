@@ -14,7 +14,7 @@ A terminal-based TTRPG character manager built with Bubble Tea, Lip Gloss and Du
 
 ![demo](examples/demo.gif)
 
-## Quick start
+## Quick Start
 
 Requirements
 
@@ -33,9 +33,35 @@ If you can't run the bin, add the output of the following command to your `$PATH
 go env GOBIN GOPATH
 ```
 
-You can modify the key bindings stored at `os.UserConfigDir()/dnc/config.json`. Defaults can be found in `util.DefaultKeyMap()` or by pressing `ctrl+h`.
+## Usage
 
-## Quick actions
+(Almost all) key bindings are stored at `os.UserConfigDir()/dnc/config.json` and can be modified. Defaults can be found by pressing `ctrl+h`.
+
+Here is a list of some useful key bindings and their effects:
+| Key | Effect |
+| ----| ------ |
+| `e` | Edit the selected element |
+| `Space` | Show more details about the element |
+| `Esc / q` | Exit a mode or selected element |
+| `Enter` | Confirm / Select |
+| `:` | Open the quick action menu (see below) |
+
+Lists have some common (optional) shortcuts:
+| Key | Effect |
+| ----| ------ |
+| `Tab` | Cycle / Toggle a value (Death saves, spell preparedness etc.) |
+| `a` | Append an element |
+| `x` | Delete an element |
+| `/` | Open a search filter (close with `esc`) |
+
+The reader screen (invoked through `space` on an element) has text search / highlight shortcuts:
+| Key | Effect |
+| ----| ------ |
+| `/` | Open a search field (close with `esc`) |
+| `n` | Highlight (and jump to) next matching element |
+| `N` | Highlight (and jump to) previous matching element |
+
+### Quick actions
 
 Press `:` to open the quick action palette. Use `tab` to autocomplete from suggestions.
 
