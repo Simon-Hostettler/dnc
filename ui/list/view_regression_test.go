@@ -3,6 +3,7 @@ package list
 import (
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/ui/editor"
@@ -32,7 +33,7 @@ func TestViewRegression(t *testing.T) {
 	})
 
 	t.Run("AppenderRow", func(t *testing.T) {
-		r := NewAppenderRow(km, "item")
+		r := NewAppenderRow(km, func() tea.Cmd { return nil })
 		util.AssertGolden(t, "appender_row", r.View().Content)
 	})
 
@@ -50,7 +51,7 @@ func TestViewRegression(t *testing.T) {
 			NewSeparatorRow("─", 30),
 			NewLabeledIntRow(km, "Dexterity", &val2, editor.NewIntEditor(km, "Dexterity", &val2)),
 			NewLabeledStringRow(km, "Class", &str, editor.NewStringEditor(km, "Class", &str)),
-			NewAppenderRow(km, "stat"),
+			NewAppenderRow(km, func() tea.Cmd { return nil }),
 		})
 		l.Init()
 		util.AssertGolden(t, "list_with_rows", l.View().Content)

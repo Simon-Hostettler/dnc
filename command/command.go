@@ -100,14 +100,6 @@ func FocusNextElementCmd(d Direction) func() tea.Msg {
 	}
 }
 
-type AppendElementMsg struct {
-	Tag string
-}
-
-func AppendElementCmd(tag string) func() tea.Msg {
-	return func() tea.Msg { return AppendElementMsg{tag} }
-}
-
 type ReturnFocusToParentMsg struct{}
 
 func ReturnFocusToParentCmd() tea.Msg {

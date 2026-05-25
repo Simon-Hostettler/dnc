@@ -34,7 +34,7 @@ type InventoryScreen struct {
 	platinum *component.SimpleComponent[int]
 	itemList *list.List
 
-	itemRows *CollectionRows[models.ItemTO]
+	itemRows *Collection[models.ItemTO]
 }
 
 func NewInventoryScreen(k util.KeyMap, c *repository.CharacterAggregate) *InventoryScreen {
@@ -51,7 +51,7 @@ func NewInventoryScreen(k util.KeyMap, c *repository.CharacterAggregate) *Invent
 			WithViewport(itemColHeight - 2).
 			WithSearch(),
 	}
-	s.itemRows = NewCollectionRows(k, s.itemList, "item",
+	s.itemRows = NewCollection(k, s.itemList,
 		func() []*models.ItemTO { return util.Pointers(s.character.Items) },
 		func(i *models.ItemTO) uuid.UUID { return i.ID },
 		s.character.AddEmptyItem,
@@ -78,10 +78,6 @@ func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case command.AppendElementMsg:
-		if strings.Contains(msg.Tag, "item") {
-			cmd = s.itemRows.HandleAppend(msg.Tag)
-		}
 	case command.FocusNextElementMsg:
 		s.MoveFocus(msg.Direction)
 	case tea.KeyPressMsg:

@@ -43,7 +43,7 @@ type ProfileScreen struct {
 	appearance          *component.SimpleTextComponent
 	personality         *component.SimpleTextComponent
 
-	featureRows *CollectionRows[models.FeatureTO]
+	featureRows *Collection[models.FeatureTO]
 }
 
 func NewProfileScreen(km util.KeyMap, c *repository.CharacterAggregate) *ProfileScreen {
@@ -57,7 +57,7 @@ func NewProfileScreen(km util.KeyMap, c *repository.CharacterAggregate) *Profile
 		characterAppearance: list.NewListWithDefaults(km),
 		features:            list.NewListWithDefaults(km).WithTitle("Features & Traits"),
 	}
-	s.featureRows = NewCollectionRows(km, s.features, "feature",
+	s.featureRows = NewCollection(km, s.features,
 		func() []*models.FeatureTO { return util.Pointers(s.agg.Features) },
 		func(f *models.FeatureTO) uuid.UUID { return f.ID },
 		s.agg.AddEmptyFeature,
@@ -94,12 +94,6 @@ func (s *ProfileScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case command.AppendElementMsg:
-		if msg.Tag == "feature" {
-			cmd = s.featureRows.HandleAppend(msg.Tag)
-		} else {
-			_, cmd = s.focusedElement.Update(msg)
-		}
 	case command.FocusNextElementMsg:
 		s.MoveFocus(msg.Direction)
 	case tea.KeyPressMsg:

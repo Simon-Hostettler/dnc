@@ -35,32 +35,18 @@ func TestSeparatorSkips(t *testing.T) {
 }
 
 func TestVisibleIndexComputation(t *testing.T) {
-	tmp := "tmp"
-	list := NewListWithDefaults(testKM).WithRows([]Row{
-		createDummyRow(),
-		NewLabeledStringRow(testKM, "string", &tmp, editor.NewStringEditor(testKM, "string", &tmp)),
-		createDummyRow(),
-	})
-	list.Init()
-	list.Focus()
+	l := newSearchList(searchRow("apple"), searchRow("banana"), searchRow("apricot"))
+	l.Update(runeKey('/'))
+	typeInto(l, "ap")
 
-	list.Filter(func(r Row) bool {
-		switch r.(type) {
-		case *LabeledRow[string]:
-			return false
-		default:
-			return true
-		}
-	})
+	l.Update(codeKey(tea.KeyDown))
+	l.Update(codeKey(tea.KeyDown))
 
-	msg := tea.KeyPressMsg{Code: tea.KeyDown}
-	list.Update(msg)
-
-	if !(list.Size() == 2) {
-		t.Errorf("Row was not filtered, size is %d instead of 2", list.Size())
+	if !(l.Size() == 2) {
+		t.Errorf("Row was not filtered, size is %d instead of 2", l.Size())
 	}
-	if !(list.CursorPos() == 1) {
-		t.Errorf("Expected cursor at 1, got %d instead", list.CursorPos())
+	if !(l.CursorPos() == 1) {
+		t.Errorf("Expected cursor at 1, got %d instead", l.CursorPos())
 	}
 }
 
@@ -120,53 +106,26 @@ func TestListExits(t *testing.T) {
 }
 
 func TestRenderedRowCountWithFilter(t *testing.T) {
-	tmp := "tmp"
-	list := NewListWithDefaults(testKM).WithRows([]Row{
-		createDummyRow(),
-		NewLabeledStringRow(testKM, "string", &tmp, editor.NewStringEditor(testKM, "string", &tmp)),
-		createDummyRow(),
-	})
-	list.Init()
-	list.Focus()
+	l := newSearchList(searchRow("apple"), searchRow("banana"), searchRow("apricot"))
+	l.Update(runeKey('/'))
+	typeInto(l, "ap")
 
-	list.Filter(func(r Row) bool {
-		switch r.(type) {
-		case *LabeledRow[string]:
-			return false
-		default:
-			return true
-		}
-	})
-
-	view := list.View().Content
-	if got, want := lipgloss.Height(view), 2; got != want {
+	view := l.View().Content
+	if got, want := lipgloss.Height(view), 3; got != want {
 		t.Errorf("Rendered row count mismatch. Got %d, want %d", got, want)
 	}
 }
 
 func TestCursorDoesNotMoveIntoInvisibleTail(t *testing.T) {
-	tmp := "tmp"
-	list := NewListWithDefaults(testKM).WithRows([]Row{
-		createDummyRow(),
-		NewLabeledStringRow(testKM, "string", &tmp, editor.NewStringEditor(testKM, "string", &tmp)),
-	})
-	list.Init()
-	list.Focus()
+	l := newSearchList(searchRow("apple"), searchRow("banana"))
+	l.Update(runeKey('/'))
+	typeInto(l, "apple")
+	l.Update(codeKey(tea.KeyDown))
 
-	list.Filter(func(r Row) bool {
-		switch r.(type) {
-		case *LabeledRow[string]:
-			return false
-		default:
-			return true
-		}
-	})
+	_, cmd := l.Update(codeKey(tea.KeyDown))
 
-	msg := tea.KeyPressMsg{Code: tea.KeyDown}
-	_, cmd := list.Update(msg)
-
-	if list.CursorPos() != 0 {
-		t.Errorf("Cursor moved into/over invisible tail. Got %d, want %d", list.CursorPos(), 0)
+	if l.CursorPos() != 0 {
+		t.Errorf("Cursor moved into/over invisible tail. Got %d, want %d", l.CursorPos(), 0)
 	}
 	if cmd == nil {
 		t.Fatalf("expected a command, got nil")
@@ -207,7 +166,7 @@ func TestSearchFilter(t *testing.T) {
 	fire := searchRow("Fireball")
 	ice := searchRow("Ice Knife")
 	sep := NewSeparatorRow("-", 10)
-	app := NewAppenderRow(testKM, "x")
+	app := NewAppenderRow(testKM, func() tea.Cmd { return nil })
 	// a StructRow without WithSearchText: not Searchable.
 	plainVal := "plain"
 	plain := NewStructRow(testKM, &plainVal, func(s *string) string { return *s }, nil)

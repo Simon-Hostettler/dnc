@@ -17,8 +17,6 @@ var DefaultColWidth = 16
 
 const searchBarHeight = 1
 
-// closes the search bar from within the input. Deliberately matches only the literal escape key
-// so all other keys remain typable
 var searchEscapeKey = key.NewBinding(key.WithKeys("esc"))
 
 type Row interface {
@@ -29,12 +27,10 @@ type Row interface {
 	Selectable() bool
 }
 
-// Implemented by rows that can be matched against a search term.
 type Searchable interface {
 	FilterValue() string
 }
 
-// case-insensitive, empty -> all match
 func SearchFilter(term string) func(Row) bool {
 	normalized := strings.ToLower(strings.TrimSpace(term))
 	if normalized == "" {
@@ -62,12 +58,14 @@ type List struct {
 	KeyMap util.KeyMap
 	Styles ListStyles
 
-	focus      bool
-	title      string
-	content    []Row
-	visible    []Row
-	cursor     int
-	fixedWidth int
+	focus        bool
+	title        string
+	sections     []Section
+	sectionStyle SectionStyle
+	content      []Row
+	visible      []Row
+	cursor       int
+	fixedWidth   int
 
 	viewport bool
 	vpHeight int
@@ -76,6 +74,26 @@ type List struct {
 	searchable   bool
 	searchActive bool
 	searchInput  textinput.Model
+}
+
+func NewList(k util.KeyMap, s ListStyles) *List {
+	return &List{
+		KeyMap:     k,
+		Styles:     s,
+		fixedWidth: -1,
+	}
+}
+
+func NewListWithDefaults(km util.KeyMap) *List {
+	return &List{
+		KeyMap:     km,
+		Styles:     DefaultListStyles(),
+		fixedWidth: -1,
+	}
+}
+
+func (t *List) Init() tea.Cmd {
+	return nil
 }
 
 func (t *List) WithKeyMap(k util.KeyMap) *List {
@@ -89,12 +107,18 @@ func (t *List) WithStyles(s ListStyles) *List {
 }
 
 func (t *List) WithRows(r []Row) *List {
-	t.content = r
-	if t.searchActive {
-		t.applySearchFilter()
-	} else {
-		t.visible = r
-	}
+	return t.WithSections([]Section{{Items: r}})
+}
+
+func (t *List) WithSections(sections []Section) *List {
+	t.sections = sections
+	t.refresh()
+	return t
+}
+
+func (t *List) WithSectionStyle(s SectionStyle) *List {
+	t.sectionStyle = s
+	t.refresh()
 	return t
 }
 
@@ -130,17 +154,6 @@ func (t *List) WithSearch() *List {
 	}
 	t.searchInput = in
 	return t
-}
-
-func (t *List) Filter(filter func(Row) bool) {
-	filtered := []Row{}
-	for _, r := range t.content {
-		if filter(r) {
-			filtered = append(filtered, r)
-		}
-	}
-	t.visible = filtered
-	t.ResetCursor()
 }
 
 func (t *List) Focus() {
@@ -182,10 +195,13 @@ func (t *List) ResetCursor() {
 	t.vpCursor = 0
 }
 
+func (t *List) inRange(idx int) bool {
+	return idx >= 0 && idx < len(t.visible)
+}
+
 func (t *List) MoveCursor(offset int) tea.Cmd {
 	finalOffset := offset
 
-	// skip separator row
 	for t.inRange(t.cursor+finalOffset) &&
 		(!t.visible[t.cursor+finalOffset].Selectable()) {
 		finalOffset += offset
@@ -193,21 +209,18 @@ func (t *List) MoveCursor(offset int) tea.Cmd {
 
 	newCursor := t.cursor + finalOffset
 
-	// exiting list
 	if !t.inRange(newCursor) {
 		if newCursor < 0 {
 			return command.FocusNextElementCmd(command.UpDirection)
-		} else {
-			return command.FocusNextElementCmd(command.DownDirection)
 		}
+		return command.FocusNextElementCmd(command.DownDirection)
 	}
 
-	// keep cursor in view
 	if t.viewport {
 		if newCursor < t.vpCursor {
 			t.vpCursor = newCursor
 		}
-		if newCursor >= t.viewportEnd() {
+		if newCursor >= t.viewportEnd(len(t.toLines())) {
 			t.vpCursor += finalOffset
 		}
 	}
@@ -216,31 +229,11 @@ func (t *List) MoveCursor(offset int) tea.Cmd {
 	return nil
 }
 
-func NewList(k util.KeyMap, s ListStyles) *List {
-	return &List{
-		KeyMap:     k,
-		Styles:     s,
-		fixedWidth: -1,
-	}
-}
-
-func NewListWithDefaults(km util.KeyMap) *List {
-	return &List{
-		KeyMap: km,
-		Styles: DefaultListStyles(),
-	}
-}
-
-func (t *List) Init() tea.Cmd {
-	return nil
-}
-
 func (t *List) Update(m tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
 	if !t.focus {
 		return t, nil
 	}
-
+	var cmd tea.Cmd
 	switch msg := m.(type) {
 	case tea.KeyPressMsg:
 		if t.SearchInputFocused() {
@@ -266,7 +259,8 @@ func (t *List) updateSearchInput(msg tea.KeyPressMsg) tea.Cmd {
 	default:
 		var cmd tea.Cmd
 		t.searchInput, cmd = t.searchInput.Update(msg)
-		t.applySearchFilter()
+		t.refresh()
+		t.ResetCursor()
 		return cmd
 	}
 }
@@ -307,19 +301,14 @@ func (t *List) closeSearch() {
 	t.searchActive = false
 	t.searchInput.Blur()
 	t.searchInput.SetValue("")
-	t.visible = t.content
+	t.refresh()
 	t.ResetCursor()
-}
-
-func (t *List) applySearchFilter() {
-	t.Filter(SearchFilter(t.searchInput.Value()))
 }
 
 func (t *List) SearchInputFocused() bool {
 	return t.searchActive && t.searchInput.Focused()
 }
 
-// atTop reports whether there is no selectable row above the cursor.
 func (t *List) atTop() bool {
 	for i := t.cursor - 1; i >= 0; i-- {
 		if t.visible[i].Selectable() {
@@ -339,20 +328,105 @@ func (t *List) focusFirstRow() {
 	t.cursor = 0
 }
 
-func (t *List) View() tea.View {
-	var body string
-	if t.viewport {
-		body = strings.Join(t.toLines()[t.vpCursor:t.viewportEnd()], "\n")
-		if t.title != "" {
-			body = lipgloss.JoinVertical(lipgloss.Center, t.renderTitle(), body)
-		}
+func (t *List) refresh() {
+	t.content = t.flatten(nil, true)
+	term := strings.TrimSpace(t.searchInput.Value())
+	if t.searchActive && term != "" {
+		t.visible = t.flatten(SearchFilter(term), false)
 	} else {
-		body = t.RenderFullContent()
+		t.visible = t.content
+	}
+}
+
+func (t *List) flatten(keep func(Row) bool, includeAppenders bool) []Row {
+	style := t.sectionStyle
+	width := style.SeparatorWidth
+	if width <= 0 {
+		width = t.fixedWidth - 1
+	}
+
+	type kept struct {
+		header   Row
+		items    []Row
+		appender *AppenderRow
+	}
+	survivors := make([]kept, 0, len(t.sections))
+	for _, sec := range t.sections {
+		var items []Row
+		if keep == nil {
+			items = sec.Items
+		} else {
+			for _, item := range sec.Items {
+				if keep(item) {
+					items = append(items, item)
+				}
+			}
+			if len(items) == 0 {
+				continue
+			}
+		}
+		k := kept{header: sec.Header, items: items}
+		if includeAppenders {
+			k.appender = sec.Appender
+		}
+		survivors = append(survivors, k)
+	}
+
+	rows := []Row{}
+	for i, s := range survivors {
+		if s.header != nil {
+			rows = append(rows, s.header)
+			if style.HeaderSeparator != "" && width > 0 {
+				rows = append(rows, NewSeparatorRow(style.HeaderSeparator, width))
+			}
+		}
+		rows = append(rows, s.items...)
+		if s.appender != nil {
+			rows = append(rows, s.appender)
+		}
+		if i < len(survivors)-1 && style.SectionGap != "" && width > 0 {
+			rows = append(rows, NewSeparatorRow(style.SectionGap, width))
+		}
+	}
+	return rows
+}
+
+func (t *List) View() tea.View {
+	body := t.RenderBody()
+	if t.viewport {
+		lines := strings.Split(body, "\n")
+		body = strings.Join(lines[t.vpCursor:t.viewportEnd(len(lines))], "\n")
+	}
+	if t.title != "" {
+		body = lipgloss.JoinVertical(lipgloss.Center, t.renderTitle(), body)
 	}
 	if t.searchable && t.searchActive {
-		return tea.NewView(lipgloss.JoinVertical(lipgloss.Left, t.renderSearchBar(), body))
+		body = lipgloss.JoinVertical(lipgloss.Left, t.renderSearchBar(), body)
 	}
 	return tea.NewView(body)
+}
+
+func (t *List) RenderBody() string {
+	rows := make([]string, 0, len(t.visible))
+	for i, el := range t.visible {
+		style := t.Styles.Row
+		if t.focus && i == t.cursor && !t.SearchInputFocused() {
+			style = t.Styles.Selected
+		}
+		if t.fixedWidth >= 0 {
+			style = style.Width(t.fixedWidth)
+		}
+		rows = append(rows, style.Render(el.View().Content))
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, rows...)
+}
+
+func (t *List) renderTitle() string {
+	style := t.Styles.Row
+	if t.focus {
+		style = t.Styles.Selected
+	}
+	return style.Render(t.title) + "\n"
 }
 
 func (t *List) renderSearchBar() string {
@@ -367,54 +441,10 @@ func (t *List) toLines() []string {
 	return strings.Split(t.RenderBody(), "\n")
 }
 
-func (t *List) viewportEnd() int {
+func (t *List) viewportEnd(total int) int {
 	height := t.vpHeight
 	if t.searchActive {
 		height -= searchBarHeight
 	}
-	return min(len(t.toLines()), t.vpCursor+height)
-}
-
-func (t *List) inRange(idx int) bool {
-	return idx >= 0 && idx < len(t.visible)
-}
-
-func (t *List) RenderFullContent() string {
-	body := t.RenderBody()
-	if t.title != "" {
-		body = lipgloss.JoinVertical(lipgloss.Center, t.renderTitle(), body)
-	}
-	return body
-}
-
-func (t *List) renderTitle() string {
-	if t.focus {
-		return t.Styles.Selected.Render(t.title) + "\n"
-	}
-	return t.Styles.Row.Render(t.title) + "\n"
-}
-
-func (t *List) RenderBody() string {
-	rows := []string{}
-
-	for i, el := range t.visible {
-		elStr := el.View().Content
-		var row string
-		if t.focus && i == t.cursor && !t.SearchInputFocused() {
-			if t.fixedWidth != -1 {
-				row = t.Styles.Selected.Width(t.fixedWidth).Render(elStr)
-			} else {
-				row = t.Styles.Selected.Render(elStr)
-			}
-		} else {
-			if t.fixedWidth != -1 {
-				row = t.Styles.Row.Width(t.fixedWidth).Render(elStr)
-			} else {
-				row = t.Styles.Row.Render(elStr)
-			}
-		}
-		rows = append(rows, row)
-	}
-	list := lipgloss.JoinVertical(lipgloss.Left, rows...)
-	return list
+	return min(total, t.vpCursor+height)
 }

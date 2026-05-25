@@ -3,22 +3,19 @@ package list
 import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
-	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/util"
 )
 
-/*
-The appender will simply send out an AppendElementCmd,
-the implementation is the client's responsibility.
-*/
+// Renders the "[ + ]" affordance at the end of a section.
+// On Select, it invokes onAppend;
 type AppenderRow struct {
-	keymap util.KeyMap
-	tag    string
+	keymap   util.KeyMap
+	onAppend func() tea.Cmd
 }
 
-func NewAppenderRow(keymap util.KeyMap, tag string) *AppenderRow {
-	return &AppenderRow{keymap, tag}
+func NewAppenderRow(keymap util.KeyMap, onAppend func() tea.Cmd) *AppenderRow {
+	return &AppenderRow{keymap, onAppend}
 }
 
 func (r *AppenderRow) Init() tea.Cmd {
@@ -26,11 +23,9 @@ func (r *AppenderRow) Init() tea.Cmd {
 }
 
 func (r *AppenderRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch {
-		case key.Matches(msg, r.keymap.Select):
-			return r, command.AppendElementCmd(r.tag)
+	if k, ok := msg.(tea.KeyPressMsg); ok && key.Matches(k, r.keymap.Select) {
+		if r.onAppend != nil {
+			return r, r.onAppend()
 		}
 	}
 	return r, nil

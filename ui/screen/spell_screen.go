@@ -34,7 +34,7 @@ type SpellScreen struct {
 	spellAtkBonus *component.SimpleComponent[int]
 	spellList     *list.List
 
-	spellRows *CollectionRows[models.SpellTO]
+	perLevelRows [10]*Collection[models.SpellTO]
 }
 
 func NewSpellScreen(k util.KeyMap, c *repository.CharacterAggregate) *SpellScreen {
@@ -50,17 +50,29 @@ func NewSpellScreen(k util.KeyMap, c *repository.CharacterAggregate) *SpellScree
 		}).
 			WithFixedWidth(spellColWidth).
 			WithViewport(spellColHeight - 2).
-			WithSearch(),
+			WithSearch().
+			WithSectionStyle(list.SectionStyle{
+				HeaderSeparator: "─",
+				SectionGap:      " ",
+				SeparatorWidth:  spellColWidth - 6,
+			}),
 	}
-	s.spellRows = NewCustomCollectionRows(s.spellList,
-		func(sp *models.SpellTO) uuid.UUID { return sp.ID },
-		func(tag string) uuid.UUID {
-			l, _ := strconv.Atoi(strings.Split(tag, ":")[1])
-			return s.character.AddEmptySpell(l)
-		},
-		s.character.DeleteSpell,
-	)
-	s.spellRows.Repopulate = s.populateSpells
+	for i := range 10 {
+		level := i
+		s.perLevelRows[level] = NewCollection(k, s.spellList,
+			func() []*models.SpellTO { return s.character.GetSpellsByLevel(level) },
+			func(sp *models.SpellTO) uuid.UUID { return sp.ID },
+			func() uuid.UUID { return s.character.AddEmptySpell(level) },
+			s.character.DeleteSpell,
+			func(sp *models.SpellTO) *list.StructRow[models.SpellTO] {
+				return list.NewStructRow(s.keymap, sp, renderSpellInfoRow,
+					s.createSpellEditors(sp)).
+					WithReader(renderFullSpellInfo).
+					WithSearchText(spellSearchText).
+					WithCycleAction(toggleSpellPrepared)
+			},
+		).WithOnChange(s.populateSpells)
+	}
 	return s
 }
 
@@ -82,10 +94,6 @@ func (s *SpellScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case command.AppendElementMsg:
-		if strings.Contains(msg.Tag, "spell:") {
-			cmd = s.spellRows.HandleAppend(msg.Tag)
-		}
 	case command.FocusNextElementMsg:
 		s.MoveFocus(msg.Direction)
 	case tea.KeyPressMsg:
@@ -129,30 +137,13 @@ func (s *SpellScreen) wireFocusGraph() {
 }
 
 func (s *SpellScreen) populateSpells() {
-	rows := []list.Row{}
-	for i := range 10 {
-		rows = append(rows, s.getSpellListByLevel(i)...)
+	sections := make([]list.Section, 0, 10)
+	for level := range 10 {
+		sec := s.perLevelRows[level].Section()
+		sec.Header = s.newSpellHeaderRow(level)
+		sections = append(sections, sec)
 	}
-	s.spellList.WithRows(rows[:len(rows)-1]) // drop last separator row
-}
-
-func (s *SpellScreen) getSpellListByLevel(l int) []list.Row {
-	rows := []list.Row{}
-	spells := s.character.GetSpellsByLevel(l)
-	rows = append(rows, s.newSpellHeaderRow(l))
-	rows = append(rows, list.NewSeparatorRow("─", spellColWidth-6))
-	for _, spell := range spells {
-		rows = append(rows, list.NewStructRow(s.keymap, spell,
-			renderSpellInfoRow,
-			s.createSpellEditors(spell),
-		).WithDestructor(s.spellRows.DeleteCallback(spell.ID)).
-			WithReader(renderFullSpellInfo).
-			WithSearchText(spellSearchText).
-			WithCycleAction(toggleSpellPrepared))
-	}
-	rows = append(rows, list.NewAppenderRow(s.keymap, fmt.Sprintf("spell:%d", l)))
-	rows = append(rows, list.NewSeparatorRow(" ", spellColWidth-6))
-	return rows
+	s.spellList.WithSections(sections)
 }
 
 func (s *SpellScreen) createSpellEditors(spell *models.SpellTO) []editor.ValueEditor {

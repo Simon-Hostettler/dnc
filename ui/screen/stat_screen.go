@@ -50,7 +50,7 @@ type StatScreen struct {
 	actions       *component.SimpleTextComponent
 	bonusActions  *component.SimpleTextComponent
 
-	attackRows *CollectionRows[models.AttackTO]
+	attackRows *Collection[models.AttackTO]
 }
 
 func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen {
@@ -70,7 +70,7 @@ func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen
 		attacks: list.NewListWithDefaults(km).
 			WithTitle("Attacks").WithViewport(4),
 	}
-	s.attackRows = NewCollectionRows(km, s.attacks, "attack",
+	s.attackRows = NewCollection(km, s.attacks,
 		func() []*models.AttackTO { return util.Pointers(s.agg.Attacks) },
 		func(a *models.AttackTO) uuid.UUID { return a.ID },
 		s.agg.AddEmptyAttack,
@@ -114,12 +114,6 @@ func (s *StatScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case command.AppendElementMsg:
-		if msg.Tag == "attack" {
-			cmd = s.attackRows.HandleAppend(msg.Tag)
-		} else {
-			_, cmd = s.focusedElement.Update(msg)
-		}
 	case command.FocusNextElementMsg:
 		s.MoveFocus(msg.Direction)
 	case tea.KeyPressMsg:

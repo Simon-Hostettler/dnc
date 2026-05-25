@@ -27,7 +27,7 @@ type NoteScreen struct {
 
 	noteList *list.List
 
-	noteRows *CollectionRows[models.NoteTO]
+	noteRows *Collection[models.NoteTO]
 }
 
 func NewNoteScreen(k util.KeyMap, c *repository.CharacterAggregate) *NoteScreen {
@@ -39,7 +39,7 @@ func NewNoteScreen(k util.KeyMap, c *repository.CharacterAggregate) *NoteScreen 
 			WithViewport(noteColHeight - 2).
 			WithSearch(),
 	}
-	s.noteRows = NewCollectionRows(k, s.noteList, "note",
+	s.noteRows = NewCollection(k, s.noteList,
 		func() []*models.NoteTO { return util.Pointers(s.character.Notes) },
 		func(n *models.NoteTO) uuid.UUID { return n.ID },
 		s.character.AddEmptyNote,
@@ -66,10 +66,6 @@ func (s *NoteScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case command.AppendElementMsg:
-		if strings.Contains(msg.Tag, "note") {
-			cmd = s.noteRows.HandleAppend(msg.Tag)
-		}
 	case command.FocusNextElementMsg:
 		s.MoveFocus(msg.Direction)
 	case tea.KeyPressMsg:
