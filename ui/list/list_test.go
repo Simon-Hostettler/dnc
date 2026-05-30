@@ -204,7 +204,7 @@ func TestSearchOpenFilterClose(t *testing.T) {
 
 	// TextSearch opens and focuses the bar without filtering yet.
 	l.Update(runeKey('/'))
-	if !l.searchActive || !l.SearchInputFocused() {
+	if !l.search.active || !l.SearchInputFocused() {
 		t.Fatal("'/' should open and focus the search bar")
 	}
 	if l.Size() != 3 {
@@ -219,7 +219,7 @@ func TestSearchOpenFilterClose(t *testing.T) {
 
 	// esc closes the bar and restores the full content.
 	l.Update(codeKey(tea.KeyEscape))
-	if l.searchActive {
+	if l.search.active {
 		t.Error("esc should close the search bar")
 	}
 	if l.Size() != 3 {
@@ -237,11 +237,11 @@ func TestSearchInputTreatsQAsText(t *testing.T) {
 	l.Update(runeKey('/'))
 
 	typeInto(l, "qu")
-	if !l.searchActive {
+	if !l.search.active {
 		t.Fatal("'q' must be typed into the search input, not treated as escape")
 	}
-	if l.searchInput.Value() != "qu" {
-		t.Errorf("expected search value %q, got %q", "qu", l.searchInput.Value())
+	if l.search.input.Value() != "qu" {
+		t.Errorf("expected search value %q, got %q", "qu", l.search.input.Value())
 	}
 	if l.Size() != 1 {
 		t.Errorf("expected 1 row matching 'qu', got %d", l.Size())
@@ -261,7 +261,7 @@ func TestSearchFocusHandoff(t *testing.T) {
 		if l.SearchInputFocused() {
 			t.Error("Down should blur the search input")
 		}
-		if !l.searchActive {
+		if !l.search.active {
 			t.Error("Down should keep the search bar visible")
 		}
 		if l.CursorPos() != 0 {
