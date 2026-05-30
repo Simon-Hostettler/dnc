@@ -29,13 +29,7 @@ func (a LongRestAction) Name() string    { return "longrest" }
 func (a LongRestAction) ArgHint() string { return "" }
 
 func (a LongRestAction) Execute(agg *repository.CharacterAggregate, args string) ActionResult {
-	c := agg.Character
-	c.CurrHitPoints = c.MaxHitPoints
-	c.DeathSaveSuccesses = 0
-	c.DeathSaveFailures = 0
-	for i := range c.SpellSlotsUsed {
-		c.SpellSlotsUsed[i] = 0
-	}
+	agg.LongRest()
 	return ActionResult{Cmd: command.WriteBackRequest}
 }
 
@@ -49,14 +43,9 @@ func (a CastAction) Execute(agg *repository.CharacterAggregate, args string) Act
 	if err != nil || level < 1 || level > 9 {
 		return ActionResult{ErrMsg: "usage: cast <1-9>"}
 	}
-	c := agg.Character
-	if level >= len(c.SpellSlots) || c.SpellSlots[level] <= 0 {
-		return ActionResult{ErrMsg: fmt.Sprintf("no spell slots at level %d", level)}
+	if err := agg.CastSpell(level); err != nil {
+		return ActionResult{ErrMsg: err.Error()}
 	}
-	if c.SpellSlotsUsed[level] >= c.SpellSlots[level] {
-		return ActionResult{ErrMsg: fmt.Sprintf("no available slots at level %d", level)}
-	}
-	c.SpellSlotsUsed[level]++
 	return ActionResult{Cmd: command.WriteBackRequest}
 }
 
@@ -70,8 +59,7 @@ func (a HealAction) Execute(agg *repository.CharacterAggregate, args string) Act
 	if err != nil || amount < 0 {
 		return ActionResult{ErrMsg: "usage: heal <amount>"}
 	}
-	c := agg.Character
-	c.CurrHitPoints = min(c.CurrHitPoints+amount, c.MaxHitPoints)
+	agg.Heal(amount)
 	return ActionResult{Cmd: command.WriteBackRequest}
 }
 
@@ -85,8 +73,7 @@ func (a DmgAction) Execute(agg *repository.CharacterAggregate, args string) Acti
 	if err != nil || amount < 0 {
 		return ActionResult{ErrMsg: "usage: dmg <amount>"}
 	}
-	c := agg.Character
-	c.CurrHitPoints = max(c.CurrHitPoints-amount, 0)
+	agg.TakeDamage(amount)
 	return ActionResult{Cmd: command.WriteBackRequest}
 }
 

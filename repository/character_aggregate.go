@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 	"hostettler.dev/dnc/models"
 	"hostettler.dev/dnc/util"
@@ -129,4 +131,38 @@ func (c *CharacterAggregate) GetSpellsByLevel(l int) []*models.SpellTO {
 		}
 	}
 	return spells
+}
+
+func (c *CharacterAggregate) LongRest() {
+	ch := c.Character
+	ch.CurrHitPoints = ch.MaxHitPoints
+	ch.DeathSaveSuccesses = 0
+	ch.DeathSaveFailures = 0
+	for i := range ch.SpellSlotsUsed {
+		ch.SpellSlotsUsed[i] = 0
+	}
+}
+
+func (c *CharacterAggregate) Heal(amount int) {
+	ch := c.Character
+	ch.CurrHitPoints = min(ch.CurrHitPoints+amount, ch.MaxHitPoints)
+}
+
+func (c *CharacterAggregate) TakeDamage(amount int) {
+	ch := c.Character
+	spill := max(0, -(ch.TempHitPoints - amount))
+	ch.TempHitPoints = max(ch.TempHitPoints-amount, 0)
+	ch.CurrHitPoints = max(ch.CurrHitPoints-spill, 0)
+}
+
+func (c *CharacterAggregate) CastSpell(level int) error {
+	ch := c.Character
+	if level >= len(ch.SpellSlots) || ch.SpellSlots[level] <= 0 {
+		return fmt.Errorf("no spell slots at level %d", level)
+	}
+	if ch.SpellSlotsUsed[level] >= ch.SpellSlots[level] {
+		return fmt.Errorf("no available slots at level %d", level)
+	}
+	ch.SpellSlotsUsed[level]++
+	return nil
 }

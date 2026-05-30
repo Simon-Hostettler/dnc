@@ -291,10 +291,11 @@ func (s *StatScreen) CreateCombatInfoRows() {
 			}),
 		list.NewLabeledIntRow(s.keymap, "Speed", &s.agg.Character.Speed,
 			editor.NewIntEditor(s.keymap, "Speed", &s.agg.Character.Speed)).WithConfig(standardCfg),
-		list.NewStructRow(s.keymap, &HPInfo{&s.agg.Character.CurrHitPoints, &s.agg.Character.MaxHitPoints}, renderHPInfoRow,
+		list.NewStructRow(s.keymap, &HPInfo{&s.agg.Character.CurrHitPoints, &s.agg.Character.MaxHitPoints, &s.agg.Character.TempHitPoints}, renderHPInfoRow,
 			[]editor.ValueEditor{
 				editor.NewIntEditor(s.keymap, "Current HP", &s.agg.Character.CurrHitPoints),
 				editor.NewIntEditor(s.keymap, "Max HP", &s.agg.Character.MaxHitPoints),
+				editor.NewIntEditor(s.keymap, "Temp HP", &s.agg.Character.TempHitPoints),
 			}),
 		list.NewStructRow(s.keymap, &HitDiceInfo{&s.agg.Character.UsedHitDice, &s.agg.Character.HitDice}, renderHitDiceInfoRow,
 			[]editor.ValueEditor{
@@ -348,10 +349,15 @@ func (s *StatScreen) CreateSavingThrowRows() {
 type HPInfo struct {
 	current *int
 	max     *int
+	temp    *int
 }
 
 func renderHPInfoRow(hp *HPInfo) string {
-	return styles.RenderEdgeBound(statColWidth-4, 7, "HP", strconv.Itoa(*hp.current)+"/"+strconv.Itoa(*hp.max))
+	tmp := ""
+	if hp.temp != nil && *hp.temp > 0 {
+		tmp = fmt.Sprintf("(+%d)", *hp.temp)
+	}
+	return styles.RenderEdgeBound(statColWidth-4, 7, "HP", strconv.Itoa(*hp.current)+tmp+"/"+strconv.Itoa(*hp.max))
 }
 
 type HitDiceInfo struct {
