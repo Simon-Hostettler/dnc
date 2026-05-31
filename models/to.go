@@ -24,6 +24,10 @@ type CharacterTO struct {
 	UsedHitDice         string    `db:"used_hit_dice"`
 	DeathSaveSuccesses  int       `db:"death_save_successes"`
 	DeathSaveFailures   int       `db:"death_save_failures"`
+	Exhaustion          int       `db:"exhaustion"`
+	Concentration       int       `db:"concentration"`
+	Inspiration         int       `db:"inspiration"`
+	Condition           string    `db:"condition"`
 	Actions             string    `db:"actions"`
 	BonusActions        string    `db:"bonus_actions"`
 	SpellSlots          IntList   `db:"spell_slots"`

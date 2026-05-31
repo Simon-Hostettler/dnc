@@ -134,7 +134,7 @@ func createItemEditors(k util.KeyMap, item *models.ItemTO) []editor.ValueEditor 
 	return []editor.ValueEditor{
 		editor.NewStringEditor(k, "Name", &item.Name),
 		editor.NewEnumEditor(k, styles.IsEquippableSymbols, "Equippable", &item.IsEquippable),
-		editor.NewEnumEditor(k, styles.EquippedSymbols, "Equipped", &item.Equipped).
+		editor.NewEnumEditor(k, styles.BinarySymbols, "Equipped", &item.Equipped).
 			WithDisabledWhen(func() bool { return item.IsEquippable == 0 }),
 		editor.NewEnumEditor(k, styles.AttunementSymbols, "Attunement Slots", &item.AttunementSlots),
 		editor.NewIntEditor(k, "Quantity", &item.Quantity),

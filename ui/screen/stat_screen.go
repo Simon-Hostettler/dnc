@@ -33,6 +33,8 @@ var (
 	statShortColWidth  = 8
 	statTinyColWidth   = 3
 
+	statAbilityCellWidth = 14
+
 	statActionHeight = 5
 )
 
@@ -42,7 +44,11 @@ type StatScreen struct {
 	FocusManager
 
 	characterInfo *list.List
-	abilities     *list.List
+	abilities     []*component.SimpleComponent[int]
+	concentration *component.SimpleComponent[int]
+	inspiration   *component.SimpleComponent[int]
+	exhaustion    *component.SimpleComponent[int]
+	condition     *component.SimpleComponent[string]
 	skills        *list.List
 	savingThrows  *list.List
 	combatInfo    *list.List
@@ -59,8 +65,11 @@ func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen
 		agg:           c,
 		actions:       component.NewSimpleTextComponent(km, "Actions", &c.Character.Actions, statActionHeight, statRightContentWidth),
 		bonusActions:  component.NewSimpleTextComponent(km, "Bonus Actions", &c.Character.BonusActions, statActionHeight, statRightContentWidth),
+		concentration: component.NewSimpleEnumComponent(km, "Concentration", &c.Character.Concentration, styles.BinarySymbols, true, true),
+		inspiration:   component.NewSimpleEnumComponent(km, "Inspiration", &c.Character.Inspiration, styles.BinarySymbols, true, true),
+		exhaustion:    component.NewSimpleEnumComponent(km, "Exhaustion", &c.Character.Exhaustion, styles.ExhaustionSymbols, true, true),
+		condition:     component.NewSimpleStringComponent(km, "Condition", &c.Character.Condition, true, true),
 		characterInfo: list.NewListWithDefaults(km),
-		abilities:     list.NewListWithDefaults(km),
 		skills: list.NewListWithDefaults(km).
 			WithTitle("Skills"),
 		savingThrows: list.NewListWithDefaults(km).
@@ -69,6 +78,20 @@ func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen
 			WithTitle("Combat"),
 		attacks: list.NewListWithDefaults(km).
 			WithTitle("Attacks").WithViewport(4),
+	}
+	scorePrinter := func(score int) string {
+		return fmt.Sprintf("%2s [%+d]", strconv.Itoa(score), models.ToModifier(score, 0, 0))
+	}
+	ability := func(name string, field *int) *component.SimpleComponent[int] {
+		return component.NewSimpleIntComponent(km, name, field, true, true).WithFormat(scorePrinter)
+	}
+	s.abilities = []*component.SimpleComponent[int]{
+		ability("Str", &c.Abilities.Strength),
+		ability("Dex", &c.Abilities.Dexterity),
+		ability("Con", &c.Abilities.Constitution),
+		ability("Int", &c.Abilities.Intelligence),
+		ability("Wis", &c.Abilities.Wisdom),
+		ability("Cha", &c.Abilities.Charisma),
 	}
 	s.attackRows = NewCollection(km, s.attacks,
 		func() []*models.AttackTO { return util.Pointers(s.agg.Attacks) },
@@ -90,7 +113,13 @@ func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen
 func (s *StatScreen) Init() tea.Cmd {
 	cmds := []tea.Cmd{}
 	cmds = append(cmds, s.characterInfo.Init())
-	cmds = append(cmds, s.abilities.Init())
+	for _, a := range s.abilities {
+		cmds = append(cmds, a.Init())
+	}
+	cmds = append(cmds, s.concentration.Init())
+	cmds = append(cmds, s.inspiration.Init())
+	cmds = append(cmds, s.exhaustion.Init())
+	cmds = append(cmds, s.condition.Init())
 	cmds = append(cmds, s.skills.Init())
 	cmds = append(cmds, s.savingThrows.Init())
 	cmds = append(cmds, s.combatInfo.Init())
@@ -99,7 +128,6 @@ func (s *StatScreen) Init() tea.Cmd {
 	cmds = append(cmds, s.bonusActions.Init())
 
 	s.CreateCharacterInfoRows()
-	s.CreateAbilityRows()
 	s.CreateSkillRows()
 	s.CreateCombatInfoRows()
 	s.attackRows.Repopulate()
@@ -123,15 +151,65 @@ func (s *StatScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (s *StatScreen) wireFocusGraph() {
+	ab := s.abilities
 	s.Wire(FocusGraph{
 		s.characterInfo: {
 			command.DownDirection:  To(s.skills),
-			command.RightDirection: To(s.abilities),
+			command.RightDirection: To(ab[0]),
 			command.LeftDirection:  Emit(command.ReturnFocusToParentCmd),
 		},
-		s.abilities: {
+		ab[0]: {
+			command.RightDirection: To(ab[1]),
+			command.DownDirection:  To(ab[3]),
+			command.LeftDirection:  To(s.characterInfo),
+		},
+		ab[1]: {
+			command.LeftDirection:  To(ab[0]),
+			command.RightDirection: To(ab[2]),
+			command.DownDirection:  To(ab[4]),
+		},
+		ab[2]: {
+			command.LeftDirection: To(ab[1]),
+			command.DownDirection: To(ab[5]),
+		},
+		ab[3]: {
+			command.RightDirection: To(ab[4]),
+			command.UpDirection:    To(ab[0]),
+			command.DownDirection:  To(s.concentration),
+			command.LeftDirection:  To(s.characterInfo),
+		},
+		ab[4]: {
+			command.LeftDirection:  To(ab[3]),
+			command.RightDirection: To(ab[5]),
+			command.UpDirection:    To(ab[1]),
+			command.DownDirection:  To(s.concentration),
+		},
+		ab[5]: {
+			command.LeftDirection: To(ab[4]),
+			command.UpDirection:   To(ab[2]),
+			command.DownDirection: To(s.condition),
+		},
+		s.concentration: {
+			command.UpDirection:    To(ab[3]),
+			command.RightDirection: To(s.condition),
+			command.DownDirection:  To(s.inspiration),
+			command.LeftDirection:  To(s.characterInfo),
+		},
+		s.condition: {
+			command.UpDirection:   To(ab[5]),
+			command.LeftDirection: To(s.concentration),
+			command.DownDirection: To(s.exhaustion),
+		},
+		s.inspiration: {
+			command.UpDirection:    To(s.concentration),
+			command.RightDirection: To(s.exhaustion),
+			command.DownDirection:  To(s.actions),
+			command.LeftDirection:  To(s.characterInfo),
+		},
+		s.exhaustion: {
+			command.UpDirection:   To(s.condition),
+			command.LeftDirection: To(s.inspiration),
 			command.DownDirection: To(s.actions),
-			command.LeftDirection: To(s.characterInfo),
 		},
 		s.skills: {
 			command.UpDirection:   To(s.characterInfo),
@@ -155,7 +233,7 @@ func (s *StatScreen) wireFocusGraph() {
 			command.LeftDirection:  ToWith(s.skills, func() { s.skills.SetCursor(s.skills.Size() / 2) }),
 		},
 		s.actions: {
-			command.UpDirection:   To(s.abilities),
+			command.UpDirection:   To(s.inspiration),
 			command.LeftDirection: To(s.combatInfo),
 			command.DownDirection: To(s.bonusActions),
 		},
@@ -174,7 +252,20 @@ func (s *StatScreen) wireFocusGraph() {
 func (s *StatScreen) View() tea.View {
 	characterInfo := s.characterInfo.View().Content
 
-	abilities := s.abilities.View().Content
+	abilityCell := func(i int) string {
+		return lipgloss.NewStyle().Width(statAbilityCellWidth).Render(s.abilities[i].View().Content)
+	}
+	statCell := func(content string) string {
+		return lipgloss.NewStyle().Width(statColWidth + statTinyColWidth).Render(content)
+	}
+	concentrationLine := lipgloss.JoinHorizontal(lipgloss.Left, statCell(s.concentration.View().Content), s.condition.View().Content)
+	inspirationLine := lipgloss.JoinHorizontal(lipgloss.Left, statCell(s.inspiration.View().Content), s.exhaustion.View().Content)
+	abilities := lipgloss.JoinVertical(lipgloss.Left,
+		lipgloss.JoinHorizontal(lipgloss.Top, abilityCell(0), abilityCell(1), abilityCell(2)),
+		lipgloss.JoinHorizontal(lipgloss.Top, abilityCell(3), abilityCell(4), abilityCell(5)),
+		"",
+		concentrationLine,
+		inspirationLine)
 
 	topBarSeparator := styles.MakeVerticalSeparator(statTopBarHeight)
 
@@ -183,7 +274,7 @@ func (s *StatScreen) View() tea.View {
 		Width(styles.ScreenWidth).
 		Render(lipgloss.JoinHorizontal(lipgloss.Center,
 			characterInfo,
-			lipgloss.PlaceHorizontal(20, lipgloss.Center, topBarSeparator),
+			lipgloss.PlaceHorizontal(13, lipgloss.Center, topBarSeparator),
 			abilities))
 
 	leftColumn := styles.DefaultBorderStyle.
@@ -249,26 +340,6 @@ func (s *StatScreen) CreateCharacterInfoRows() {
 			}),
 	}
 	s.characterInfo.WithRows(rows)
-}
-
-func (s *StatScreen) CreateAbilityRows() {
-	scorePrinter := func(score int) string {
-		return fmt.Sprintf("%3s  ( %+d )", strconv.Itoa(score), models.ToModifier(score, 0, 0))
-	}
-	rowCfg := list.LabeledIntRowConfig{ValuePrinter: scorePrinter, JustifyValue: true, LabelWidth: statColWidth, ValueWidth: statShortColWidth}
-	newAbilityRow := func(field *int, name string) list.Row {
-		return list.NewLabeledIntRow(s.keymap, name+":", field,
-			editor.NewIntEditor(s.keymap, name, field)).WithConfig(rowCfg)
-	}
-	rows := []list.Row{
-		newAbilityRow(&s.agg.Abilities.Strength, "Strength"),
-		newAbilityRow(&s.agg.Abilities.Constitution, "Constitution"),
-		newAbilityRow(&s.agg.Abilities.Dexterity, "Dexterity"),
-		newAbilityRow(&s.agg.Abilities.Intelligence, "Intelligence"),
-		newAbilityRow(&s.agg.Abilities.Wisdom, "Wisdom"),
-		newAbilityRow(&s.agg.Abilities.Charisma, "Charisma"),
-	}
-	s.abilities.WithRows(rows)
 }
 
 func (s *StatScreen) CreateCombatInfoRows() {

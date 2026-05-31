@@ -31,6 +31,7 @@ func (r *DBCharacterRepository) create(ctx context.Context, agg *CharacterAggreg
                 proficiency_bonus, armor_class, initiative, speed,
                 max_hit_points, curr_hit_points, temp_hit_points,
                 hit_dice, used_hit_dice, death_save_successes, death_save_failures,
+				exhaustion, concentration, inspiration, condition,
 				actions, bonus_actions, spell_slots, spell_slots_used,
                 spellcasting_ability, spell_save_dc, spell_attack_bonus,
 				age, height, weight, eyes, skin, hair, appearance, backstory,
@@ -38,13 +39,14 @@ func (r *DBCharacterRepository) create(ctx context.Context, agg *CharacterAggreg
             ) VALUES (
                 ?,?,?,?,?,?,?,?,?,?,?,
                 ?,?,?,?,?,?,?,?,?,?,?,?,
-				?,?,?,?,?,?,?,?
+				?,?,?,?,?,?,?,?,?,?,?,?
 			) RETURNING id`
 		row := tx.QueryRowxContext(ctx, query,
 			c.Name, c.ClassLevels, c.Race, c.Alignment,
 			c.ProficiencyBonus, c.ArmorClass, c.Initiative, c.Speed,
 			c.MaxHitPoints, c.CurrHitPoints, c.TempHitPoints,
 			c.HitDice, c.UsedHitDice, c.DeathSaveSuccesses, c.DeathSaveFailures,
+			c.Exhaustion, c.Concentration, c.Inspiration, c.Condition,
 			c.Actions, c.BonusActions, c.SpellSlots, c.SpellSlotsUsed,
 			c.SpellcastingAbility, c.SpellSaveDC, c.SpellAttackBonus,
 			c.Age, c.Height, c.Weight, c.Eyes, c.Skin, c.Hair, c.Appearance, c.Backstory,
@@ -219,6 +221,7 @@ func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggreg
 				proficiency_bonus=?, armor_class=?, initiative=?, speed=?,
 				max_hit_points=?, curr_hit_points=?, temp_hit_points=?,
 				hit_dice=?, used_hit_dice=?, death_save_successes=?, death_save_failures=?,
+				exhaustion=?, concentration=?, inspiration=?, condition=?,
 				actions=?, bonus_actions=?, spell_slots=?, spell_slots_used=?,
 				spellcasting_ability=?, spell_save_dc=?, spell_attack_bonus=?,
 				age=?, height=?, weight=?, eyes=?, skin=?, hair=?, appearance=?,
@@ -230,6 +233,7 @@ func (r *DBCharacterRepository) Update(ctx context.Context, agg *CharacterAggreg
 			c.ProficiencyBonus, c.ArmorClass, c.Initiative, c.Speed,
 			c.MaxHitPoints, c.CurrHitPoints, c.TempHitPoints,
 			c.HitDice, c.UsedHitDice, c.DeathSaveSuccesses, c.DeathSaveFailures,
+			c.Exhaustion, c.Concentration, c.Inspiration, c.Condition,
 			c.Actions, c.BonusActions, c.SpellSlots, c.SpellSlotsUsed,
 			c.SpellcastingAbility, c.SpellSaveDC, c.SpellAttackBonus,
 			c.Age, c.Height, c.Weight, c.Eyes, c.Skin, c.Hair, c.Appearance, c.Backstory,

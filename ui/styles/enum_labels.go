@@ -22,17 +22,7 @@ var ProficiencySymbols []EnumMapping = []EnumMapping{
 	{Value: int(models.Expertise), Label: "●"},
 }
 
-var PreparedSymbols []EnumMapping = []EnumMapping{
-	{Value: 0, Label: "□"},
-	{Value: 1, Label: "■"},
-}
-
-var ConcentrationSymbols []EnumMapping = []EnumMapping{
-	{Value: 0, Label: "□"},
-	{Value: 1, Label: "■"},
-}
-
-var RitualSymbols []EnumMapping = []EnumMapping{
+var BinarySymbols []EnumMapping = []EnumMapping{
 	{Value: 0, Label: "□"},
 	{Value: 1, Label: "■"},
 }
@@ -52,16 +42,21 @@ var IsEquippableSymbols []EnumMapping = []EnumMapping{
 	{Value: 1, Label: "Equippable"},
 }
 
-var EquippedSymbols []EnumMapping = []EnumMapping{
-	{Value: 0, Label: "□"},
-	{Value: 1, Label: "■"},
-}
-
 var AttunementSymbols []EnumMapping = []EnumMapping{
 	{Value: 0, Label: "□□□"},
 	{Value: 1, Label: "■□□"},
 	{Value: 2, Label: "■■□"},
 	{Value: 3, Label: "■■■"},
+}
+
+var ExhaustionSymbols []EnumMapping = []EnumMapping{
+	{Value: 0, Label: "□□□□□□"},
+	{Value: 1, Label: "■□□□□□"},
+	{Value: 2, Label: "■■□□□□"},
+	{Value: 3, Label: "■■■□□□"},
+	{Value: 4, Label: "■■■■□□"},
+	{Value: 5, Label: "■■■■■□"},
+	{Value: 6, Label: "■■■■■■"},
 }
 
 var DeathSaveSymbols []EnumMapping = []EnumMapping{

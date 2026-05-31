@@ -150,9 +150,9 @@ func (s *SpellScreen) createSpellEditors(spell *models.SpellTO) []editor.ValueEd
 	return []editor.ValueEditor{
 		editor.NewStringEditor(s.keymap, "Name", &spell.Name),
 		editor.NewStringEditor(s.keymap, "School", &spell.School),
-		editor.NewEnumEditor(s.keymap, styles.PreparedSymbols, "Prepared", &spell.Prepared),
-		editor.NewEnumEditor(s.keymap, styles.ConcentrationSymbols, "Concentration", &spell.Concentration),
-		editor.NewEnumEditor(s.keymap, styles.RitualSymbols, "Ritual", &spell.Ritual),
+		editor.NewEnumEditor(s.keymap, styles.BinarySymbols, "Prepared", &spell.Prepared),
+		editor.NewEnumEditor(s.keymap, styles.BinarySymbols, "Concentration", &spell.Concentration),
+		editor.NewEnumEditor(s.keymap, styles.BinarySymbols, "Ritual", &spell.Ritual),
 		editor.NewEnumEditor(s.keymap, styles.SpellSourceStrings, "Spell Source", &spell.SpellSource),
 		editor.NewStringEditor(s.keymap, "Damage", &spell.Damage),
 		editor.NewStringEditor(s.keymap, "Casting Time", &spell.CastingTime),
