@@ -36,6 +36,8 @@ var (
 	statAbilityCellWidth = 14
 
 	statActionHeight = 5
+
+	statStatusLabelWidth = 15
 )
 
 type StatScreen struct {
@@ -65,8 +67,8 @@ func NewStatScreen(km util.KeyMap, c *repository.CharacterAggregate) *StatScreen
 		agg:           c,
 		actions:       component.NewSimpleTextComponent(km, "Actions", &c.Character.Actions, statActionHeight, statRightContentWidth),
 		bonusActions:  component.NewSimpleTextComponent(km, "Bonus Actions", &c.Character.BonusActions, statActionHeight, statRightContentWidth),
-		concentration: component.NewSimpleEnumComponent(km, "Concentration", &c.Character.Concentration, styles.BinarySymbols, true, true),
-		inspiration:   component.NewSimpleEnumComponent(km, "Inspiration", &c.Character.Inspiration, styles.BinarySymbols, true, true),
+		concentration: component.NewSimpleEnumComponent(km, "Concentration", &c.Character.Concentration, styles.BinarySymbols, true, true).WithLabelWidth(statStatusLabelWidth),
+		inspiration:   component.NewSimpleEnumComponent(km, "Inspiration", &c.Character.Inspiration, styles.BinarySymbols, true, true).WithLabelWidth(statStatusLabelWidth),
 		exhaustion:    component.NewSimpleEnumComponent(km, "Exhaustion", &c.Character.Exhaustion, styles.ExhaustionSymbols, true, true),
 		condition:     component.NewSimpleStringComponent(km, "Condition", &c.Character.Condition, true, true),
 		characterInfo: list.NewListWithDefaults(km),

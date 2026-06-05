@@ -5,6 +5,7 @@ import (
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"hostettler.dev/dnc/command"
 	"hostettler.dev/dnc/ui/editor"
 	"hostettler.dev/dnc/ui/styles"
@@ -19,16 +20,17 @@ type SimpleComponent[T any] struct {
 	focus            bool
 	renderName       bool
 	highlightOnFocus bool
+	labelWidth       int
 	format           func(T) string
 	cycleAction      func(*T) tea.Cmd
 }
 
 func NewSimpleIntComponent(k util.KeyMap, name string, content *int, renderName bool, highlightOnFocus bool) *SimpleComponent[int] {
-	return &SimpleComponent[int]{k, name, content, editor.NewIntEditor(k, name, content), false, renderName, highlightOnFocus, strconv.Itoa, nil}
+	return &SimpleComponent[int]{k, name, content, editor.NewIntEditor(k, name, content), false, renderName, highlightOnFocus, 0, strconv.Itoa, nil}
 }
 
 func NewSimpleStringComponent(k util.KeyMap, name string, content *string, renderName bool, highlightOnFocus bool) *SimpleComponent[string] {
-	return &SimpleComponent[string]{k, name, content, editor.NewStringEditor(k, name, content), false, renderName, highlightOnFocus, func(s string) string { return s }, nil}
+	return &SimpleComponent[string]{k, name, content, editor.NewStringEditor(k, name, content), false, renderName, highlightOnFocus, 0, func(s string) string { return s }, nil}
 }
 
 // Renders an int-backed enum using the given symbols and
@@ -46,7 +48,7 @@ func NewSimpleEnumComponent(k util.KeyMap, name string, content *int, symbols []
 		*v = (*v + 1) % len(symbols)
 		return command.WriteBackRequest
 	}
-	return &SimpleComponent[int]{k, name, content, editor.NewEnumEditor(k, symbols, name, content), false, renderName, highlightOnFocus, format, cycle}
+	return &SimpleComponent[int]{k, name, content, editor.NewEnumEditor(k, symbols, name, content), false, renderName, highlightOnFocus, 0, format, cycle}
 }
 
 func (s *SimpleComponent[T]) WithFormat(format func(T) string) *SimpleComponent[T] {
@@ -56,6 +58,11 @@ func (s *SimpleComponent[T]) WithFormat(format func(T) string) *SimpleComponent[
 
 func (s *SimpleComponent[T]) WithCycleAction(action func(*T) tea.Cmd) *SimpleComponent[T] {
 	s.cycleAction = action
+	return s
+}
+
+func (s *SimpleComponent[T]) WithLabelWidth(width int) *SimpleComponent[T] {
+	s.labelWidth = width
 	return s
 }
 
@@ -80,6 +87,9 @@ func (s *SimpleComponent[T]) View() tea.View {
 	prefix := ""
 	if s.renderName {
 		prefix = s.name + ": "
+		if s.labelWidth > 0 {
+			prefix = lipgloss.NewStyle().Width(s.labelWidth).Render(prefix)
+		}
 	}
 	return tea.NewView(styles.RenderItem(s.focus && s.highlightOnFocus, prefix+s.format(*s.content)))
 }
