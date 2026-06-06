@@ -41,6 +41,8 @@ Left
 Sleep 0.25
 Left
 Sleep 0.25
+Left
+Sleep 0.25
 Down
 Sleep 0.5
 Enter
