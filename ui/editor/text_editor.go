@@ -24,17 +24,22 @@ func NewTextEditor(keymap util.KeyMap, label string, value *string) *TextEditor 
 	ta.SetHeight(8)
 	ta.ShowLineNumbers = false
 	ta.Prompt = ""
-	if value != nil {
-		ta.SetValue(*value)
-	}
-	ta.CursorStart()
 
-	return &TextEditor{
+	e := &TextEditor{
 		keymap:   keymap,
 		label:    label,
 		value:    value,
 		textArea: ta,
 	}
+	e.Reload()
+	return e
+}
+
+func (e *TextEditor) Reload() {
+	if e.value != nil {
+		e.textArea.SetValue(*e.value)
+	}
+	e.textArea.CursorStart()
 }
 
 func (e *TextEditor) Update(msg tea.Msg) tea.Cmd {

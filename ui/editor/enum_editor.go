@@ -40,18 +40,21 @@ func NewEnumEditor[T IntLike](keymap util.KeyMap, options []styles.EnumMapping, 
 		label:   label,
 		value:   value,
 	}
+	e.Reload()
+	return e
+}
 
-	if value != nil {
-		current := int(*value)
-		for i, opt := range options {
-			if opt.Value == current {
-				e.cursor = i
-				break
-			}
+func (e *EnumEditor[T]) Reload() {
+	if e.value == nil {
+		return
+	}
+	current := int(*e.value)
+	for i, opt := range e.options {
+		if opt.Value == current {
+			e.cursor = i
+			break
 		}
 	}
-
-	return e
 }
 
 func (e *EnumEditor[T]) Update(msg tea.Msg) tea.Cmd {

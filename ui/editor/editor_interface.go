@@ -17,6 +17,9 @@ type ValueEditor interface {
 	// Updates the delegator, does not store changes to filesystem.
 	Save() tea.Cmd
 
+	// Re-seeds widget state from the backing pointer
+	Reload()
+
 	Focus()
 
 	Blur()

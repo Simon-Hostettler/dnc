@@ -33,6 +33,7 @@ func (s *EditorScreen) Init() tea.Cmd { return nil }
 func (s *EditorScreen) StartEdit(editors []editor.ValueEditor) {
 	s.nodes = make([]*editorNode, len(editors))
 	for i, e := range editors {
+		e.Reload()
 		s.nodes[i] = &editorNode{editor: e}
 	}
 	s.save.onSave = s.buildSaveCmd()

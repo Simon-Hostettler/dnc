@@ -31,17 +31,23 @@ func newTextInputEditor[T any](
 ) *TextInputEditor[T] {
 	ti := textinput.New()
 	ti.Prompt = ""
-	if value != nil {
-		ti.SetValue(format(*value))
-	}
 
-	return &TextInputEditor[T]{
+	e := &TextInputEditor[T]{
 		keymap:    keymap,
 		label:     label,
 		value:     value,
 		textInput: ti,
 		parse:     parse,
 		format:    format,
+	}
+	e.Reload()
+	return e
+}
+
+func (s *TextInputEditor[T]) Reload() {
+	if s.value != nil {
+		s.textInput.SetValue(s.format(*s.value))
+		s.textInput.CursorEnd()
 	}
 }
 
