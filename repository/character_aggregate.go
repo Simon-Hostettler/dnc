@@ -155,6 +155,10 @@ func (c *CharacterAggregate) TakeDamage(amount int) {
 	ch.CurrHitPoints = max(ch.CurrHitPoints-spill, 0)
 }
 
+func (c *CharacterAggregate) SetTempHP(amount int) {
+	c.Character.TempHitPoints = amount
+}
+
 func (c *CharacterAggregate) CastSpell(level int) error {
 	ch := c.Character
 	if level >= len(ch.SpellSlots) || ch.SpellSlots[level] <= 0 {

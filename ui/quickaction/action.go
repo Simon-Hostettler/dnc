@@ -86,6 +86,20 @@ func (a DmgAction) Execute(agg *repository.CharacterAggregate, args string) Acti
 	return ActionResult{Cmd: command.WriteBackRequest}
 }
 
+type TempHPAction struct{}
+
+func (a TempHPAction) Name() string    { return "thp" }
+func (a TempHPAction) ArgHint() string { return "<amount>" }
+
+func (a TempHPAction) Execute(agg *repository.CharacterAggregate, args string) ActionResult {
+	amount, err := strconv.Atoi(strings.TrimSpace(args))
+	if err != nil || amount < 0 {
+		return ActionResult{ErrMsg: "usage: thp <amount>"}
+	}
+	agg.SetTempHP(amount)
+	return ActionResult{Cmd: command.WriteBackRequest}
+}
+
 type ProbAction struct{}
 
 func (a ProbAction) Name() string    { return "prob" }
