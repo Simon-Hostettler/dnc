@@ -69,10 +69,12 @@ Available actions:
 
 | Action                  | Description                                              |
 | ----------------------- | -------------------------------------------------------- |
+| `q`                     | Quits the app                                            |
 | `longrest`              | Resets HP, death saves, and spell slots                  |
 | `cast <1-9>`            | Uses a spell slot at the given level                     |
 | `heal <amount>`         | Restores hit points (capped at max)                      |
 | `dmg <amount>`          | Reduces hit points (floored at 0)                        |
+| `thp <amount>`          | Sets temporary hit points (>= 0)                         |
 | `prob <expr cmp value>` | Probability that a dice expression satisfies a condition |
 | `ev <expression>`       | Expected value of a dice expression                      |
 | `dist <expression>`     | Distribution stats for a dice expression                 |
