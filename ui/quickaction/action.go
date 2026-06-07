@@ -23,6 +23,15 @@ type Action interface {
 	Execute(agg *repository.CharacterAggregate, args string) ActionResult
 }
 
+type QuitAction struct{}
+
+func (a QuitAction) Name() string    { return "q" }
+func (a QuitAction) ArgHint() string { return "" }
+
+func (a QuitAction) Execute(_ *repository.CharacterAggregate, _ string) ActionResult {
+	return ActionResult{Cmd: tea.Quit}
+}
+
 type LongRestAction struct{}
 
 func (a LongRestAction) Name() string    { return "longrest" }

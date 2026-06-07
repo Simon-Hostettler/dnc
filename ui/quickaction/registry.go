@@ -8,6 +8,7 @@ type Registry struct {
 
 func NewRegistry() *Registry {
 	r := &Registry{}
+	r.Register(QuitAction{})
 	r.Register(LongRestAction{})
 	r.Register(CastAction{})
 	r.Register(HealAction{})

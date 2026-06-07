@@ -65,7 +65,7 @@ func (p *Palette) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, p.keymap.Escape):
+		case key.Matches(msg, p.keymap.Escape) && !util.IsLetterKey(msg):
 			p.Close()
 			return nil
 		case key.Matches(msg, p.keymap.Enter):
