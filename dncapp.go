@@ -93,7 +93,13 @@ func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
 		confirmationScreen: screen.NewConfirmationScreen(km),
 		readerScreen:       screen.NewReaderScreen(km),
 		palette:            quickaction.NewPalette(km, quickaction.NewRegistry()),
-		router:             screen.NewScreenRouter(),
+		router: screen.NewScreenRouter([]command.ScreenIndex{
+			command.StatScreenIndex,
+			command.ProfileScreenIndex,
+			command.SpellScreenIndex,
+			command.InventoryScreenIndex,
+			command.NoteScreenIndex,
+		}),
 	}
 
 	return app, nil
@@ -138,20 +144,17 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = a.palette.Update(msg)
 		case key.Matches(msg, a.keymap.QuickAction) && a.router.IsCharacterReady() && !a.router.InModal():
 			a.palette.Open()
-		case key.Matches(msg, a.keymap.Screen1):
-			cmd = command.SwitchScreenCmd(command.StatScreenIndex)
-		case key.Matches(msg, a.keymap.Screen2):
-			cmd = command.SwitchScreenCmd(command.ProfileScreenIndex)
-		case key.Matches(msg, a.keymap.Screen3):
-			cmd = command.SwitchScreenCmd(command.SpellScreenIndex)
-		case key.Matches(msg, a.keymap.Screen4):
-			cmd = command.SwitchScreenCmd(command.InventoryScreenIndex)
 		case key.Matches(msg, a.keymap.ShowKeymap):
 			cmd = command.LaunchReaderScreenCmd(a.renderKeymap())
 		default:
 			translated := msg
 			if a.vim.InNormal() {
 				translated = a.vim.TranslateVimBindings(msg)
+			}
+			// first check if key affects screen navigation, otherwise pass to active screen
+			if c := a.router.NavCmd(translated, a.keymap); c != nil {
+				cmd = c
+				break
 			}
 			if a.router.IsFocused() {
 				_, cmd = a.router.Active().Update(translated)

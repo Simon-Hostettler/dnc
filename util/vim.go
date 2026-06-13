@@ -28,6 +28,10 @@ func (v *VimMode) TranslateVimBindings(msg tea.KeyPressMsg) tea.KeyPressMsg {
 		return BindingToKeyPress(v.Km.Left)
 	case key.Matches(msg, v.Km.VimRight):
 		return BindingToKeyPress(v.Km.Right)
+	case key.Matches(msg, v.Km.VimScreenUp):
+		return BindingToKeyPress(v.Km.ScreenUp)
+	case key.Matches(msg, v.Km.VimScreenDown):
+		return BindingToKeyPress(v.Km.ScreenDown)
 	default:
 		return msg
 	}

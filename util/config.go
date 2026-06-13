@@ -124,66 +124,76 @@ func GetConfig(cfgDir string, demo bool) (Config, func(), error) {
 }
 
 type KeyMap struct {
-	Up          key.Binding `json:"up"`
-	Down        key.Binding `json:"down"`
-	Left        key.Binding `json:"left"`
-	Right       key.Binding `json:"right"`
-	Select      key.Binding `json:"select"`
-	Edit        key.Binding `json:"edit"`
-	Enter       key.Binding `json:"enter"`
-	Save        key.Binding `json:"save"`
-	Escape      key.Binding `json:"escape"`
-	Delete      key.Binding `json:"delete"`
-	ForceQuit   key.Binding `json:"force_quit"`
-	Show        key.Binding `json:"show"`
-	Screen1     key.Binding `json:"screen1"`
-	Screen2     key.Binding `json:"screen2"`
-	Screen3     key.Binding `json:"screen3"`
-	Screen4     key.Binding `json:"screen4"`
-	ShowKeymap  key.Binding `json:"show_keymap"`
-	Cycle       key.Binding `json:"cycle"`
-	QuickAction key.Binding `json:"quick_action"`
-	TextSearch  key.Binding `json:"text_search"`
-	NextMatch   key.Binding `json:"next_match"`
-	PrevMatch   key.Binding `json:"prev_match"`
-	Append      key.Binding `json:"append"`
-	VimInsert   key.Binding `json:"vim_insert"`
-	VimUp       key.Binding `json:"vim_up"`
-	VimDown     key.Binding `json:"vim_down"`
-	VimLeft     key.Binding `json:"vim_left"`
-	VimRight    key.Binding `json:"vim_right"`
+	Up            key.Binding `json:"up"`
+	Down          key.Binding `json:"down"`
+	Left          key.Binding `json:"left"`
+	Right         key.Binding `json:"right"`
+	Select        key.Binding `json:"select"`
+	Edit          key.Binding `json:"edit"`
+	Enter         key.Binding `json:"enter"`
+	Save          key.Binding `json:"save"`
+	Escape        key.Binding `json:"escape"`
+	Delete        key.Binding `json:"delete"`
+	ForceQuit     key.Binding `json:"force_quit"`
+	Show          key.Binding `json:"show"`
+	Screen1       key.Binding `json:"screen1"`
+	Screen2       key.Binding `json:"screen2"`
+	Screen3       key.Binding `json:"screen3"`
+	Screen4       key.Binding `json:"screen4"`
+	Screen5       key.Binding `json:"screen5"`
+	ScreenUp      key.Binding `json:"screen_up"`
+	ScreenDown    key.Binding `json:"screen_down"`
+	ShowKeymap    key.Binding `json:"show_keymap"`
+	Cycle         key.Binding `json:"cycle"`
+	QuickAction   key.Binding `json:"quick_action"`
+	TextSearch    key.Binding `json:"text_search"`
+	NextMatch     key.Binding `json:"next_match"`
+	PrevMatch     key.Binding `json:"prev_match"`
+	Append        key.Binding `json:"append"`
+	VimInsert     key.Binding `json:"vim_insert"`
+	VimUp         key.Binding `json:"vim_up"`
+	VimDown       key.Binding `json:"vim_down"`
+	VimLeft       key.Binding `json:"vim_left"`
+	VimRight      key.Binding `json:"vim_right"`
+	VimScreenUp   key.Binding `json:"vim_screen_up"`
+	VimScreenDown key.Binding `json:"vim_screen_down"`
 }
 
 func DefaultKeyMap() KeyMap {
 	return KeyMap{
-		Up:          key.NewBinding(key.WithKeys("up")),
-		Down:        key.NewBinding(key.WithKeys("down")),
-		Left:        key.NewBinding(key.WithKeys("left")),
-		Right:       key.NewBinding(key.WithKeys("right")),
-		Select:      key.NewBinding(key.WithKeys("space", "enter")),
-		Edit:        key.NewBinding(key.WithKeys("e")),
-		Enter:       key.NewBinding(key.WithKeys("enter")),
-		Save:        key.NewBinding(key.WithKeys("enter")),
-		Escape:      key.NewBinding(key.WithKeys("esc", "q")),
-		Delete:      key.NewBinding(key.WithKeys("x", "del")),
-		ForceQuit:   key.NewBinding(key.WithKeys("ctrl+c")),
-		Show:        key.NewBinding(key.WithKeys("space")),
-		Screen1:     key.NewBinding(key.WithKeys("ctrl+a")),
-		Screen2:     key.NewBinding(key.WithKeys("ctrl+s")),
-		Screen3:     key.NewBinding(key.WithKeys("ctrl+d")),
-		Screen4:     key.NewBinding(key.WithKeys("ctrl+f")),
-		ShowKeymap:  key.NewBinding(key.WithKeys("ctrl+h")),
-		Cycle:       key.NewBinding(key.WithKeys("tab")),
-		QuickAction: key.NewBinding(key.WithKeys(":")),
-		TextSearch:  key.NewBinding(key.WithKeys("/")),
-		NextMatch:   key.NewBinding(key.WithKeys("n")),
-		PrevMatch:   key.NewBinding(key.WithKeys("N")),
-		Append:      key.NewBinding(key.WithKeys("a")),
-		VimInsert:   key.NewBinding(key.WithKeys("i")),
-		VimUp:       key.NewBinding(key.WithKeys("k")),
-		VimDown:     key.NewBinding(key.WithKeys("j")),
-		VimLeft:     key.NewBinding(key.WithKeys("h")),
-		VimRight:    key.NewBinding(key.WithKeys("l")),
+		Up:            key.NewBinding(key.WithKeys("up")),
+		Down:          key.NewBinding(key.WithKeys("down")),
+		Left:          key.NewBinding(key.WithKeys("left")),
+		Right:         key.NewBinding(key.WithKeys("right")),
+		Select:        key.NewBinding(key.WithKeys("space", "enter")),
+		Edit:          key.NewBinding(key.WithKeys("e")),
+		Enter:         key.NewBinding(key.WithKeys("enter")),
+		Save:          key.NewBinding(key.WithKeys("enter")),
+		Escape:        key.NewBinding(key.WithKeys("esc", "q")),
+		Delete:        key.NewBinding(key.WithKeys("x", "del")),
+		ForceQuit:     key.NewBinding(key.WithKeys("ctrl+c")),
+		Show:          key.NewBinding(key.WithKeys("space")),
+		Screen1:       key.NewBinding(key.WithKeys("ctrl+a")),
+		Screen2:       key.NewBinding(key.WithKeys("ctrl+s")),
+		Screen3:       key.NewBinding(key.WithKeys("ctrl+d")),
+		Screen4:       key.NewBinding(key.WithKeys("ctrl+f")),
+		Screen5:       key.NewBinding(key.WithKeys("ctrl+g")),
+		ScreenUp:      key.NewBinding(key.WithKeys("pgup")),
+		ScreenDown:    key.NewBinding(key.WithKeys("pgdown")),
+		ShowKeymap:    key.NewBinding(key.WithKeys("ctrl+h")),
+		Cycle:         key.NewBinding(key.WithKeys("tab")),
+		QuickAction:   key.NewBinding(key.WithKeys(":")),
+		TextSearch:    key.NewBinding(key.WithKeys("/")),
+		NextMatch:     key.NewBinding(key.WithKeys("n")),
+		PrevMatch:     key.NewBinding(key.WithKeys("N")),
+		Append:        key.NewBinding(key.WithKeys("a")),
+		VimInsert:     key.NewBinding(key.WithKeys("i")),
+		VimUp:         key.NewBinding(key.WithKeys("k")),
+		VimDown:       key.NewBinding(key.WithKeys("j")),
+		VimLeft:       key.NewBinding(key.WithKeys("h")),
+		VimRight:      key.NewBinding(key.WithKeys("l")),
+		VimScreenUp:   key.NewBinding(key.WithKeys("K")),
+		VimScreenDown: key.NewBinding(key.WithKeys("J")),
 	}
 }
 

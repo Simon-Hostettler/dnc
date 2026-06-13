@@ -1,23 +1,27 @@
 package screen
 
 import (
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"hostettler.dev/dnc/command"
+	"hostettler.dev/dnc/util"
 )
 
 type ScreenRouter struct {
 	screens        map[command.ScreenIndex]FocusableModel
 	modalIndexes   map[command.ScreenIndex]bool
+	contentOrder   []command.ScreenIndex
 	contentIdx     command.ScreenIndex
 	modalStack     []command.ScreenIndex
 	characterReady bool
 	focused        bool
 }
 
-func NewScreenRouter() *ScreenRouter {
+func NewScreenRouter(order []command.ScreenIndex) *ScreenRouter {
 	return &ScreenRouter{
 		screens:      map[command.ScreenIndex]FocusableModel{},
 		modalIndexes: map[command.ScreenIndex]bool{},
+		contentOrder: order,
 	}
 }
 
@@ -105,4 +109,55 @@ func (r *ScreenRouter) focusActive() {
 	if m := r.Active(); m != nil {
 		m.Focus()
 	}
+}
+
+// nil if msg is not a navigation key
+func (r *ScreenRouter) NavCmd(msg tea.KeyPressMsg, km util.KeyMap) tea.Cmd {
+	if r.InModal() {
+		return nil // don't steal keys from modals/editors
+	}
+	switch {
+	case key.Matches(msg, km.Screen1):
+		return r.jumpCmd(0)
+	case key.Matches(msg, km.Screen2):
+		return r.jumpCmd(1)
+	case key.Matches(msg, km.Screen3):
+		return r.jumpCmd(2)
+	case key.Matches(msg, km.Screen4):
+		return r.jumpCmd(3)
+	case key.Matches(msg, km.Screen5):
+		return r.jumpCmd(4)
+	case key.Matches(msg, km.ScreenDown):
+		return r.stepCmd(1)
+	case key.Matches(msg, km.ScreenUp):
+		return r.stepCmd(-1)
+	default:
+		return nil
+	}
+}
+
+func (r *ScreenRouter) jumpCmd(i int) tea.Cmd {
+	if i < 0 || i >= len(r.contentOrder) {
+		return nil
+	}
+	return tea.Batch(command.SwitchScreenCmd(r.contentOrder[i]), command.FocusActiveScreenCmd)
+}
+
+func (r *ScreenRouter) stepCmd(delta int) tea.Cmd {
+	n := len(r.contentOrder)
+	cur := r.currentOrderPos()
+	if n == 0 || cur < 0 {
+		return nil
+	}
+	next := ((cur+delta)%n + n) % n
+	return tea.Batch(command.SwitchScreenCmd(r.contentOrder[next]), command.FocusActiveScreenCmd)
+}
+
+func (r *ScreenRouter) currentOrderPos() int {
+	for i, idx := range r.contentOrder {
+		if idx == r.contentIdx {
+			return i
+		}
+	}
+	return -1
 }
