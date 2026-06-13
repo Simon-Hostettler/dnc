@@ -81,7 +81,7 @@ func (s *InventoryScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case command.FocusNextElementMsg:
 		s.MoveFocus(msg.Direction)
 	case tea.KeyPressMsg:
-		cmd = RouteKey(s.focusedElement, msg, s.keymap, s.MoveFocus)
+		cmd = s.RouteKey(msg, s.keymap)
 	}
 	return s, cmd
 }

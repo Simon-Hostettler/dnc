@@ -104,3 +104,7 @@ func NewStringEditor(keymap util.KeyMap, label string, value *string) *TextInput
 		func(s string) string { return s },
 	)
 }
+
+func (e *TextInputEditor[T]) CapturesTextInput() bool {
+	return true
+}

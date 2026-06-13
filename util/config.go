@@ -39,6 +39,7 @@ func encode(f *os.File, v any) error {
 type Config struct {
 	KeyMap       KeyMap `json:"keymap"`
 	DatabasePath string `json:"database_path"`
+	VimMode      bool   `json:"vim_mode"`
 	Demo         bool   `json:"-"`
 }
 
@@ -46,6 +47,7 @@ func DefaultConfig(cfgDir string) Config {
 	return Config{
 		KeyMap:       DefaultKeyMap(),
 		DatabasePath: filepath.Join(cfgDir, "dnc", "dnc.db"),
+		VimMode:      false,
 		Demo:         false,
 	}
 }
@@ -144,6 +146,11 @@ type KeyMap struct {
 	NextMatch   key.Binding `json:"next_match"`
 	PrevMatch   key.Binding `json:"prev_match"`
 	Append      key.Binding `json:"append"`
+	VimInsert   key.Binding `json:"vim_insert"`
+	VimUp       key.Binding `json:"vim_up"`
+	VimDown     key.Binding `json:"vim_down"`
+	VimLeft     key.Binding `json:"vim_left"`
+	VimRight    key.Binding `json:"vim_right"`
 }
 
 func DefaultKeyMap() KeyMap {
@@ -170,6 +177,11 @@ func DefaultKeyMap() KeyMap {
 		NextMatch:   key.NewBinding(key.WithKeys("n")),
 		PrevMatch:   key.NewBinding(key.WithKeys("N")),
 		Append:      key.NewBinding(key.WithKeys("a")),
+		VimInsert:   key.NewBinding(key.WithKeys("i")),
+		VimUp:       key.NewBinding(key.WithKeys("k")),
+		VimDown:     key.NewBinding(key.WithKeys("j")),
+		VimLeft:     key.NewBinding(key.WithKeys("h")),
+		VimRight:    key.NewBinding(key.WithKeys("l")),
 	}
 }
 

@@ -86,3 +86,7 @@ func (e *TextEditor) Blur() {
 	e.textArea.Blur()
 	e.focus = false
 }
+
+func (e *TextEditor) CapturesTextInput() bool {
+	return true
+}

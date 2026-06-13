@@ -79,7 +79,7 @@ func TestViewRegression(t *testing.T) {
 			editor.NewStringEditor(km, "Name", &strVal),
 			editor.NewIntEditor(km, "Age", &intVal),
 		}
-		s := NewEditorScreen(km)
+		s := NewEditorScreen(km, &util.VimMode{})
 		s.StartEdit(editors)
 		util.AssertGolden(t, "editor_screen", s.View().Content)
 	})

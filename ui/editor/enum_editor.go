@@ -109,3 +109,7 @@ func (e *EnumEditor[T]) Focus() {
 func (e *EnumEditor[T]) Blur() {
 	e.focus = false
 }
+
+func (e *EnumEditor[T]) CapturesTextInput() bool {
+	return false
+}

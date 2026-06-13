@@ -16,15 +16,19 @@ type EditorScreen struct {
 	keymap util.KeyMap
 	FocusManager
 
+	// read-only state, owned by dncapp
+	vimMode *util.VimMode
+
 	nodes []*editorNode
 	save  *saveButton
 	vpTop int
 }
 
-func NewEditorScreen(keymap util.KeyMap) *EditorScreen {
+func NewEditorScreen(km util.KeyMap, vimMode *util.VimMode) *EditorScreen {
 	return &EditorScreen{
-		keymap: keymap,
-		save:   &saveButton{keymap: keymap},
+		keymap:  km,
+		vimMode: vimMode,
+		save:    &saveButton{keymap: km},
 	}
 }
 
@@ -52,11 +56,27 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		if key.Matches(msg, s.keymap.Escape) && !util.IsLetterKey(msg) {
+			if s.vimMode.InInsert() {
+				return s, util.ExitInsertModeCmd()
+			}
 			return s, command.SwitchToPrevScreenCmd
 		}
 		if focused := s.Focused(); focused != nil {
-			_, cmd := focused.Update(msg)
-			return s, cmd
+			if s.vimMode.InNormal() && capturesTextInput(focused) {
+				switch {
+				case key.Matches(msg, s.keymap.VimInsert):
+					return s, util.EnterInsertModeCmd()
+				case key.Matches(msg, s.keymap.Up):
+					return s, command.FocusNextElementCmd(command.UpDirection)
+				case key.Matches(msg, s.keymap.Down):
+					return s, command.FocusNextElementCmd(command.DownDirection)
+				default:
+					return s, nil
+				}
+			} else {
+				_, cmd := focused.Update(msg)
+				return s, cmd
+			}
 		}
 	case command.FocusNextElementMsg:
 		cmd := s.MoveFocus(msg.Direction)
@@ -88,6 +108,15 @@ func (s *EditorScreen) View() tea.View {
 		}
 	}
 	separated = append(separated, horizontalSeparator, s.save.render())
+
+	if s.vimMode.InNormal() && s.Focused() != nil && capturesTextInput(s.Focused()) {
+		separated = append(separated, styles.GrayTextStyle.
+			Render("\n'"+styles.RenderKeyBinding(s.keymap.VimInsert)+"': insert"))
+	}
+
+	if s.vimMode.InInsert() {
+		separated = append(separated, styles.GrayTextStyle.Render("\n'esc': exit insert"))
+	}
 
 	return tea.NewView(styles.DefaultBorderStyle.
 		Width(styles.SmallScreenWidth).
@@ -165,6 +194,13 @@ func (s *EditorScreen) focusedIndex() int {
 	return -1
 }
 
+func capturesTextInput(m tea.Model) bool {
+	if c, ok := m.(interface{ CapturesTextInput() bool }); ok {
+		return c.CapturesTextInput()
+	}
+	return false
+}
+
 func (s *EditorScreen) adjustViewport() {
 	idx := s.focusedIndex()
 	switch {
@@ -195,6 +231,8 @@ func (n *editorNode) Focus() { n.editor.Focus() }
 func (n *editorNode) Blur() { n.editor.Blur() }
 
 func (n *editorNode) Disabled() bool { return isDisabled(n.editor) }
+
+func (n *editorNode) CapturesTextInput() bool { return n.editor.CapturesTextInput() }
 
 func isDisabled(e editor.ValueEditor) bool {
 	if d, ok := e.(interface{ Disabled() bool }); ok {

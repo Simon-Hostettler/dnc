@@ -200,12 +200,11 @@ func (t *List) Update(m tea.Msg) (tea.Model, tea.Cmd) {
 func (t *List) updateSearchInput(msg tea.KeyPressMsg) tea.Cmd {
 	switch {
 	case key.Matches(msg, searchEscapeKey):
-		t.closeSearch()
-		return nil
+		return t.closeSearch()
 	case key.Matches(msg, t.KeyMap.Down):
 		t.search.blur()
 		t.focusFirstRow()
-		return nil
+		return util.ExitInsertModeCmd()
 	case key.Matches(msg, t.KeyMap.Up):
 		return command.FocusNextElementCmd(command.UpDirection)
 	default:
@@ -222,15 +221,14 @@ func (t *List) updateRows(msg tea.KeyPressMsg) tea.Cmd {
 		return t.openSearch()
 	case key.Matches(msg, t.KeyMap.Up):
 		if t.search.active && t.atTop() {
-			return t.search.open()
+			return t.openSearch()
 		}
 		return t.moveCursor(-1)
 	case key.Matches(msg, t.KeyMap.Down):
 		return t.moveCursor(1)
 	case key.Matches(msg, t.KeyMap.Escape):
 		if t.search.active {
-			t.closeSearch()
-			return nil
+			return t.closeSearch()
 		}
 		t.focus = false
 		return nil
@@ -261,13 +259,14 @@ func (t *List) triggerAppender() tea.Cmd {
 }
 
 func (t *List) openSearch() tea.Cmd {
-	return t.search.open()
+	return tea.Batch(t.search.open(), util.EnterInsertModeCmd())
 }
 
-func (t *List) closeSearch() {
+func (t *List) closeSearch() tea.Cmd {
 	t.search.close()
 	t.refresh()
 	t.resetCursor()
+	return util.ExitInsertModeCmd()
 }
 
 func (t *List) SearchInputFocused() bool {

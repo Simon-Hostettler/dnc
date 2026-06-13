@@ -75,14 +75,15 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg := msg.(type) {
 		case tea.KeyPressMsg:
 			switch {
-			case key.Matches(msg, m.KeyMap.Escape):
+			case key.Matches(msg, m.KeyMap.Escape) && !util.IsLetterKey(msg):
 				m.nameInput.Reset()
 				m.nameInput.Blur()
+				cmd = util.ExitInsertModeCmd()
 			case key.Matches(msg, m.KeyMap.Enter):
 				name := m.nameInput.Value()
 				m.nameInput.Reset()
 				m.nameInput.Blur()
-				cmd = command.CreateCharacterRequest(name)
+				cmd = tea.Batch(command.CreateCharacterRequest(name), util.ExitInsertModeCmd())
 			default:
 				m.nameInput, cmd = m.nameInput.Update(msg)
 			}
@@ -114,7 +115,7 @@ func (m *TitleScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.characters.Focus()
 			case key.Matches(msg, m.KeyMap.Select):
 				m.nameInput.Focus()
-				cmd = textinput.Blink
+				cmd = tea.Batch(textinput.Blink, util.EnterInsertModeCmd())
 			}
 		}
 	}
@@ -134,7 +135,7 @@ func (m *TitleScreen) View() tea.View {
 	}
 
 	helperNotice := styles.GrayTextStyle.Render(
-		"Press '" + m.KeyMap.ShowKeymap.Keys()[0] + "' to show key bindings",
+		"Press '" + styles.RenderKeyBinding(m.KeyMap.ShowKeymap) + "' to show key bindings",
 	)
 
 	return tea.NewView(lipgloss.JoinVertical(lipgloss.Center,

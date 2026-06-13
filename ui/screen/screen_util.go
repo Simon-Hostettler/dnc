@@ -79,34 +79,33 @@ func Emit(cmd tea.Cmd) FocusEdge {
 	return func() (FocusableModel, tea.Cmd) { return nil, cmd }
 }
 
-func RouteKey(focused FocusableModel,
+func (f *FocusManager) RouteKey(
 	msg tea.KeyPressMsg,
 	km util.KeyMap,
-	moveFocus func(command.Direction) tea.Cmd,
 ) tea.Cmd {
 	var cmd tea.Cmd
-	switch f := focused.(type) {
+	switch fe := f.focusedElement.(type) {
 	case *list.List:
 		switch {
-		case !f.SearchInputFocused() && key.Matches(msg, km.Right):
-			cmd = moveFocus(command.RightDirection)
-		case !f.SearchInputFocused() && key.Matches(msg, km.Left):
-			cmd = moveFocus(command.LeftDirection)
+		case !fe.SearchInputFocused() && key.Matches(msg, km.Right):
+			cmd = f.MoveFocus(command.RightDirection)
+		case !fe.SearchInputFocused() && key.Matches(msg, km.Left):
+			cmd = f.MoveFocus(command.LeftDirection)
 		default:
-			_, cmd = f.Update(msg)
+			_, cmd = fe.Update(msg)
 		}
 	default:
 		switch {
 		case key.Matches(msg, km.Right):
-			cmd = moveFocus(command.RightDirection)
+			cmd = f.MoveFocus(command.RightDirection)
 		case key.Matches(msg, km.Left):
-			cmd = moveFocus(command.LeftDirection)
+			cmd = f.MoveFocus(command.LeftDirection)
 		case key.Matches(msg, km.Up):
-			cmd = moveFocus(command.UpDirection)
+			cmd = f.MoveFocus(command.UpDirection)
 		case key.Matches(msg, km.Down):
-			cmd = moveFocus(command.DownDirection)
+			cmd = f.MoveFocus(command.DownDirection)
 		default:
-			_, cmd = focused.Update(msg)
+			_, cmd = f.focusedElement.Update(msg)
 		}
 	}
 	return cmd

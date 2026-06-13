@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"charm.land/bubbles/v2/key"
 	"charm.land/lipgloss/v2"
 )
 
@@ -184,4 +185,11 @@ func PrettyBoolCircle(b bool) string {
 	} else {
 		return "○"
 	}
+}
+
+func RenderKeyBinding(b key.Binding) string {
+	if len(b.Keys()) == 0 {
+		return ""
+	}
+	return b.Keys()[0]
 }

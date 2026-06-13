@@ -25,6 +25,7 @@ type DnCApp struct {
 
 	config     util.Config
 	keymap     util.KeyMap
+	vim        *util.VimMode
 	width      int
 	height     int
 	db         *sqlx.DB
@@ -71,11 +72,13 @@ func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
 			}
 		}
 	}
+	vim := &util.VimMode{Km: km, Enabled: cfg.VimMode, Layer: util.VimNormal}
 
 	app := &DnCApp{
 		config:             cfg,
 		keymap:             km,
 		db:                 handle,
+		vim:                vim,
 		ctx:                ctx,
 		cancel:             cancel,
 		cleanup:            cleanup,
@@ -86,7 +89,7 @@ func NewApp(cfg util.Config, cleanup func()) (*DnCApp, error) {
 		inventoryTab:       screen.NewScreenTab(km, "Inventory", command.InventoryScreenIndex, false),
 		noteTab:            screen.NewScreenTab(km, "Notes", command.NoteScreenIndex, false),
 		titleScreen:        screen.NewTitleScreen(km),
-		editorScreen:       screen.NewEditorScreen(km),
+		editorScreen:       screen.NewEditorScreen(km, vim),
 		confirmationScreen: screen.NewConfirmationScreen(km),
 		readerScreen:       screen.NewReaderScreen(km),
 		palette:            quickaction.NewPalette(km, quickaction.NewRegistry()),
@@ -131,6 +134,7 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, a.keymap.ForceQuit):
 			return a, tea.Quit
 		case a.palette.Active():
+			a.resetVimMode()
 			cmd = a.palette.Update(msg)
 		case key.Matches(msg, a.keymap.QuickAction) && a.router.IsCharacterReady() && !a.router.InModal():
 			a.palette.Open()
@@ -145,10 +149,14 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, a.keymap.ShowKeymap):
 			cmd = command.LaunchReaderScreenCmd(a.renderKeymap())
 		default:
+			translated := msg
+			if a.vim.InNormal() {
+				translated = a.vim.TranslateVimBindings(msg)
+			}
 			if a.router.IsFocused() {
-				_, cmd = a.router.Active().Update(msg)
+				_, cmd = a.router.Active().Update(translated)
 			} else {
-				cmd = screen.RouteKey(a.Focused(), msg, a.keymap, a.MoveFocus)
+				cmd = a.RouteKey(translated, a.keymap)
 			}
 		}
 	case tea.WindowSizeMsg:
@@ -161,6 +169,7 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.Blur()
 		a.router.Focus()
 	case command.SwitchScreenMsg:
+		a.resetVimMode()
 		if a.router.IsModal(msg.Screen) {
 			a.router.PushModal(msg.Screen)
 		} else {
@@ -198,6 +207,11 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd = command.SwitchScreenCmd(command.ReaderScreenIndex)
 	case command.SwitchToPrevScreenMsg:
 		a.router.PopModal()
+	case util.VimModeChangeMsg:
+		a.vim.Layer = msg.Layer
+	case command.FocusNextElementMsg:
+		a.resetVimMode()
+		_, cmd = a.router.Active().Update(msg)
 	default:
 		_, cmd = a.router.Active().Update(msg)
 	}
@@ -306,4 +320,10 @@ func (a *DnCApp) renderKeymap() string {
 		styles.DefaultTextStyle.
 			Render(util.PrettyPrintKeymap(a.keymap)),
 	)
+}
+
+func (a *DnCApp) resetVimMode() {
+	if a.vim.Enabled {
+		a.vim.Layer = util.VimNormal
+	}
 }

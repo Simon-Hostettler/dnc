@@ -23,4 +23,6 @@ type ValueEditor interface {
 	Focus()
 
 	Blur()
+
+	CapturesTextInput() bool
 }
