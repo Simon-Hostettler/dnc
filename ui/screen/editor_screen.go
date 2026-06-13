@@ -56,7 +56,10 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return s, command.SwitchToPrevScreenCmd
 		}
-		if key.Matches(msg, s.keymap.Save) && !s.vimMode.InInsert() && s.onSave != nil {
+		if key.Matches(msg, s.keymap.Save) && s.onSave != nil {
+			return s, s.onSave()
+		}
+		if s.vimMode.InNormal() && key.Matches(msg, s.keymap.VimSave) && s.onSave != nil {
 			return s, s.onSave()
 		}
 		if focused := s.Focused(); focused != nil {
@@ -106,7 +109,11 @@ func (s *EditorScreen) View() tea.View {
 		}
 	}
 
-	footer := "\n" + styles.RenderKeyBinding(s.keymap.Save) + ": save"
+	saveKey := s.keymap.Save
+	if s.vimMode.InNormal() {
+		saveKey = s.keymap.VimSave
+	}
+	footer := "\n" + styles.RenderKeyBinding(saveKey) + ": save"
 
 	if s.vimMode.InNormal() && s.Focused() != nil && capturesTextInput(s.Focused()) {
 		footer += " ∙ " + styles.RenderKeyBinding(s.keymap.VimInsert) + ": insert"

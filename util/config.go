@@ -151,6 +151,7 @@ type KeyMap struct {
 	PrevMatch     key.Binding `json:"prev_match"`
 	Append        key.Binding `json:"append"`
 	VimInsert     key.Binding `json:"vim_insert"`
+	VimSave       key.Binding `json:"vim_save"`
 	VimUp         key.Binding `json:"vim_up"`
 	VimDown       key.Binding `json:"vim_down"`
 	VimLeft       key.Binding `json:"vim_left"`
@@ -168,7 +169,7 @@ func DefaultKeyMap() KeyMap {
 		Select:        key.NewBinding(key.WithKeys("space", "enter")),
 		Edit:          key.NewBinding(key.WithKeys("e")),
 		Enter:         key.NewBinding(key.WithKeys("enter")),
-		Save:          key.NewBinding(key.WithKeys("enter")),
+		Save:          key.NewBinding(key.WithKeys("ctrl+s")),
 		Escape:        key.NewBinding(key.WithKeys("esc", "q")),
 		Delete:        key.NewBinding(key.WithKeys("x", "del")),
 		ForceQuit:     key.NewBinding(key.WithKeys("ctrl+c")),
@@ -188,6 +189,7 @@ func DefaultKeyMap() KeyMap {
 		PrevMatch:     key.NewBinding(key.WithKeys("N")),
 		Append:        key.NewBinding(key.WithKeys("a")),
 		VimInsert:     key.NewBinding(key.WithKeys("i")),
+		VimSave:       key.NewBinding(key.WithKeys("enter")),
 		VimUp:         key.NewBinding(key.WithKeys("k")),
 		VimDown:       key.NewBinding(key.WithKeys("j")),
 		VimLeft:       key.NewBinding(key.WithKeys("h")),

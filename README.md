@@ -44,6 +44,7 @@ Here is a list of some useful key bindings and their effects:
 | `Space` | Show more details about the element |
 | `Esc / q` | Exit a mode or selected element |
 | `Enter` | Confirm / Select |
+| `Ctrl+S` | Save changes in the edit screen |
 | `:` | Open the quick action menu (see below) |
 
 Lists have some common (optional) shortcuts:
@@ -63,7 +64,7 @@ The reader screen (invoked through `space` on an element) has text search / high
 
 ### Vim Mode
 
-Currently experimental. Set `"vim_mode": true` in the config to enable. This lets you move using `hijkl`, switch pages with `JK` and switch between insert and normal mode in the edit screen.
+Currently experimental. Set `"vim_mode": true` in the config to enable. This lets you move using `hijkl`, switch pages with `JK`, save with `enter` and switch between insert and normal mode in the edit screen.
 
 ### Quick actions
 
