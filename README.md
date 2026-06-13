@@ -61,6 +61,10 @@ The reader screen (invoked through `space` on an element) has text search / high
 | `n` | Highlight (and jump to) next matching element |
 | `N` | Highlight (and jump to) previous matching element |
 
+### Vim Mode
+
+Currently experimental. Set `"vim_mode": true` in the config to enable. This lets you move using `hijkl`, switch pages with `JK` and switch between insert and normal mode in the edit screen.
+
 ### Quick actions
 
 Press `:` to open the quick action palette. Use `tab` to autocomplete from suggestions.
