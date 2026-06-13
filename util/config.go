@@ -131,6 +131,7 @@ type KeyMap struct {
 	Select      key.Binding `json:"select"`
 	Edit        key.Binding `json:"edit"`
 	Enter       key.Binding `json:"enter"`
+	Save        key.Binding `json:"save"`
 	Escape      key.Binding `json:"escape"`
 	Delete      key.Binding `json:"delete"`
 	ForceQuit   key.Binding `json:"force_quit"`
@@ -162,6 +163,7 @@ func DefaultKeyMap() KeyMap {
 		Select:      key.NewBinding(key.WithKeys("space", "enter")),
 		Edit:        key.NewBinding(key.WithKeys("e")),
 		Enter:       key.NewBinding(key.WithKeys("enter")),
+		Save:        key.NewBinding(key.WithKeys("enter")),
 		Escape:      key.NewBinding(key.WithKeys("esc", "q")),
 		Delete:      key.NewBinding(key.WithKeys("x", "del")),
 		ForceQuit:   key.NewBinding(key.WithKeys("ctrl+c")),

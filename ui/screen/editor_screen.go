@@ -19,16 +19,15 @@ type EditorScreen struct {
 	// read-only state, owned by dncapp
 	vimMode *util.VimMode
 
-	nodes []*editorNode
-	save  *saveButton
-	vpTop int
+	nodes  []*editorNode
+	onSave func() tea.Cmd
+	vpTop  int
 }
 
 func NewEditorScreen(km util.KeyMap, vimMode *util.VimMode) *EditorScreen {
 	return &EditorScreen{
 		keymap:  km,
 		vimMode: vimMode,
-		save:    &saveButton{keymap: km},
 	}
 }
 
@@ -40,14 +39,10 @@ func (s *EditorScreen) StartEdit(editors []editor.ValueEditor) {
 		e.Reload()
 		s.nodes[i] = &editorNode{editor: e}
 	}
-	s.save.onSave = s.buildSaveCmd()
+	s.onSave = s.buildSaveCmd()
 	s.vpTop = 0
 
-	initial := s.firstEnabled()
-	if initial == nil {
-		initial = FocusableModel(s.save)
-	}
-	s.Wire(s.graph(), initial)
+	s.Wire(s.graph(), s.firstEnabled())
 	s.Focus()
 	s.adjustViewport()
 }
@@ -60,6 +55,9 @@ func (s *EditorScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return s, util.ExitInsertModeCmd()
 			}
 			return s, command.SwitchToPrevScreenCmd
+		}
+		if key.Matches(msg, s.keymap.Save) && !s.vimMode.InInsert() && s.onSave != nil {
+			return s, s.onSave()
 		}
 		if focused := s.Focused(); focused != nil {
 			if s.vimMode.InNormal() && capturesTextInput(focused) {
@@ -107,16 +105,20 @@ func (s *EditorScreen) View() tea.View {
 			separated = append(separated, horizontalSeparator, row)
 		}
 	}
-	separated = append(separated, horizontalSeparator, s.save.render())
+
+	footer := "\n" + styles.RenderKeyBinding(s.keymap.Save) + ": save"
 
 	if s.vimMode.InNormal() && s.Focused() != nil && capturesTextInput(s.Focused()) {
-		separated = append(separated, styles.GrayTextStyle.
-			Render("\n'"+styles.RenderKeyBinding(s.keymap.VimInsert)+"': insert"))
+		footer += " ∙ " + styles.RenderKeyBinding(s.keymap.VimInsert) + ": insert"
 	}
 
 	if s.vimMode.InInsert() {
-		separated = append(separated, styles.GrayTextStyle.Render("\n'esc': exit insert"))
+		footer += " ∙ " + styles.RenderKeyBinding(s.keymap.Escape) + ": exit insert"
+	} else {
+		footer += " ∙ " + styles.RenderKeyBinding(s.keymap.Escape) + ": back"
 	}
+
+	separated = append(separated, "\n"+styles.GrayTextStyle.Render(footer))
 
 	return tea.NewView(styles.DefaultBorderStyle.
 		Width(styles.SmallScreenWidth).
@@ -141,10 +143,6 @@ func (s *EditorScreen) graph() FocusGraph {
 			command.DownDirection: ToCond(func() FocusableModel { return s.nextEnabled(i) }),
 		}
 	}
-	g[s.save] = map[command.Direction]FocusEdge{
-		command.UpDirection:   ToCond(func() FocusableModel { return s.lastEnabled() }),
-		command.DownDirection: ToCond(func() FocusableModel { return s.firstEnabled() }),
-	}
 	return g
 }
 
@@ -154,7 +152,7 @@ func (s *EditorScreen) nextEnabled(from int) FocusableModel {
 			return s.nodes[i]
 		}
 	}
-	return s.save
+	return s.firstEnabled()
 }
 
 func (s *EditorScreen) prevEnabled(from int) FocusableModel {
@@ -163,7 +161,7 @@ func (s *EditorScreen) prevEnabled(from int) FocusableModel {
 			return s.nodes[i]
 		}
 	}
-	return s.save
+	return s.lastEnabled()
 }
 
 func (s *EditorScreen) firstEnabled() FocusableModel {
@@ -240,37 +238,3 @@ func isDisabled(e editor.ValueEditor) bool {
 	}
 	return false
 }
-
-type saveButton struct {
-	keymap  util.KeyMap
-	focused bool
-	onSave  func() tea.Cmd
-}
-
-func (b *saveButton) Init() tea.Cmd { return nil }
-
-func (b *saveButton) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	keyMsg, ok := msg.(tea.KeyPressMsg)
-	if !ok {
-		return b, nil
-	}
-	switch {
-	case key.Matches(keyMsg, b.keymap.Enter):
-		if b.onSave != nil {
-			return b, b.onSave()
-		}
-	case key.Matches(keyMsg, b.keymap.Up):
-		return b, command.FocusNextElementCmd(command.UpDirection)
-	case key.Matches(keyMsg, b.keymap.Down):
-		return b, command.FocusNextElementCmd(command.DownDirection)
-	}
-	return b, nil
-}
-
-func (b *saveButton) View() tea.View { return tea.NewView(b.render()) }
-
-func (b *saveButton) render() string { return styles.RenderItem(b.focused, "[ Save ]") }
-
-func (b *saveButton) Focus() { b.focused = true }
-
-func (b *saveButton) Blur() { b.focused = false }

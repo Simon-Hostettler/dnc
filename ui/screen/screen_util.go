@@ -26,7 +26,9 @@ func (f *FocusManager) Focus() {
 
 func (f *FocusManager) focusOn(m FocusableModel) {
 	f.focusedElement = m
-	m.Focus()
+	if m != nil {
+		m.Focus()
+	}
 }
 
 // Blur is idempotent: only the focused element can be active, so blurring it
