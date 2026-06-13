@@ -108,6 +108,7 @@ func LoadDemoConfig(cfgDir string) (Config, func(), error) {
 	}
 	cfg.DatabasePath = filepath.Join(tmp, "demo.db")
 	cfg.Demo = true
+	cfg.VimMode = false
 	cleanup := func() {
 		_ = os.RemoveAll(tmp)
 	}

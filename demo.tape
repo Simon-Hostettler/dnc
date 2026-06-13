@@ -32,9 +32,7 @@ Backspace
 Backspace
 Type "18"
 Sleep 0.5
-Down
-Sleep 0.5
-Enter
+Ctrl+e
 
 Sleep 1
 Left
