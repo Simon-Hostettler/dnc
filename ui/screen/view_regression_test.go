@@ -93,4 +93,10 @@ func TestViewRegression(t *testing.T) {
 		s := NewScreenTab(km, "Stats", command.StatScreenIndex, true)
 		util.AssertGolden(t, "screen_tab_focused", s.View().Content)
 	})
+
+	t.Run("ScreenTab_active", func(t *testing.T) {
+		s := NewScreenTab(km, "Stats", command.StatScreenIndex, false)
+		s.SetActive(true)
+		util.AssertGolden(t, "screen_tab_active", s.View().Content)
+	})
 }

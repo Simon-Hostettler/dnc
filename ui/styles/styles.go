@@ -41,9 +41,10 @@ var (
 				BorderForeground(SecondaryColor).
 				Align(lipgloss.Center).
 				Padding(1, 2)
-	NoBorderStyle = lipgloss.
-			NewStyle().
-			Border(RoundedBorder, false, false, false)
+	ActiveBorderStyle = DefaultBorderStyle.BorderForeground(HighlightColor)
+	NoBorderStyle     = lipgloss.
+				NewStyle().
+				Border(RoundedBorder, false, false, false)
 
 	RoundedBorder = lipgloss.Border{
 		Top:         "─",

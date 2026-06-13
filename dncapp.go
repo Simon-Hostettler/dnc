@@ -177,6 +177,7 @@ func (a *DnCApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.router.PushModal(msg.Screen)
 		} else {
 			a.router.SwitchContent(msg.Screen)
+			a.syncActiveTab()
 		}
 	case command.LoadSummariesRequestMsg:
 		cmd = repository.LoadSummariesCommand(a.repository, a.ctx)
@@ -282,6 +283,15 @@ func (a *DnCApp) populateCharacterScreens(agg *repository.CharacterAggregate) te
 	return tea.Batch(cmds...)
 }
 
+func (a *DnCApp) syncActiveTab() {
+	idx := a.router.ContentIndex()
+	for _, t := range []*screen.ScreenTab{
+		a.statTab, a.profileTab, a.spellTab, a.inventoryTab, a.noteTab,
+	} {
+		t.SetActive(t.ScreenIndex() == idx)
+	}
+}
+
 func (a *DnCApp) displayTabs() bool {
 	return !a.router.InModal() && a.router.ContentIndex() != command.TitleScreenIndex
 }
@@ -289,6 +299,7 @@ func (a *DnCApp) displayTabs() bool {
 func (a *DnCApp) wireTabFocusGraph() {
 	a.Wire(screen.FocusGraph{
 		a.statTab: {
+			command.UpDirection:    screen.To(a.noteTab),
 			command.DownDirection:  screen.To(a.profileTab),
 			command.RightDirection: screen.Emit(command.FocusActiveScreenCmd),
 		},
@@ -309,6 +320,7 @@ func (a *DnCApp) wireTabFocusGraph() {
 		},
 		a.noteTab: {
 			command.UpDirection:    screen.To(a.inventoryTab),
+			command.DownDirection:  screen.To(a.statTab),
 			command.RightDirection: screen.Emit(command.FocusActiveScreenCmd),
 		},
 	}, a.statTab)

@@ -19,10 +19,11 @@ type ScreenTab struct {
 	name        string
 	screenIndex command.ScreenIndex
 	focus       bool
+	active      bool
 }
 
 func NewScreenTab(keymap util.KeyMap, name string, idx command.ScreenIndex, focus bool) *ScreenTab {
-	return &ScreenTab{keymap, name, idx, focus}
+	return &ScreenTab{keymap: keymap, name: name, screenIndex: idx, focus: focus}
 }
 
 func (s *ScreenTab) Init() tea.Cmd {
@@ -47,11 +48,23 @@ func (s *ScreenTab) View() tea.View {
 	} else {
 		name = styles.ItemStyleDefault.Render(name)
 	}
-	return tea.NewView(styles.DefaultBorderStyle.UnsetPadding().
+	border := styles.DefaultBorderStyle
+	if s.active {
+		border = styles.ActiveBorderStyle
+	}
+	return tea.NewView(border.UnsetPadding().
 		AlignVertical(lipgloss.Center).
 		Width(tabWidth).
 		Height(tabHeight).
 		Render(name))
+}
+
+func (s *ScreenTab) SetActive(v bool) {
+	s.active = v
+}
+
+func (s *ScreenTab) ScreenIndex() command.ScreenIndex {
+	return s.screenIndex
 }
 
 func (s *ScreenTab) Focus() {
